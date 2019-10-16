@@ -43,6 +43,64 @@ module OcflTools
       moab_version.file_inventory( 'version' )
     end
 
+    def version_int_to_string(version)
+      # converts [Integer] version to [String] v0001 format.
+      result = "v%04d" % version.to_i
+    end
+
+    def list_all_files
+      # @return [Array] of all files found relative to Moab object root.
+      results = Array.new
+      Dir.chdir("#{@moab.object_pathname}")
+      @versions.each do | version |
+        version_name = self.version_int_to_string(version)
+        # Files only, Dir.glob('path/**/*').select{ |e| File.file? e }
+        Dir.glob("#{version_name}/data/**/*").select.each do |e|
+          if File.file? e
+              results << e
+            end
+          end
+        end
+        return results
+    end
+
+    def generate_file_digest(file)
+      # Given a fully-resolvable file path, calculate and return @digest.
+      case @digest
+        when 'md5'
+          checksum = Digest::MD5.hexdigest(File.read(file))
+        when 'sha1'
+          checksum = Digest::SHA1.hexdigest(File.read(file))
+        when 'sha256'
+          checksum = Digest::SHA256.hexdigest(File.read(file))
+        else
+          raise "Unknown digest type!"
+      end
+      return checksum
+    end
+
+    def generate_ocfl_manifest
+      # @return [Hash] of digests with [Array] of filenames as values.
+      # The returned [Hash] is the Manifest block of an OCFL object. 
+      my_files = self.list_all_files
+      my_manifest = Hash.new
+
+      my_files.each do | file |
+        full_filepath = "#{@moab.object_pathname}" + "/" + "#{file}"
+        checksum = self.generate_file_digest(full_filepath)
+        if my_manifest.has_key? checksum
+          existing_entries = my_manifest[checksum]
+          existing_entries.concat( [ file ] ) # NOT the FULL filepath; relative to object root.
+          # Make unique.
+          unique_entries = existing_entries.uniq
+          my_manifest[checksum] = unique_entries
+        end
+        # if the checksum isn't already there, add it as a new key. File must be in an array.
+        my_manifest[checksum] = [ file ]
+      end
+      return my_manifest
+    end
+
     def print_deltas
       # @return Puts all deltas of this object to std out.
       # Convenience method for CLI and debugging.

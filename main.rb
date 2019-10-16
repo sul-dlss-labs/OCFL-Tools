@@ -34,3 +34,5 @@ puts export.get_deltas[3]
 
 puts "Show files added in version 2"
 puts export.get_deltas[2]['added']
+
+puts export.generate_ocfl_manifest

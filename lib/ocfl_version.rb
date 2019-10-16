@@ -20,8 +20,19 @@ module OcflTools
 
     def add_entry(digest, filename)
       # @params [String] digest, [Array] filename(s) associated with given digest.
-      # Actually needs to check if it's already here, and append filename to array if so.
+      # If @state[digest] has a value, get it and concat filename to it.
+      # Otherwise, add @state[digest] as a new k/v pair with filename as value.
+      if @state.has_key? digest
+        existing_entries = @state[digest]
+        existing_entries.concat(filename)
+        # Make unique.
+        unique_entries = existing_entries.uniq
+        @state[digest] = unique_entries
+        return @state
+      end
+      # if the digest isn't already in @state, set it and return @state.
       @state[digest] = filename
+      return @state
     end
   end
 end
