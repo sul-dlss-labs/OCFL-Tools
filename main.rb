@@ -3,7 +3,8 @@ require 'druid-tools'
 require 'moab'
 # Need moab/stanford for proper druid_tree parsing.
 require 'moab/stanford'
-require './ocfl_tools.rb'
+
+Dir[File.join(__dir__, 'lib', '*.rb')].each { |file| require file }
 
 Moab::Config.configure do
   storage_roots ['/Users/jmorley/Documents/source3']
