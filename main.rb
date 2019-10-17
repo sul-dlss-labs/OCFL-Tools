@@ -42,4 +42,6 @@ ocfl.fixity = export.generate_ocfl_fixity
 
 puts ocfl.serialize
 
+ocfl.to_file(path)
+
 #puts export.generate_ocfl_manifest_until_version(export.current_version_id)
