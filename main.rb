@@ -3,8 +3,11 @@ require 'druid-tools'
 require 'moab'
 # Need moab/stanford for proper druid_tree parsing.
 require 'moab/stanford'
+require 'nokogiri' # needed for XML parsing
 
-Dir[File.join(__dir__, 'lib', '*.rb')].each { |file| require file }
+#Dir[File.join(__dir__, 'lib', '*.rb')].each { |file| require file }
+
+require 'ocfl-tools'
 
 Moab::Config.configure do
   storage_roots ['/Users/jmorley/Documents/source3']
@@ -40,7 +43,7 @@ ocfl.manifest = export.generate_ocfl_manifest
 export.digest = 'md5'
 ocfl.fixity = export.generate_ocfl_fixity
 
-#puts ocfl.serialize
+puts ocfl.serialize
 
 #ocfl.to_file(path)
 
