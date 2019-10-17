@@ -33,9 +33,11 @@ export = OcflTools::MoabExport.new(moab)
 
 export.digest = 'sha256'
 
-ocfl = OcflTools::OcflInventory.new(druid, 3)
+ocfl = OcflTools::OcflInventory.new(export.digital_object_id, export.current_version_id)
 
 ocfl.versions = export.generate_ocfl_versions
 ocfl.manifest = export.generate_ocfl_manifest
 
 puts ocfl.serialize
+
+puts export.generate_ocfl_manifest_until_version(export.current_version_id)

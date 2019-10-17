@@ -7,6 +7,9 @@ module OcflTools
     # @return [String] The digital object ID (Stanford druid)
     attr_reader :digital_object_id
 
+    # @return [Integer] The most recent version of the Moab (Stanford druid)
+    attr_reader :current_version_id
+
     # @return [String] The algorithm used to compute hashes.
     attr_accessor :digest
 
@@ -17,6 +20,7 @@ module OcflTools
       @moab               = moab
       @versions           = @moab.version_id_list  # remember, versions must be Integers.
       @digital_object_id  = @moab.digital_object_id
+      @current_version_id = @moab.current_version_id
       @digest             = 'md5' # default value, but can be changed to sha1 or sha256.
 
     end
@@ -28,7 +32,7 @@ module OcflTools
       self.get_inventory('version', version)
     end
 
-    # Not really used; here for completeness because I indirected get_inventory.
+    # used by generate_ocfl_manifest_until_version
     def version_additions(version)
       # @param [Integer] version of object to generate inventory for.
       # @return [Hash] of all files and checksums that were added or modified at this version.
@@ -65,6 +69,8 @@ module OcflTools
     end
 
     def generate_file_digest(file)
+      # @param [String] fully-resolvable filesystem path to a file.
+      # @return [String] checksum of requested file using specified digest algorithm.
       # Given a fully-resolvable file path, calculate and return @digest.
       case @digest
         when 'md5'
@@ -79,10 +85,13 @@ module OcflTools
       return checksum
     end
 
-    def generate_ocfl_manifest
+    def generate_ocfl_manifest_from_disk
       # @return [Hash] of digests with [Array] of filenames as values.
       # The returned [Hash] is the Manifest block of an OCFL object.
-      my_files = self.list_all_files
+      # This method creates the manifest by searching the object_root on disk
+      # and computing new checksums for all files found. By design, it runs
+      # against all versions of the Moab.
+      my_files = self.list_all_files # includes 'v0001/' prepending.
       my_manifest = Hash.new
 
       my_files.each do | file |
@@ -101,8 +110,50 @@ module OcflTools
       return my_manifest
     end
 
+    def generate_ocfl_manifest
+      # @return [Hash] OCFL-compliant Manifest block; keys are digests, values are [Array] of files.
+      self.generate_ocfl_manifest_until_version(@current_version_id)
+    end
+
+    def generate_ocfl_manifest_until_version(version)
+      # @param [Integer] version number to generate manifest for. Manifest will include all prior versions.
+      # @return [Hash] OCFL-compliant Manifest block; keys are digests, values are [Array] of files.
+      # Produces a partial manifest; i.e. if the Moab has a current version of 9,
+      # this method can produce a manifest up to version 7. Used for back-filling Moab version directories
+      # with valid OCFL inventories, and for creating OCFL Manifests by inspecting Moab Manifests
+      # rather than discovering files on disk and re-generating checksums.
+
+      my_version = 0
+      my_manifest = Hash.new
+
+      while my_version < version
+        my_version = my_version + 1
+        my_version_name = self.version_int_to_string(my_version)  # [String] 'v0001' etc
+        my_files_and_checksums = self.version_additions(my_version)
+
+        my_files_and_checksums.each do | file, checksums |
+          # Checksums is an [Array], but should only have 1 value in it.
+          checksum = checksums[0]
+          # We also need to append version_name to file.
+          filepath = "#{my_version_name}/data/#{file}"
+          # We need to flip the results around so checksum becomes the key, [Array] filepath is value.
+          if my_manifest.has_key? checksum
+            existing_entries = my_manifest[checksum]
+            existing_entries.concat( [ filepath ] ) # NOT the FULL filepath; relative to object root.
+            # Make unique.
+            unique_entries = existing_entries.uniq
+            my_manifest[checksum] = unique_entries
+          end
+          # If the checksum isn't already there, add it as a new key. File must be in an array.
+          my_manifest[checksum] = [ filepath ]
+        end
+      end
+      return my_manifest
+    end
+
     def generate_ocfl_state(version)
-      # @return [Hash] in correct format for an OCFL version state block, used in Versions block.
+      # @param [Integer] version to create state block for.
+      # @return [Hash] OCFL-compliant state block, used in OCFL Versions block.
       input = self.version_inventory(version)
       # input is a [Hash] with files as key, digests as checksum.
       # It needs to be flipped around to checksums as key, files as values in arrays.
