@@ -1,0 +1,30 @@
+module OcflTools
+  class DruidExport
+    # A convenience class that wraps MoabExport and OcflInventory to produce an OCFL inventory file.
+
+    attr_accessor :export_directory
+
+    attr_reader :path, :moab, :export
+
+    def initialize(druid)
+      # @param [String] druid, a Stanford Druid object ID.
+
+      @path = Moab::StorageServices.object_path( druid )
+      @moab = Moab::StorageObject.new( druid , @path )
+      @export = OcflTools::MoabExport.new(@moab)
+      @export_directory = @moab.object_pathname # default value, can be changed.
+    end
+
+    def make_inventory
+      @export.digest = 'sha256'
+      ocfl = OcflTools::OcflInventory.new(@export.digital_object_id, @export.current_version_id)
+      ocfl.versions = @export.generate_ocfl_versions
+      ocfl.manifest = @export.generate_ocfl_manifest
+
+      @export.digest = 'md5'
+      ocfl.fixity = @export.generate_ocfl_fixity
+
+      ocfl.to_file(@export_directory)
+    end
+  end
+end

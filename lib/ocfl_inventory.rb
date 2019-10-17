@@ -28,22 +28,49 @@ module OcflTools
       output_hash = Hash.new
 
       output_hash['id']               = @id
+      output_hash['head']             = @head
       output_hash['type']             = @type
       output_hash['digestAlgorithm']  = @digestAlgorithm
-      output_hash['head']             = @head
       output_hash['contentDirectory'] = @contentDirectory
       output_hash['manifest']         = @manifest
       output_hash['versions']         = @versions
       # optional
-      # output_hash['fixity'] = @fixity
       output_hash['fixity']           = @fixity unless @fixity.size == 0
       JSON.pretty_generate(output_hash)
+    end
+
+    def to_file(directory)
+      # @param [String] resolvable directory to write inventory.json to.
+      # Also needs to create inventory_digest file.
+      inventory = File.new("#{directory}/inventory.json", "w+")
+      inventory.syswrite(self.serialize)
+
+      checksum = self.generate_file_digest(inventory.path)
+
+      inventory_digest = File.new("#{inventory.path}.#{@digestAlgorithm}", "w+")
+      inventory_digest.syswrite("#{checksum} inventory.json")
     end
 
     def crosscheck_digests
       # requires values in @versions and @manifest.
       # verifies that every digest in @versions can be found in @manifest.
+    end
 
+    def generate_file_digest(file)
+      # @param [String] fully-resolvable filesystem path to a file.
+      # @return [String] checksum of requested file using specified digest algorithm.
+      # Given a fully-resolvable file path, calculate and return @digest.
+      case @digestAlgorithm
+        when 'md5'
+          checksum = Digest::MD5.hexdigest(File.read(file))
+        when 'sha1'
+          checksum = Digest::SHA1.hexdigest(File.read(file))
+        when 'sha256'
+          checksum = Digest::SHA256.hexdigest(File.read(file))
+        else
+          raise "Unknown digest type!"
+      end
+      return checksum
     end
   end
 end
