@@ -110,6 +110,18 @@ module OcflTools
       return my_manifest
     end
 
+    def generate_ocfl_fixity
+      self.generate_ocfl_fixity_until_version(@current_version_id)
+    end
+
+    def generate_ocfl_fixity_until_version(version)
+      # @param [Integer] version number to generate manifest for. Manifest will include all prior versions.
+      # Fixity is basically a Manifest block inside a wrapping hash.
+      my_fixity = Hash.new
+      my_fixity["#{@digest}"] = generate_ocfl_manifest_until_version(version)
+      return my_fixity
+    end
+
     def generate_ocfl_manifest
       # @return [Hash] OCFL-compliant Manifest block; keys are digests, values are [Array] of files.
       self.generate_ocfl_manifest_until_version(@current_version_id)

@@ -36,13 +36,14 @@ module OcflTools
       output_hash['versions']         = @versions
       # optional
       # output_hash['fixity'] = @fixity
+      output_hash['fixity']           = @fixity unless @fixity.size == 0
       JSON.pretty_generate(output_hash)
     end
 
     def crosscheck_digests
       # requires values in @versions and @manifest.
       # verifies that every digest in @versions can be found in @manifest.
-      
+
     end
   end
 end

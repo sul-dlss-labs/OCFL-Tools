@@ -37,7 +37,9 @@ ocfl = OcflTools::OcflInventory.new(export.digital_object_id, export.current_ver
 
 ocfl.versions = export.generate_ocfl_versions
 ocfl.manifest = export.generate_ocfl_manifest
+export.digest = 'md5'
+ocfl.fixity = export.generate_ocfl_fixity
 
 puts ocfl.serialize
 
-puts export.generate_ocfl_manifest_until_version(export.current_version_id)
+#puts export.generate_ocfl_manifest_until_version(export.current_version_id)
