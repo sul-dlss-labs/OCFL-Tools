@@ -12,10 +12,10 @@ module OcflTools
       @type             = 'https://ocfl.io/1.0/spec/#inventory'
       @digestAlgorithm  = 'sha256' # sha512 is recommended, Stanford uses sha256.
       @head             = self.version_int_to_string(version)
-      @contentDirectory = 'data' # default is 'content', Stanford uses 'data'
+      @contentDirectory = 'data' # OCFL default value is 'content', Stanford uses 'data'
       @manifest         = Hash.new
       @versions         = Hash.new # A hash of Version hashes.
-      @fixity           = Hash.new # Optional. Same format as Manifest.
+      @fixity           = Hash.new # Optional. Almost the same format as Manifest.
     end
 
     def version_int_to_string(version)
@@ -51,9 +51,23 @@ module OcflTools
       inventory_digest.syswrite("#{checksum} inventory.json")
     end
 
+    def from_file(directory)
+      # Read in an existing inventory.json from the specified file
+      # verify digest against sidecar.
+    end
+
     def crosscheck_digests
       # requires values in @versions and @manifest.
       # verifies that every digest in @versions can be found in @manifest.
+    end
+
+    def update_version_message(version)
+    end
+
+    def update_version_user(version)
+    end
+
+    def update_version_created(version)
     end
 
     def generate_file_digest(file)
