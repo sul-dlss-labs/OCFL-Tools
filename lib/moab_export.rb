@@ -81,7 +81,7 @@ module OcflTools
 
     def generate_ocfl_manifest
       # @return [Hash] of digests with [Array] of filenames as values.
-      # The returned [Hash] is the Manifest block of an OCFL object. 
+      # The returned [Hash] is the Manifest block of an OCFL object.
       my_files = self.list_all_files
       my_manifest = Hash.new
 
@@ -99,6 +99,53 @@ module OcflTools
         my_manifest[checksum] = [ file ]
       end
       return my_manifest
+    end
+
+    def generate_ocfl_state(version)
+      # @return [Hash] in correct format for an OCFL version state block, used in Versions block.
+      input = self.version_inventory(version)
+      # input is a [Hash] with files as key, digests as checksum.
+      # It needs to be flipped around to checksums as key, files as values in arrays.
+      my_state = Hash.new
+
+      input.each do | file, checksums |
+        # Checksums is an [Array], but should only have 1 value in it.
+        checksum = checksums[0]
+        if my_state.has_key? checksum
+          existing_entries = my_state[checksum]
+          existing_entries.concat( [ file ] ) # NOT the FULL filepath; relative to object root.
+          # Make unique.
+          unique_entries = existing_entries.uniq
+          my_state[checksum] = unique_entries
+        end
+        # If the checksum isn't already there, add it as a new key. File must be in an array.
+        my_state[checksum] = [ file ]
+      end
+      return my_state
+    end
+
+    def generate_ocfl_versions
+      # @return [Hash] of versions in OCFL format.
+      # Calls generate_ocfl_state for each version
+      my_versions = Hash.new
+      @versions.each do | version |
+        this_version = Hash.new #
+        version_name = self.version_int_to_string(version) # 'v0001' etc.
+
+        this_version['created'] = 'A placeholder value'
+        this_version['message'] = 'Placeholder text goes here'
+
+        my_user = Hash.new
+        my_user['name'] = 'John Hancock'
+        my_user['address'] = 'jhancock@congress.org'
+
+        this_version['user'] = my_user
+
+        this_version['state'] = self.generate_ocfl_state(version)
+
+        my_versions[version_name] = this_version
+      end
+      return my_versions
     end
 
     def print_deltas

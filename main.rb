@@ -25,14 +25,17 @@ moab = Moab::StorageObject.new( druid , path )
 export = OcflTools::MoabExport.new(moab)
 
 # puts all changes from all versions in human-readable output.
-export.print_deltas
+#export.print_deltas
+#puts "Show all changes in version 3"
+#puts export.get_deltas[3]
+#puts "Show files added in version 2"
+#puts export.get_deltas[2]['added']
 
 export.digest = 'sha256'
 
-puts "Show all changes in version 3"
-puts export.get_deltas[3]
+ocfl = OcflTools::OcflInventory.new(druid, 3)
 
-puts "Show files added in version 2"
-puts export.get_deltas[2]['added']
+ocfl.versions = export.generate_ocfl_versions
+ocfl.manifest = export.generate_ocfl_manifest
 
-puts export.generate_ocfl_manifest
+puts ocfl.serialize
