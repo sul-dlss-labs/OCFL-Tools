@@ -40,8 +40,14 @@ ocfl.manifest = export.generate_ocfl_manifest
 export.digest = 'md5'
 ocfl.fixity = export.generate_ocfl_fixity
 
-puts ocfl.serialize
+#puts ocfl.serialize
 
-ocfl.to_file(path)
+#ocfl.to_file(path)
 
 #puts export.generate_ocfl_manifest_until_version(export.current_version_id)
+
+#druid_export = OcflTools::DruidExport.new(druid).make_inventory
+#druid_export.make_inventory
+
+# Given a [String] druid, make an OCFL inventory file in the object root.
+OcflTools::DruidExport.new(druid).make_inventory
