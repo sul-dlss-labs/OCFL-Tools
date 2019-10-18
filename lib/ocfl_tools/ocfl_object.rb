@@ -22,5 +22,34 @@ module OcflTools
 
     # TODO; get and set version stuff?
 
+    def get_state(version)
+      # @param [Integer] version to get state block of.
+      # @return [Hash] state block.
+      version_name = OcflTools::Utils.version_int_to_string(version)
+      raise "Version #{version_name} does not exist in OCFL object!" unless @versions.has_key?(version_name)
+      @versions[version_name]['state']
+    end
+
+    def get_files(version)
+      # @param [Integer] version from which to generate file list.
+      # @return [Hash] of files, with logical file as key, physical location within object dir as value.
+      my_state = self.get_state(version)
+      my_files = Hash.new
+
+      my_state.each do | digest, filepaths | # filepaths is [Array]
+        filepaths.each do | logical_filepath |
+          # look up this file via digest in @manifest.
+          physical_filepath = @manifest[digest]
+          # physical_filepath is an [Array] of files, but they're all the same so only need 1.
+          my_files[logical_filepath] = physical_filepath[0]
+        end
+      end
+      my_files
+    end
+
+    def get_current_files
+      self.get_files(OcflTools::Utils.version_string_to_int(@head))
+    end
+
   end
 end
