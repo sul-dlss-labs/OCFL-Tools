@@ -46,8 +46,22 @@ module OcflTools
     end
 
     def crosscheck_digests
+      # @return [Boolean] true if crosscheck is successful; else raises exception.
       # requires values in @versions and @manifest.
       # verifies that every digest in @versions can be found in @manifest.
+      my_checksums = []
+      @versions.each do | version, block |
+        version_digests = block['state']
+        version_digests.each_key { |k| my_checksums << k }
+      end
+      unique_checksums = my_checksums.uniq
+      # First check; there should be the same number of entries on both sides.
+      raise "We're missing digests!" unless unique_checksums.length == @manifest.length
+      # Second check; each entry in unique_checksums should have a match in @manifest.
+      unique_checksums.each do | checksum |
+        raise "Checksum #{checksum} not found in manifest!" unless @manifest.member?(checksum)
+      end
+      return true
     end
 
   end
