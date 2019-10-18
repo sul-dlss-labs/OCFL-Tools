@@ -1,16 +1,11 @@
 # OCFL-Tools
-Ruby gem to create OCFL objects from existing Moabs. 
+Ruby gem to create OCFL objects from existing Moabs.
 
 ## Usage
 
 Require the gem and configure Moab to point at one or more storage roots.
 
 ```
-require 'druid-tools'
-require 'moab'
-require 'moab/stanford' # Need moab/stanford for proper druid_tree parsing.
-require 'nokogiri'      # needed for Moab XML parsing
-
 require 'ocfl-tools'
 
 Moab::Config.configure do
