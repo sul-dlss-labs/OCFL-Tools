@@ -10,16 +10,11 @@ module OcflTools
       @id               = id
       @type             = 'https://ocfl.io/1.0/spec/#inventory'
       @digestAlgorithm  = 'sha256' # sha512 is recommended, Stanford uses sha256.
-      @head             = self.version_int_to_string(version)
+      @head             = OcflTools::Utils.version_int_to_string(version)
       @contentDirectory = 'data' # default is 'content', Stanford uses 'data'
       @manifest         = Hash.new
       @versions         = Hash.new # A hash of Version hashes.
       @fixity           = Hash.new # Optional. Same format as Manifest.
-    end
-
-    def version_int_to_string(version)
-      # converts [Integer] version to [String] v0001 format.
-      result = "v%04d" % version.to_i
     end
 
     def serialize

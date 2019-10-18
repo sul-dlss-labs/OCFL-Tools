@@ -47,17 +47,12 @@ module OcflTools
       moab_version.file_inventory( 'version' )
     end
 
-    def version_int_to_string(version)
-      # converts [Integer] version to [String] v0001 format.
-      result = "v%04d" % version.to_i
-    end
-
     def list_all_files
       # @return [Array] of all files found relative to Moab object root.
       results = Array.new
       Dir.chdir("#{@moab.object_pathname}")
       @versions.each do | version |
-        version_name = self.version_int_to_string(version)
+        version_name = OcflTools::Utils.version_int_to_string(version)
         # Files only, Dir.glob('path/**/*').select{ |e| File.file? e }
         Dir.glob("#{version_name}/data/**/*").select.each do |e|
           if File.file? e
@@ -140,7 +135,7 @@ module OcflTools
 
       while my_version < version
         my_version = my_version + 1
-        my_version_name = self.version_int_to_string(my_version)  # [String] 'v0001' etc
+        my_version_name = OcflTools::Utils.version_int_to_string(my_version)  # [String] 'v0001' etc
         my_files_and_checksums = self.version_additions(my_version)
 
         my_files_and_checksums.each do | file, checksums |
@@ -193,7 +188,7 @@ module OcflTools
       my_versions = Hash.new
       @versions.each do | version |
         this_version = Hash.new #
-        version_name = self.version_int_to_string(version) # 'v0001' etc.
+        version_name = OcflTools::Utils.version_int_to_string(version) # 'v0001' etc.
 
         this_version['created'] = 'A placeholder value'
         this_version['message'] = 'Placeholder text goes here'
