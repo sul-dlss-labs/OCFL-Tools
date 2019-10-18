@@ -3,7 +3,7 @@ module OcflTools
   class OcflInventory
     # create and manipulate an OCFL inventory file.
 
-    attr_accessor :manifest, :versions, :fixity
+    attr_accessor :manifest, :versions, :fixity, :id, :digestAlgorithm, :head, :type, :contentDirectory
 
     def initialize(id, version)
       # Parameters that must be serialized into JSON
@@ -30,6 +30,9 @@ module OcflTools
       output_hash['versions']         = @versions
       # optional
       output_hash['fixity']           = @fixity unless @fixity.size == 0
+
+      raise "inventory failed validation!" unless self.sanity_check_inventory(output_hash) == true
+
       JSON.pretty_generate(output_hash)
     end
 
@@ -43,6 +46,58 @@ module OcflTools
 
       inventory_digest = File.new("#{inventory.path}.#{@digestAlgorithm}", "w+")
       inventory_digest.syswrite("#{checksum} inventory.json")
+    end
+
+    def read_json(file)
+      # @param [String] resolvable path to alleged inventory.json.
+      # @return [Hash] of JSON keys & values.
+      JSON.parse(File.read(file))
+    end
+
+    def from_file(file)
+      # @param [String] a file that should contain an inventory.json.
+      import_hash = self.read_json(file)
+      raise "inventory failed validation!" unless self.sanity_check_inventory(import_hash) == true
+      # We passed validation, so let's assign our results to our instance variables.
+      @id               = import_hash['id']
+      @head             = import_hash['head']
+      @type             = import_hash['type']
+      @digestAlgorithm  = import_hash['digestAlgorithm']
+      @contentDirectory = import_hash['contentDirectory']
+      @manifest         = import_hash['manifest']
+      @versions         = import_hash['versions']
+
+      if import_hash.has_key?('fixity')
+        @fixity = import_hash['fixity']
+      end
+      return self
+    end
+
+    def sanity_check_inventory(hash)
+      # TODO: spin this out to a separate class (put it in Utils?)
+      # @param [Hash] that is purportedly a complete OCFL object.
+      # @return [Boolean] true or raises an exception, depending on result.
+      # Sanity check import_hash for expected/required keys.
+      # id, head, type, digestAlgorithm, contentDirectory, manifest, versions, [fixity]
+      # check 1: hash should have 7 or 8 keys.
+      if hash.length < 7
+        raise "Proposed inventory contains #{hash.length} keys. 7 or 8 required."
+      end
+
+      if hash.length > 8
+        raise "Proposed inventory contains #{hash.length} keys. 7 or 8 required."
+      end
+
+      # check 2: keys should be named id, head, type, digestAlgorithm, contentDirectory, manifest, versions, [fixity]
+
+      # check 3: versions key should contain contiguous version blocks, starting at 1 to versions.length.
+
+      # check 4: 'head' value should match highest value found in versions block.
+
+      # check 5: crosscheck digests.
+      self.crosscheck_digests
+      # If we make it this far, all is well.
+      return true
     end
 
     def crosscheck_digests
