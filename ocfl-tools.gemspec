@@ -4,7 +4,7 @@ Gem::Specification.new do |gem|
   gem.description   = 'Tools to migrate Stanford Moab objects into OCFL objects.'
   gem.summary       = 'Tools to migrate Stanford Moab objects into OCFL objects.'
   gem.homepage      = 'https://github.com/sul-dlss-labs/OCFL-Tools'
-  gem.licenses      = ['ALv2', 'Stanford University Libraries']
+  gem.licenses      = ['Apache-2.0', 'Stanford University Libraries']
 
   gem.files         = `git ls-files`.split($OUTPUT_RECORD_SEPARATOR)
 

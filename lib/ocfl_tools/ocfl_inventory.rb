@@ -2,7 +2,6 @@ module OcflTools
 
   class OcflInventory
     # create and manipulate an OCFL inventory file.
-    require 'json'
 
     attr_accessor :manifest, :versions, :fixity
 
