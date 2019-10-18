@@ -1,21 +1,7 @@
 module OcflTools
 
-  class OcflInventory
+  class OcflInventory < OcflTools::OcflObject
     # create and manipulate an OCFL inventory file.
-
-    attr_accessor :manifest, :versions, :fixity, :id, :digestAlgorithm, :head, :type, :contentDirectory
-
-    def initialize
-      # Parameters that must be serialized into JSON
-      @id               = nil
-      @head             = nil
-      @type             = 'https://ocfl.io/1.0/spec/#inventory'
-      @digestAlgorithm  = 'sha256' # sha512 is recommended, Stanford uses sha256.
-      @contentDirectory = 'data' # default is 'content', Stanford uses 'data'
-      @manifest         = Hash.new
-      @versions         = Hash.new # A hash of Version hashes.
-      @fixity           = Hash.new # Optional. Same format as Manifest.
-    end
 
     def serialize
       # return serialized JSON of OCFL object at most recent version.
@@ -71,12 +57,6 @@ module OcflTools
         @fixity = import_hash['fixity']
       end
       return self
-    end
-
-    def set_head_from_version(version)
-      # @param [Integer] current version.
-      # sets @head in current format.
-      @head = OcflTools::Utils.version_int_to_string(version)
     end
 
     def sanity_check_inventory(hash)
