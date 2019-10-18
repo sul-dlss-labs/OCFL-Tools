@@ -17,9 +17,11 @@ module OcflTools
 
     def make_inventory
       @export.digest = 'sha256'
-      ocfl = OcflTools::OcflInventory.new(@export.digital_object_id, @export.current_version_id)
+      ocfl = OcflTools::OcflInventory.new
+      ocfl.id       = @export.digital_object_id
       ocfl.versions = @export.generate_ocfl_versions
       ocfl.manifest = @export.generate_ocfl_manifest
+      ocfl.set_head_from_version(@export.current_version_id) # to set @head.
 
       @export.digest = 'md5'
       ocfl.fixity = @export.generate_ocfl_fixity

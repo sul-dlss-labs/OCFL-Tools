@@ -5,12 +5,12 @@ module OcflTools
 
     attr_accessor :manifest, :versions, :fixity, :id, :digestAlgorithm, :head, :type, :contentDirectory
 
-    def initialize(id, version)
+    def initialize
       # Parameters that must be serialized into JSON
-      @id               = id
+      @id               = nil
+      @head             = nil
       @type             = 'https://ocfl.io/1.0/spec/#inventory'
       @digestAlgorithm  = 'sha256' # sha512 is recommended, Stanford uses sha256.
-      @head             = OcflTools::Utils.version_int_to_string(version)
       @contentDirectory = 'data' # default is 'content', Stanford uses 'data'
       @manifest         = Hash.new
       @versions         = Hash.new # A hash of Version hashes.
@@ -71,6 +71,12 @@ module OcflTools
         @fixity = import_hash['fixity']
       end
       return self
+    end
+
+    def set_head_from_version(version)
+      # @param [Integer] current version.
+      # sets @head in current format.
+      @head = OcflTools::Utils.version_int_to_string(version)
     end
 
     def sanity_check_inventory(hash)

@@ -41,10 +41,13 @@ export = OcflTools::MoabExport.new(moab)
 # We want to extract sha256 digests.
 export.digest = 'sha256'
 
-ocfl = OcflTools::OcflInventory.new(export.digital_object_id, export.current_version_id)
+ocfl = OcflTools::OcflInventory.new
 
+ocfl.id       = export.digital_object_id
 ocfl.versions = export.generate_ocfl_versions
 ocfl.manifest = export.generate_ocfl_manifest
+ocfl.set_head_from_version(export.current_version_id)
+
 # We'd also like to extract the md5 digests for additional fixity.
 export.digest = 'md5'
 ocfl.fixity = export.generate_ocfl_fixity
