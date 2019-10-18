@@ -39,7 +39,7 @@ module OcflTools
       inventory = File.new("#{directory}/inventory.json", "w+")
       inventory.syswrite(self.serialize)
 
-      checksum = self.generate_file_digest(inventory.path)
+      checksum = OcflTools::Utils.generate_file_digest(inventory.path, @digestAlgorithm)
 
       inventory_digest = File.new("#{inventory.path}.#{@digestAlgorithm}", "w+")
       inventory_digest.syswrite("#{checksum} inventory.json")
@@ -50,21 +50,5 @@ module OcflTools
       # verifies that every digest in @versions can be found in @manifest.
     end
 
-    def generate_file_digest(file)
-      # @param [String] fully-resolvable filesystem path to a file.
-      # @return [String] checksum of requested file using specified digest algorithm.
-      # Given a fully-resolvable file path, calculate and return @digest.
-      case @digestAlgorithm
-        when 'md5'
-          checksum = Digest::MD5.hexdigest(File.read(file))
-        when 'sha1'
-          checksum = Digest::SHA1.hexdigest(File.read(file))
-        when 'sha256'
-          checksum = Digest::SHA256.hexdigest(File.read(file))
-        else
-          raise "Unknown digest type!"
-      end
-      return checksum
-    end
   end
 end

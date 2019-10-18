@@ -63,23 +63,6 @@ module OcflTools
         return results
     end
 
-    def generate_file_digest(file)
-      # @param [String] fully-resolvable filesystem path to a file.
-      # @return [String] checksum of requested file using specified digest algorithm.
-      # Given a fully-resolvable file path, calculate and return @digest.
-      case @digest
-        when 'md5'
-          checksum = Digest::MD5.hexdigest(File.read(file))
-        when 'sha1'
-          checksum = Digest::SHA1.hexdigest(File.read(file))
-        when 'sha256'
-          checksum = Digest::SHA256.hexdigest(File.read(file))
-        else
-          raise "Unknown digest type!"
-      end
-      return checksum
-    end
-
     def generate_ocfl_manifest_from_disk
       # @return [Hash] of digests with [Array] of filenames as values.
       # The returned [Hash] is the Manifest block of an OCFL object.
@@ -91,7 +74,7 @@ module OcflTools
 
       my_files.each do | file |
         full_filepath = "#{@moab.object_pathname}" + "/" + "#{file}"
-        checksum = self.generate_file_digest(full_filepath)
+        checksum = OcflTools::Utils.generate_file_digest(full_filepath, @digest)
         if my_manifest.has_key? checksum
           existing_entries = my_manifest[checksum]
           existing_entries.concat( [ file ] ) # NOT the FULL filepath; relative to object root.
