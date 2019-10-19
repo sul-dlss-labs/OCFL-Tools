@@ -88,6 +88,23 @@ module OcflTools
       return my_manifest
     end
 
+    def generate_ocfl_messages
+      # get workflowMetadata description?
+      # @return [Hash] of version [Integer] and descriptions.
+      vm = Moab::StorageServices.version_metadata(@digital_object_id)
+      vm2 = Moab::VersionMetadata.read_xml_file(vm.dirname, vm.basename)
+      my_messages = Hash.new
+      vm2.versions.each do | md |
+        puts md.version_id
+        puts md.description
+        my_messages[md.version_id] = md.description
+      end
+      return my_messages
+    end
+
+    def generate_ocfl_message(version)
+    end
+
     def generate_ocfl_fixity
       self.generate_ocfl_fixity_until_version(@current_version_id)
     end

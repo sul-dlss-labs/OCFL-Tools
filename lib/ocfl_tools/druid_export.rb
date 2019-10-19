@@ -23,6 +23,12 @@ module OcflTools
       ocfl.manifest = @export.generate_ocfl_manifest
       ocfl.set_head_from_version(@export.current_version_id) # to set @head.
 
+      # put versionMetadata in version description field, if it exists.
+      my_messages = @export.generate_ocfl_messages
+      my_messages.each do | version, message |
+        ocfl.set_version_message(version, message)
+      end
+
       @export.digest = 'md5'
       ocfl.fixity = @export.generate_ocfl_fixity
 
