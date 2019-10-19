@@ -20,7 +20,31 @@ module OcflTools
       @head = OcflTools::Utils.version_int_to_string(version)
     end
 
+    def set_version_message(version, message)
+      @versions[OcflTools::Utils.version_int_to_string(version)]['message'] = message
+    end
+
+    def get_version_message(version)
+      @versions[OcflTools::Utils.version_int_to_string(version)]['message']
+    end
+
+    def set_version_user(version, user)
+      @versions[OcflTools::Utils.version_int_to_string(version)]['user'] = user
+    end
+
+    def get_version_user(version)
+      @versions[OcflTools::Utils.version_int_to_string(version)]['user']
+    end
+
     # TODO; get and set version stuff?
+    def version_id_list
+      # @return [Array] of [Integer] versions.
+      my_versions = []
+      @versions.keys.each do | key |
+        my_versions << OcflTools::Utils.version_string_to_int(key)
+      end
+      my_versions
+    end
 
     def get_state(version)
       # @param [Integer] version to get state block of.
@@ -48,6 +72,8 @@ module OcflTools
     end
 
     def get_current_files
+      # @return [Hash] of files from most recent version, with logical file as key,
+      # physical location within object dir as value.
       self.get_files(OcflTools::Utils.version_string_to_int(@head))
     end
 
