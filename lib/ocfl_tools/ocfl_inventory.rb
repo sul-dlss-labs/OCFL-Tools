@@ -43,7 +43,6 @@ module OcflTools
     def from_file(file)
       # @param [String] a file that should contain an inventory.json.
       import_hash = self.read_json(file)
-      raise "inventory failed validation!" unless self.sanity_check_inventory(import_hash) == true
       # We passed validation, so let's assign our results to our instance variables.
       @id               = import_hash['id']
       @head             = import_hash['head']
@@ -56,11 +55,13 @@ module OcflTools
       if import_hash.has_key?('fixity')
         @fixity = import_hash['fixity']
       end
+      raise "inventory failed validation!" unless self.sanity_check_inventory(import_hash) == true
+
       return self
     end
 
     def sanity_check_inventory(hash)
-      # TODO: spin this out to a separate class (put it in Utils?)
+      # TODO: spin this out to a separate class? (put it in Utils?)
       # @param [Hash] that is purportedly a complete OCFL object.
       # @return [Boolean] true or raises an exception, depending on result.
       # Sanity check import_hash for expected/required keys.
@@ -77,6 +78,15 @@ module OcflTools
       # check 2: keys should be named id, head, type, digestAlgorithm, contentDirectory, manifest, versions, [fixity]
 
       # check 3: versions key should contain contiguous version blocks, starting at 1 to versions.length.
+
+      # Get the highest version; should equal @versions.length.
+  
+      my_count = 0
+      while my_count < @versions.length
+        my_count += 1
+        # My_count is our proxy for 1,2,3,4,5....
+        raise "I'm missing version #{my_count}!" unless @versions[OcflTools::Utils.version_int_to_string(my_count)]
+      end
 
       # check 4: 'head' value should match highest value found in versions block.
 
