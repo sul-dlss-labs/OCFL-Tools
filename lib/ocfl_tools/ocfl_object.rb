@@ -77,5 +77,36 @@ module OcflTools
       self.get_files(OcflTools::Utils.version_string_to_int(@head))
     end
 
+    def add_file(file, digest, version)
+      # new digest, new filename, update manifest.
+    end
+
+    def update_file(file, digest, version)
+      # Same filename, different digest, update manifest.
+      # EXPECT file to already exist, or fail.
+    end
+
+    def delete_file(file, digest, version)
+      # remove filename, may remove digest if that was last instance.
+      # EXPECT file to already exist, or fail.
+    end
+
+    def copy_file(source_file, destination_file, version)
+      # add new filename to existing digest.
+    end
+
+    def move_file(old_file, new_file, version)
+      # re-name; functionally a copy and delete.
+      # get old_file digest.
+      self.copy_file(old_file, new_file, version)
+      self.delete_file(old_file, self.get_digest(old_file, version))
+    end
+
+    def get_digest(file, version)
+      # could be moved to ocfl_object?
+    end
+
+
+
   end
 end
