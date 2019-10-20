@@ -199,11 +199,16 @@ module OcflTools
 
       # If version -1 exists, copy prior version state over.
       if @versions.key?(OcflTools::Utils.version_int_to_string(version - 1))
-        @versions[OcflTools::Utils.version_int_to_string(version)]['state'] = @versions[OcflTools::Utils.version_int_to_string(version - 1)]['state']
+        @versions[OcflTools::Utils.version_int_to_string(version)]['state'] = self.deep_copy(@versions[OcflTools::Utils.version_int_to_string(version - 1)]['state'])
       end
 
       return @versions[OcflTools::Utils.version_int_to_string(version)]
       end
+    end
+
+    def deep_copy(o)
+      # We need this serialize Hashes so they don't shallow'y refer to each other.
+      Marshal.load(Marshal.dump(o))
     end
 
     def create_version_hash
