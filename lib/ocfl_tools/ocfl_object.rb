@@ -49,9 +49,9 @@ module OcflTools
     def get_state(version)
       # @param [Integer] version to get state block of.
       # @return [Hash] state block.
-      version_name = OcflTools::Utils.version_int_to_string(version)
-      raise "Version #{version_name} does not exist in OCFL object!" unless @versions.has_key?(version_name)
-      @versions[version_name]['state']
+      # Creates version and state if it doesn't already exist.
+      my_version = self.get_version(version)
+      return my_version['state']
     end
 
     def get_files(version)
@@ -75,6 +75,114 @@ module OcflTools
       # @return [Hash] of files from most recent version, with logical file as key,
       # physical location within object dir as value.
       self.get_files(OcflTools::Utils.version_string_to_int(@head))
+    end
+
+    def add_file(file, digest, version)
+      # @param [String] logical filename
+      # @param [String] digest of filename
+      # @param [Integer] version to add file to.
+      # @return [Hash] state block reflecting changes.
+      # new digest, new filename, update manifest.
+      # We use get_state here instead of asking @versions directly
+      # because get_state will create version hash if it doesn't already exist.
+      my_state = self.get_state(version)
+      if my_state.key?(digest)
+        # file's already in this version. Add file to existing key.
+        my_files = my_state[digest]
+        my_files << file
+        unique_files = my_files.uniq # Just in case we're trying to add the same thing multiple times.
+        # Need to actually add this to @versions!
+        @versions[OcflTools::Utils.version_int_to_string(version)]['state'][digest] = unique_files
+        # Prove we actually added to state
+        # Also need to add to @manifest!
+        self.update_manifest(file, digest, version)
+        return self.get_state(version)
+      end
+      # if it's not in State already, just add it.
+      @versions[OcflTools::Utils.version_int_to_string(version)]['state'][digest] = [ file ]
+      self.update_manifest(file, digest, version)
+      return self.get_state(version)
+    end
+
+    def update_file(file, digest, version)
+      # Same filename, different digest, update manifest.
+      # EXPECT file to already exist, or fail.
+    end
+
+    def update_manifest(file, digest, version)
+      # We only ever add to the manifest.
+      # So if this digest exists, return the original source (physical path)
+      # or add new physical path if file not seen before.
+
+      # This is where we'd have to do dedupe? Maybe with some indirection
+      # that checks for a DEDUPE constant being set? Or we assume Dedupe for now,
+      # and enable the optional no-dedupe later.
+      if @manifest.key?(digest)
+        # The file is already in the manifest, don't need to add again.
+        # Just return the original path.
+        return @manifest[digest]
+      end
+      # otherwise, add to manifest.
+      physical_filepath = "#{OcflTools::Utils.version_int_to_string(version)}/#{file}"
+      @manifest[digest] = [ physical_filepath ]
+      return @manifest[digest]
+    end
+
+    def delete_file(file, digest, version)
+      # remove filename, may remove digest if that was last instance.
+      # EXPECT file to already exist, or fail.
+    end
+
+    def copy_file(source_file, destination_file, version)
+      # add new filename to existing digest.
+    end
+
+    def move_file(old_file, new_file, version)
+      # re-name; functionally a copy and delete.
+      # get old_file digest.
+      self.copy_file(old_file, new_file, version)
+      self.delete_file(old_file, self.get_digest(old_file, version))
+    end
+
+    def get_digest(file, version)
+      #
+    end
+
+    def get_version(version)
+      # @param [Integer] version
+      # @return [Hash] version block, if it exists, or creates new with prior version state in it.
+      if @versions.key?(OcflTools::Utils.version_int_to_string(version))
+        return @versions[OcflTools::Utils.version_int_to_string(version)]
+      else
+      # Otherwise, construct a new Version [Hash] and return that.
+      @versions[OcflTools::Utils.version_int_to_string(version)] = self.create_version_hash
+
+      # If version -1 exists, copy prior version state over.
+      if @versions.key?(OcflTools::Utils.version_int_to_string(version - 1))
+        @versions[OcflTools::Utils.version_int_to_string(version)]['state'] = @versions[OcflTools::Utils.version_int_to_string(version - 1)]['state']
+      end
+
+      return @versions[OcflTools::Utils.version_int_to_string(version)]
+      end
+    end
+
+    def create_version_hash
+      # @return [Hash] blank version Hash.
+      # creates a blank version hash.
+      new_version = Hash.new
+      new_version['created'] = ''
+      new_version['message'] = ''
+      new_version['user'] = Hash.new
+        # user is #name, # address.
+      new_version['user']['name'] = ''
+      new_version['user']['address'] = ''
+      new_version['state'] = Hash.new
+      return new_version
+    end
+
+    def set_version(version, hash)
+      # SAN Check to make sure passed Hash has all expected keys.
+      @versions[OcflTools::Utils.version_int_to_string(version)] = hash
     end
 
   end
