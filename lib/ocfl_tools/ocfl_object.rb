@@ -21,18 +21,26 @@ module OcflTools
     end
 
     def set_version_message(version, message)
+      # Need to check that the version exists first! Create if otherwise.
+      raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['message'] = message
     end
 
     def get_version_message(version)
+      # Need to check that the version exists first! Create if otherwise.
+      raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['message']
     end
 
     def set_version_user(version, user)
+      # Need to check that the version exists first! Create if otherwise.
+      raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['user'] = user
     end
 
     def get_version_user(version)
+      # Need to check that the version exists first! Create if otherwise.
+      raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['user']
     end
 
@@ -199,16 +207,11 @@ module OcflTools
 
       # If version -1 exists, copy prior version state over.
       if @versions.key?(OcflTools::Utils.version_int_to_string(version - 1))
-        @versions[OcflTools::Utils.version_int_to_string(version)]['state'] = self.deep_copy(@versions[OcflTools::Utils.version_int_to_string(version - 1)]['state'])
+        @versions[OcflTools::Utils.version_int_to_string(version)]['state'] = OcflTools::Utils.deep_copy(@versions[OcflTools::Utils.version_int_to_string(version - 1)]['state'])
       end
 
       return @versions[OcflTools::Utils.version_int_to_string(version)]
       end
-    end
-
-    def deep_copy(o)
-      # We need this serialize Hashes so they don't shallow'y refer to each other.
-      Marshal.load(Marshal.dump(o))
     end
 
     def create_version_hash

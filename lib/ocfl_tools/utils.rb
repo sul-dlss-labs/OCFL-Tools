@@ -16,6 +16,10 @@ module OcflTools
       result = version_name.split("v")[1].to_i
     end
 
+    def self.deep_copy(o)
+      # We need this serialize Hashes so they don't shallow'y refer to each other.
+      Marshal.load(Marshal.dump(o))
+    end
 
     def self.generate_file_digest(file, digest)
       # @param [String] fully-resolvable filesystem path to a file.
