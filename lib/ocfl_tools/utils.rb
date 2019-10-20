@@ -1,11 +1,13 @@
 module OcflTools
   module Utils
 
+    VERSION_FORMAT = "v%04d"
+
     def self.version_int_to_string(version)
       # converts [Integer] version to [String] v0001 format.
-      # This is a stub; ideally we'd expand to include different ways to format
-      # this string depending on local needs. (i.e. v1, v00001)
-      result = "v%04d" % version.to_i
+      # Adjust VERSION_FORMAT to format string version to local needs.
+      #result = "v%04d" % version.to_i
+      result = VERSION_FORMAT % version.to_i
     end
 
     def self.version_string_to_int(version_name)

@@ -95,8 +95,6 @@ module OcflTools
       vm2 = Moab::VersionMetadata.read_xml_file(vm.dirname, vm.basename)
       my_messages = Hash.new
       vm2.versions.each do | md |
-        puts md.version_id
-        puts md.description
         my_messages[md.version_id] = md.description
       end
       return my_messages
