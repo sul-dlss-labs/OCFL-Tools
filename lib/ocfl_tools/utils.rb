@@ -12,9 +12,8 @@ module OcflTools
 
     def self.version_string_to_int(version_name)
       # converts [String] version name to [Integer].
-      # This is a stub; ideally we'd expand to include different ways to handle
-      # different version string inputs.
-      # Chop off the 'v' at th start, make into String.
+      # OCFL spec requires string versions to start with 'v'.
+      # Chop off the 'v' at th start, make into integer.
       result = version_name.split("v")[1].to_i
     end
 
