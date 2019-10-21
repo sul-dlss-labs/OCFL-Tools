@@ -1,4 +1,5 @@
 module OcflTools
+  # Class that represents the data structures of an OCFL inventory file.
   class OcflObject
     attr_accessor :manifest, :versions, :fixity, :id, :digestAlgorithm, :head, :type, :contentDirectory
 
@@ -14,38 +15,47 @@ module OcflTools
       @fixity           = Hash.new # Optional. Same format as Manifest.
     end
 
+    # sets @head in current string format, when given integer.
+    # @param [Integer] version to set head to.
+    # @return {@head} value of most recent version.
     def set_head_from_version(version)
-      # @param [Integer] current version.
-      # sets @head in current format.
       @head = OcflTools::Utils.version_int_to_string(version)
     end
 
+    # sets the message field for a given version.
+    # @param [Integer] version of OCFL object to set message for.
+    # @param [String] message to set for given version.
+    # @note will raise an exception if you attempt to query a non-existent version.
     def set_version_message(version, message)
-      # Need to check that the version exists first! Create if otherwise.
       raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['message'] = message
     end
 
+    # returns the message field for a given version.
+    # @param [Integer] version of OCFL object to get the message for.
+    # @return [String] message set for the given version, if any.
+    # @note will raise an exception if you attempt to query a non-existent version.
     def get_version_message(version)
-      # Need to check that the version exists first! Create if otherwise.
       raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['message']
     end
 
+    # @param [Integer] version of OCFL object to set the user block for.
+    # @param [Hash] user block to set for this version.
+    # @note will raise an exception if you attempt to query a non-existent version.
     def set_version_user(version, user)
-      # Need to check that the version exists first! Create if otherwise.
       raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['user'] = user
     end
 
+    # @note will raise an exception if you attempt to query a non-existent version.
     def get_version_user(version)
-      # Need to check that the version exists first! Create if otherwise.
       raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['user']
     end
 
+    # @return [Array{Integer}] versions that exist in the object.
     def version_id_list
-      # @return [Array] of [Integer] versions.
       my_versions = []
       @versions.keys.each do | key |
         my_versions << OcflTools::Utils.version_string_to_int(key)
