@@ -1,10 +1,13 @@
 module OcflTools
 
+  # create and manipulate an OCFL inventory file.
   class OcflInventory < OcflTools::OcflObject
-    # create and manipulate an OCFL inventory file.
 
+    # serializes all versions of the object to JSON.
+    # @return [JSON] complete OCFL object in serialized JSON format, suitable
+    # for writing to storage.
     def serialize
-      # return serialized JSON of OCFL object at most recent version.
+
       output_hash = Hash.new
 
       self.set_head_version # We're about to make an OCFL. At least pretend it'll pass validation.
@@ -24,15 +27,15 @@ module OcflTools
       JSON.pretty_generate(output_hash)
     end
 
+    # Sets @head to highest version found in object.
+    # @return [String] current version name.
     def set_head_version
-      # @return [String] current version name.
-      # Sets @head to highest version found.
       self.set_head_from_version(self.version_id_list.sort[-1])
     end
 
+    # Writes inventory file and inventory sidecar digest file to a directory.
+    # @param [String] directory resolvable directory to write inventory.json to.
     def to_file(directory)
-      # @param [String] resolvable directory to write inventory.json to.
-      # Also needs to create inventory_digest file.
       inventory = File.new("#{directory}/inventory.json", "w+")
       inventory.syswrite(self.serialize)
 
@@ -42,14 +45,18 @@ module OcflTools
       inventory_digest.syswrite("#{checksum} inventory.json")
     end
 
+    # Reads a file in from disk and parses the JSON within.
+    # @param [Pathname] file resolvable path to alleged inventory.json.
+    # @return [Hash] of JSON keys & values.
+    # @todo fail spectacularly if the file doesn't contain JSON.
     def read_json(file)
-      # @param [String] resolvable path to alleged inventory.json.
-      # @return [Hash] of JSON keys & values.
       JSON.parse(File.read(file))
     end
 
+    # Reads in a file, parses the JSON and ingests it into an {OcflTools::OcflInventory}
+    # @param [String] file a file that should contain an inventory.json.
+    # @return [self]
     def from_file(file)
-      # @param [String] a file that should contain an inventory.json.
       import_hash = self.read_json(file)
       # We passed validation, so let's assign our results to our instance variables.
       @id               = import_hash['id']
@@ -68,6 +75,7 @@ module OcflTools
       return self
     end
 
+    # @note This method is being deprecated for the [OcflTools::OcflVerify] class.
     def sanity_check_inventory(hash)
       # TODO: spin this out to a separate class? (put it in Utils?)
       # @param [Hash] that is purportedly a complete OCFL object.
@@ -104,6 +112,7 @@ module OcflTools
       return true
     end
 
+    # @note This method is being deprecated for the [OcflTools::OcflVerify] class.
     def crosscheck_digests
       # @return [Boolean] true if crosscheck is successful; else raises exception.
       # requires values in @versions and @manifest.
