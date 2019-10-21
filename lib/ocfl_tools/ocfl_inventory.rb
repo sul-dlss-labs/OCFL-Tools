@@ -7,6 +7,8 @@ module OcflTools
       # return serialized JSON of OCFL object at most recent version.
       output_hash = Hash.new
 
+      self.set_head_version # We're about to make an OCFL. At least pretend it'll pass validation.
+
       output_hash['id']               = @id
       output_hash['head']             = @head
       output_hash['type']             = @type
@@ -20,6 +22,12 @@ module OcflTools
       raise "inventory failed validation!" unless self.sanity_check_inventory(output_hash) == true
 
       JSON.pretty_generate(output_hash)
+    end
+
+    def set_head_version
+      # @return [String] current version name.
+      # Sets @head to highest version found.
+      self.set_head_from_version(self.version_id_list.sort[-1])
     end
 
     def to_file(directory)
@@ -80,7 +88,7 @@ module OcflTools
       # check 3: versions key should contain contiguous version blocks, starting at 1 to versions.length.
 
       # Get the highest version; should equal @versions.length.
-  
+
       my_count = 0
       while my_count < @versions.length
         my_count += 1

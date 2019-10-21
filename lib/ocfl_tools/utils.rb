@@ -1,21 +1,26 @@
 module OcflTools
   module Utils
 
+    VERSION_FORMAT = "v%04d"
+
     def self.version_int_to_string(version)
       # converts [Integer] version to [String] v0001 format.
-      # This is a stub; ideally we'd expand to include different ways to format
-      # this string depending on local needs. (i.e. v1, v00001)
-      result = "v%04d" % version.to_i
+      # Adjust VERSION_FORMAT to format string version to local needs.
+      #result = "v%04d" % version.to_i
+      result = VERSION_FORMAT % version.to_i
     end
 
     def self.version_string_to_int(version_name)
       # converts [String] version name to [Integer].
-      # This is a stub; ideally we'd expand to include different ways to handle
-      # different version string inputs.
-      # Chop off the 'v' at th start, make into String.
+      # OCFL spec requires string versions to start with 'v'.
+      # Chop off the 'v' at th start, make into integer.
       result = version_name.split("v")[1].to_i
     end
 
+    def self.deep_copy(o)
+      # We need this serialize Hashes so they don't shallow'y refer to each other.
+      Marshal.load(Marshal.dump(o))
+    end
 
     def self.generate_file_digest(file, digest)
       # @param [String] fully-resolvable filesystem path to a file.

@@ -1,8 +1,8 @@
 Gem::Specification.new do |gem|
   gem.authors       = ['Julian M. Morley']
   gem.email         = ['jmorley@stanford.edu']
-  gem.description   = 'Tools to migrate Stanford Moab objects into OCFL objects.'
-  gem.summary       = 'Tools to migrate Stanford Moab objects into OCFL objects.'
+  gem.description   = 'Tools to create, manipulate and write Oxford Common File Layout (OCFL) preservation objects.'
+  gem.summary       = 'Tools to create, manipulate and write Oxford Common File Layout (OCFL) preservation objects.'
   gem.homepage      = 'https://github.com/sul-dlss-labs/OCFL-Tools'
   gem.licenses      = ['Apache-2.0', 'Stanford University Libraries']
 
