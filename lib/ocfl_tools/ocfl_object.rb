@@ -7,9 +7,9 @@ module OcflTools
       # Parameters that must be serialized into JSON
       @id               = nil
       @head             = nil
-      @type             = 'https://ocfl.io/1.0/spec/#inventory'
-      @digestAlgorithm  = 'sha256' # sha512 is recommended, Stanford uses sha256.
-      @contentDirectory = 'data' # default is 'content', Stanford uses 'data'
+      @type             = OcflTools::Utils::CONTENT_TYPE
+      @digestAlgorithm  = OcflTools::Utils::DIGEST_ALGORITHM # sha512 is recommended, Stanford uses sha256.
+      @contentDirectory = OcflTools::Utils::CONTENT_DIRECTORY # default is 'content', Stanford uses 'data'
       @manifest         = Hash.new
       @versions         = Hash.new # A hash of Version hashes.
       @fixity           = Hash.new # Optional. Same format as Manifest.
