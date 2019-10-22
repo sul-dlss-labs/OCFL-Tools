@@ -1,0 +1,123 @@
+{
+  "id": "bb123cd4567",
+  "head": "v0006",
+  "type": "https://ocfl.io/1.0/spec/#inventory",
+  "digestAlgorithm": "sha256",
+  "contentDirectory": "data",
+  "manifest": {
+    "checksum_aaaaaaaaaaaa": [
+      "v0001/my_content/this_is_a_file.txt"
+    ],
+    "checksum_bbbbbbbbbbbb": [
+      "v0002/my_content/a_second_file.txt"
+    ],
+    "checksum_cccccccccccc": [
+      "v0003/my_content/a_third_file.txt"
+    ],
+    "checksum_dddddddddddd": [
+      "v0005/my_content/a_second_file.txt"
+    ]
+  },
+  "versions": {
+    "v0001": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "checksum_aaaaaaaaaaaa": [
+          "my_content/this_is_a_file.txt"
+        ]
+      }
+    },
+    "v0002": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "checksum_aaaaaaaaaaaa": [
+          "my_content/this_is_a_file.txt"
+        ],
+        "checksum_bbbbbbbbbbbb": [
+          "my_content/a_second_file.txt"
+        ]
+      }
+    },
+    "v0003": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "checksum_aaaaaaaaaaaa": [
+          "my_content/this_is_a_file.txt"
+        ],
+        "checksum_bbbbbbbbbbbb": [
+          "my_content/a_second_file.txt"
+        ],
+        "checksum_cccccccccccc": [
+          "my_content/a_third_file.txt",
+          "my_content/a_copy_of_third_file.txt"
+        ]
+      }
+    },
+    "v0004": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "checksum_bbbbbbbbbbbb": [
+          "my_content/a_second_file.txt"
+        ],
+        "checksum_cccccccccccc": [
+          "my_content/a_third_file.txt",
+          "my_content/a_copy_of_third_file.txt"
+        ]
+      }
+    },
+    "v0005": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "checksum_cccccccccccc": [
+          "my_content/a_third_file.txt",
+          "my_content/a_copy_of_third_file.txt"
+        ],
+        "checksum_dddddddddddd": [
+          "my_content/a_second_file.txt"
+        ]
+      }
+    },
+    "v0006": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "checksum_cccccccccccc": [
+          "my_content/a_third_file.txt",
+          "my_content/a_copy_of_third_file.txt"
+        ],
+        "checksum_dddddddddddd": [
+          "my_content/a_second_file.txt"
+        ]
+      }
+    }
+  }
+}

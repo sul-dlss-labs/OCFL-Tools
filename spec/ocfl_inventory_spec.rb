@@ -1,13 +1,13 @@
 require 'ocfl-tools'
 
-describe OcflTools::OcflObject do
-  ocfl = OcflTools::OcflObject.new
+describe OcflTools::OcflInventory do
+  ocfl = OcflTools::OcflInventory.new
 #  OcflTools::Utils::VERSION_FORMAT = "v%04d"
 
   describe ".new" do
     # shameless green
     it "returns an OCFLObject" do
-      expect(ocfl).to be_instance_of(OcflTools::OcflObject)
+      expect(ocfl).to be_instance_of(OcflTools::OcflInventory)
     end
 
     describe "add id" do
@@ -183,6 +183,15 @@ describe OcflTools::OcflObject do
       expect{ocfl.delete_file('my_content/a_second_file.txt', 2)}.to raise_error(RuntimeError)
     end
 
+  end
+
+  describe "output inventory.json" do
+    it "serializes the thing" do
+      # File.read("/path/to/file").should == “content”
+      content = ocfl.serialize.to_s
+      file    = File.read("./spec/fixtures/inventory.json")
+      expect(file).to include(content)
+    end
   end
 
 end
