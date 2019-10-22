@@ -107,7 +107,11 @@ module OcflTools
       # new digest, new filename, update manifest.
       # We use get_state here instead of asking @versions directly
       # because get_state will create version hash if it doesn't already exist.
+
       my_state = self.get_state(version)
+
+      raise "Can't edit prior versions! Only version #{version} can be modified now." unless version == self.version_id_list.sort[-1]
+
       if my_state.key?(digest)
         # file's already in this version. Add file to existing digest.
         my_files = my_state[digest]
@@ -137,12 +141,14 @@ module OcflTools
       # Same filename, different digest, update manifest.
       # Do a Delete, then an Add.
       existing_files = self.get_files(version)
+
       if existing_files.key?(file)
         self.delete_file(file, version)
       end
       self.add_file(file, digest, version)
     end
 
+    # @note internal API.
     def update_manifest(file, digest, version)
       # We only ever add to the manifest.
       # So if this digest exists, return the original source (physical path)
@@ -165,6 +171,9 @@ module OcflTools
     def delete_file(file, version)
       # remove filename, may remove digest if that was last file associated with that digest.
       my_state = self.get_state(version) # Creates version & copies state from prior version if doesn't exist.
+
+      raise "Can't edit prior versions! Only version #{version} can be modified now." unless version == self.version_id_list.sort[-1]
+
       my_digest = self.get_digest(file, version)
       # we know it's here b/c self.get_digest would have crapped out if not.
       my_array = my_state[my_digest]  # Get [Array] of files that have this digest in this version.
@@ -182,7 +191,12 @@ module OcflTools
 
     def copy_file(source_file, destination_file, version)
       # add new filename to existing digest.
-      # Error if: source_file not in version state (get_digest handles that).
+      # If destination file already exists, overwrite it.
+      existing_files = self.get_files(version)
+
+      if existing_files.key?(destination_file)
+        self.delete_file(destination_file, version)
+      end
       self.add_file(destination_file, self.get_digest(source_file, version), version)
     end
 
@@ -224,6 +238,7 @@ module OcflTools
       end
     end
 
+    # @note internal API
     def create_version_hash
       # @return [Hash] blank version Hash.
       # creates a blank version hash.
