@@ -1,12 +1,16 @@
 module OcflTools
   class OcflVerify < OcflTools::OcflObject
     # Pass it an OCFLInventory for it to check.
+    attr_reader :my_results
+
     def initialize(ocfl_object)
       @my_victim = ocfl_object
       @my_results = {}
-      @my_results['errors'] = []
-      @my_results['warnings'] = []
-      @my_results['pass'] = []
+      @my_results['errors'] = {}
+      @my_results['warnings'] = {}
+      @my_results['pass'] = {}
+
+      @object_directory = '' # optional path to object for digest checking.
 
       # check .respond_to? first for all expected methods.
       self.preflight
@@ -15,15 +19,6 @@ module OcflTools
 
     def check_all
       # Duck-typing the heck out of this, assuming @my_victim will respond to ocflobject methods.
-      # Check 1; should have content in these methods.
-#      @id               = nil
-#      @head             = nil
-#      @type             = 'https://ocfl.io/1.0/spec/#inventory'
-#      @digestAlgorithm  = 'sha256' # sha512 is recommended, Stanford uses sha256.
-#      @contentDirectory = 'data' # default is 'content', Stanford uses 'data'
-#      @manifest         = Hash.new
-#      @versions         = Hash.new # A hash of Version hashes.
-#      @fixity           = Hash.new # Optional. Same format as Manifest.
 
       self.check_id
 
@@ -31,27 +26,40 @@ module OcflTools
     end
 
     def preflight
-      # check for all expected methods using .respond_to?
       # check for expected instance_variables with .instance_variable_defined?(@some_var)
-      raise "Object does not have instance var defined" unless @my_victim.instance_variable_defined?("@id")
+      [ "@id", "@head", "@type", "@digestAlgorithm", "@contentDirectory", "@manifest", "@versions", "@fixity" ].each do | var |
+        raise "Object does not have instance var #{var} defined" unless @my_victim.instance_variable_defined?(var)
+      end
+
+      # check for all methods we need to validate OCFL structure
+      [ "get_files", "get_current_files", "get_state", "version_id_list", "get_digest" ].each do | mthd |
+        raise "Object does not respond to #{mthd}" unless @my_victim.respond_to?(mthd)
+      end
+
     end
 
     def check_id
+      errors = nil
       if @my_victim.id.length < 1
-        self.error('Object ID cannot be 0 length')
+        self.error('check_id', 'Object ID cannot be 0 length')
+        errors = true
       end
       if @my_victim.id == nil
-        self.error('Object ID cannot be nil')
+        self.error('check_id', 'Object ID cannot be nil')
+        errors = true
       end
       if @my_victim.id.length > 128
-        self.error('Object ID cannot exceed 128 characters.') # Not actually a thing.
+        self.error('check_id', 'Object ID cannot exceed 128 characters.') # Not actually a thing.
+        errors = true
+      end
+      if errors == nil
+        self.pass('check_id', 'all checks passed without errors')
       end
     end
 
     def check_head
       # Must have value
       # Must match highest version found.
-
     end
 
     def check_type
@@ -63,8 +71,8 @@ module OcflTools
     end
 
     def check_manifest
-      # Should have values.
       # Should pass digest cross_check.
+      # can be null if it passes cross_check? (empty inventories are valid, but warn)
     end
 
     def check_versions
@@ -77,26 +85,29 @@ module OcflTools
       # If present, should have at least 1 sub-key and 1 value.
     end
 
-    def check_disk(object_directory)
+    def check_disk(object_directory=@object_directory)
       # If you give me an actual physical path, we can verify digests and files on disk.
     end
 
-    def error(message)
-      my_errors = @my_results['errors']
-      my_errors << message
-      @my_results['errors'] = my_errors
+    def error(check, message)
+      if @my_results['errors'].key?(check) == false
+        @my_results['errors'][check] = []  # add an initial empty array.
+      end
+      @my_results['errors'][check] = ( @my_results['errors'][check] << message )
     end
 
-    def warning(message)
-      my_warnings = @my_results['warnings']
-      my_warnings << message
-      @my_results['warnings'] = my_warnings
+    def warning(check, message)
+      if @my_results['warnings'].key?(check) == false
+        @my_results['warnings'][check] = []  # add an initial empty array.
+      end
+      @my_results['warnings'][check] = ( @my_results['warnings'][check] << message )
     end
 
-    def pass(message)
-      my_pass = @my_results['pass']
-      my_pass << message
-      @results['pass'] = my_pass
+    def pass(check, message)
+      if @my_results['pass'].key?(check) == false
+        @my_results['pass'][check] = []  # add an initial empty array.
+      end
+      @my_results['pass'][check] = ( @my_results['pass'][check] << message )
     end
 
   end

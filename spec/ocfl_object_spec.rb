@@ -183,8 +183,6 @@ describe OcflTools::OcflObject do
       expect{ocfl.delete_file('my_content/a_second_file.txt', 2)}.to raise_error(RuntimeError)
     end
 
-
-
   end
 
 end
