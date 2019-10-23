@@ -17,29 +17,16 @@ module OcflTools
 
     end
 
+    # Performs all OCFLVerify checks on the given object and reports results.
+    # @return [Hash] of results.
     def check_all
       # Duck-typing the heck out of this, assuming @my_victim will respond to ocflobject methods.
-
       self.check_id
       self.check_head
       self.check_versions
       self.crosscheck_digests
       self.check_digestAlgorithm
-
       return @my_results
-    end
-
-    def preflight
-      # check for expected instance_variables with .instance_variable_defined?(@some_var)
-      [ "@id", "@head", "@type", "@digestAlgorithm", "@contentDirectory", "@manifest", "@versions", "@fixity" ].each do | var |
-        raise "Object does not have instance var #{var} defined" unless @my_victim.instance_variable_defined?(var)
-      end
-
-      # check for all methods we need to validate OCFL structure
-      [ "get_files", "get_current_files", "get_state", "version_id_list", "get_digest" ].each do | mthd |
-        raise "Object does not respond to #{mthd}" unless @my_victim.respond_to?(mthd)
-      end
-
     end
 
     def check_id
@@ -185,6 +172,19 @@ module OcflTools
         self.pass('crosscheck_digests', "All digests successfully crosschecked.")
       end
       return @my_results
+    end
+
+    def preflight
+      # check for expected instance_variables with .instance_variable_defined?(@some_var)
+      [ "@id", "@head", "@type", "@digestAlgorithm", "@contentDirectory", "@manifest", "@versions", "@fixity" ].each do | var |
+        raise "Object does not have instance var #{var} defined" unless @my_victim.instance_variable_defined?(var)
+      end
+
+      # check for all methods we need to validate OCFL structure
+      [ "get_files", "get_current_files", "get_state", "version_id_list", "get_digest" ].each do | mthd |
+        raise "Object does not respond to #{mthd}" unless @my_victim.respond_to?(mthd)
+      end
+
     end
 
     def error(check, message)

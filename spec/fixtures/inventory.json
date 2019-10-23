@@ -6,16 +6,16 @@
   "contentDirectory": "data",
   "manifest": {
     "checksum_aaaaaaaaaaaa": [
-      "v0001/my_content/this_is_a_file.txt"
+      "v0001/data/my_content/this_is_a_file.txt"
     ],
     "checksum_bbbbbbbbbbbb": [
-      "v0002/my_content/a_second_file.txt"
+      "v0002/data/my_content/a_second_file.txt"
     ],
     "checksum_cccccccccccc": [
-      "v0003/my_content/a_third_file.txt"
+      "v0003/data/my_content/a_third_file.txt"
     ],
     "checksum_dddddddddddd": [
-      "v0005/my_content/a_second_file.txt"
+      "v0005/data/my_content/a_second_file.txt"
     ]
   },
   "versions": {

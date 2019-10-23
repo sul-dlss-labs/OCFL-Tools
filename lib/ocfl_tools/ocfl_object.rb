@@ -7,9 +7,9 @@ module OcflTools
       # Parameters that must be serialized into JSON
       @id               = nil
       @head             = nil
-      @type             = OcflTools::Utils::CONTENT_TYPE
-      @digestAlgorithm  = OcflTools::Utils::DIGEST_ALGORITHM # sha512 is recommended, Stanford uses sha256.
-      @contentDirectory = OcflTools::Utils::CONTENT_DIRECTORY # default is 'content', Stanford uses 'data'
+      @type             = OcflTools.config.content_type
+      @digestAlgorithm  = OcflTools.config.digest_algorithm # sha512 is recommended, Stanford uses sha256.
+      @contentDirectory = OcflTools.config.content_directory # default is 'content', Stanford uses 'data'
       @manifest         = Hash.new
       @versions         = Hash.new # A hash of Version hashes.
       @fixity           = Hash.new # Optional. Same format as Manifest.
@@ -163,7 +163,7 @@ module OcflTools
         return @manifest[digest]
       end
       # otherwise, add to manifest.
-      physical_filepath = "#{OcflTools::Utils.version_int_to_string(version)}/#{file}"
+      physical_filepath = "#{OcflTools::Utils.version_int_to_string(version)}/#{@contentDirectory}/#{file}"
       @manifest[digest] = [ physical_filepath ]
       return @manifest[digest]
     end

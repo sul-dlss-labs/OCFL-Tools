@@ -1,18 +1,11 @@
 module OcflTools
   module Utils
 
-    # Different sites have different requirements for version formatting.
-    # Use this constant to adjust the resulting string format to meet local requirements.
-    VERSION_FORMAT = "v%04d"
-    CONTENT_TYPE = 'https://ocfl.io/1.0/spec/#inventory'
-    CONTENT_DIRECTORY = 'content' # OCFL default is 'content'
-    DIGEST_ALGORITHM = 'sha512' # OCFL default is sha512
-
     # converts [Integer] version to [String] v0001 format.
     # Adjust VERSION_FORMAT to format string version to local needs.
     # @return [String] of version in desired format, starting with 'v'.
     def self.version_int_to_string(version)
-      result = VERSION_FORMAT % version.to_i
+      result = OcflTools.config.version_format % version.to_i
     end
 
     # converts [String] version name to [Integer].
