@@ -245,8 +245,11 @@ module OcflTools
       self.delete_file(old_file, version)
     end
 
-    # @param [Pathname] file
+    # When given a file path and version, return the associated digest from version state.
+    # @param [Pathname] filepath
     # @param [Integer] version
+    # @return [String] digest of requested file.
+    # @note Will raise an exception if requested filepath is not in given version.
     def get_digest(file, version)
       # Make a hash with each individual file as a key, with the appropriate digest as value.
       inverted = self.get_state(version).invert
@@ -261,9 +264,12 @@ module OcflTools
       return my_files[file]
     end
 
+    # Gets the existing version hash for the requested version, or else creates
+    # and populates a new, empty version hash.
+    # @param [Integer] version
+    # @return [Hash] version block, if it exists, or creates new with prior version state in it.
+    # @note If a (n-1) version exists in the object, and the requested version does not yet exist, this method will copy that version's state block into the new version.
     def get_version(version)
-      # @param [Integer] version
-      # @return [Hash] version block, if it exists, or creates new with prior version state in it.
       if @versions.key?(OcflTools::Utils.version_int_to_string(version))
         return @versions[OcflTools::Utils.version_int_to_string(version)]
       else
