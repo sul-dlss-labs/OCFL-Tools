@@ -55,7 +55,7 @@ module OcflTools
     # @return [self]
     def from_file(file)
       import_hash = self.read_json(file)
-      # We passed validation, so let's assign our results to our instance variables.
+
       @id               = import_hash['id']
       @head             = import_hash['head']
       @type             = import_hash['type']

@@ -2,7 +2,10 @@ require 'ocfl-tools'
 
 describe OcflTools::OcflObject do
   ocfl = OcflTools::OcflObject.new
-#  OcflTools::Utils::VERSION_FORMAT = "v%04d"
+
+  ocfl.contentDirectory = 'data'
+  ocfl.digestAlgorithm = 'sha256'
+
 
   describe ".new" do
     # shameless green
@@ -35,7 +38,7 @@ describe OcflTools::OcflObject do
         "checksum_aaaaaaaaaaaa"=>["my_content/this_is_a_file.txt"]
       )
       expect(ocfl.manifest).to include(
-        "checksum_aaaaaaaaaaaa"=>["v0001/my_content/this_is_a_file.txt"]
+        "checksum_aaaaaaaaaaaa"=>["v0001/#{ocfl.contentDirectory}/my_content/this_is_a_file.txt"]
       )
     end
 
@@ -44,8 +47,8 @@ describe OcflTools::OcflObject do
         "checksum_bbbbbbbbbbbb"=>["my_content/a_second_file.txt"]
       )
       expect(ocfl.manifest).to match(
-        "checksum_aaaaaaaaaaaa"=>["v0001/my_content/this_is_a_file.txt"],
-        "checksum_bbbbbbbbbbbb"=>["v0002/my_content/a_second_file.txt"]
+        "checksum_aaaaaaaaaaaa"=>["v0001/#{ocfl.contentDirectory}/my_content/this_is_a_file.txt"],
+        "checksum_bbbbbbbbbbbb"=>["v0002/#{ocfl.contentDirectory}/my_content/a_second_file.txt"]
       )
       # expect version 1 state to NOT contain file 2.
       expect(ocfl.get_state(1)).to_not include(
@@ -63,9 +66,9 @@ describe OcflTools::OcflObject do
         "checksum_cccccccccccc"=>["my_content/a_third_file.txt"]
       )
       expect(ocfl.manifest).to match(
-        "checksum_aaaaaaaaaaaa"=>["v0001/my_content/this_is_a_file.txt"],
-        "checksum_bbbbbbbbbbbb"=>["v0002/my_content/a_second_file.txt"],
-        "checksum_cccccccccccc"=>["v0003/my_content/a_third_file.txt"]
+        "checksum_aaaaaaaaaaaa"=>["v0001/#{ocfl.contentDirectory}/my_content/this_is_a_file.txt"],
+        "checksum_bbbbbbbbbbbb"=>["v0002/#{ocfl.contentDirectory}/my_content/a_second_file.txt"],
+        "checksum_cccccccccccc"=>["v0003/#{ocfl.contentDirectory}/my_content/a_third_file.txt"]
       )
       # expect version 1 state to NOT contain file 2.
       expect(ocfl.get_state(1)).to_not include(
@@ -131,7 +134,7 @@ describe OcflTools::OcflObject do
         "checksum_cccccccccccc" => ["my_content/a_third_file.txt", "my_content/a_copy_of_third_file.txt"]
        )
        expect(ocfl.manifest).to include(
-         "checksum_dddddddddddd" => ["v0005/my_content/a_second_file.txt"],
+         "checksum_dddddddddddd" => ["v0005/#{ocfl.contentDirectory}/my_content/a_second_file.txt"],
        )
     end
 

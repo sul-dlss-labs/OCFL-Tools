@@ -11,7 +11,13 @@ an updated inventory file.
 require 'ocfl-tools'
 
 # Set our version string format; 5 characters, 4 of which are 0-padded integers.
-OcflTools::Utils::VERSION_FORMAT = "v%04d"
+OcflTools.config.version_format     = "v%04d"     # default value
+
+# Set our digest algorithm
+OcflTools.config.digest_algorithm   = 'sha256'    # default is sha512
+
+# set our object's content directory name
+OcflTools.config.content_directory  = 'data'     # default is 'content'
 
 ocfl = OcflTools::OcflInventory.new
 
