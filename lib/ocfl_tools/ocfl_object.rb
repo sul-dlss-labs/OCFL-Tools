@@ -40,20 +40,25 @@ module OcflTools
       @versions[OcflTools::Utils.version_int_to_string(version)]['message']
     end
 
+    # Sets the user Hash for a given version. Expects a complete User hash (with sub-keys of name & address).
     # @param [Integer] version of OCFL object to set the user block for.
-    # @param [Hash] user block to set for this version.
-    # @note will raise an exception if you attempt to query a non-existent version.
+    # @param [Hash] user block to set for this version. Must be a hash with two keys 'name' and 'address'.
+    # @note will raise an exception if you attempt to query a nonexistent version.
     def set_version_user(version, user)
       raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['user'] = user
     end
 
-    # @note will raise an exception if you attempt to query a non-existent version.
+    # Gets the user Hash for a given version.
+    # @ param [Integer] version of OCFL object to retrieve user block for.
+    # @return [Hash] user block for this version, a hash consisting of two keys, 'name' and 'address'.
+    # @note will raise an exception if you attempt to query a nonexistent version.
     def get_version_user(version)
       raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
       @versions[OcflTools::Utils.version_int_to_string(version)]['user']
     end
 
+    # Gets an array of integers comprising all versions of this OCFL object. It is not guaranteed to be in numeric order.
     # @return [Array{Integer}] versions that exist in the object.
     def version_id_list
       my_versions = []
@@ -63,6 +68,9 @@ module OcflTools
       my_versions
     end
 
+    # Gets the state block of a given version, comprising of digest keys and an array of filenames associated with those digests.
+    # @param [Integer] version of OCFL object to retreive version state block of.
+    # @return [Hash] of digests and array of pathnames associated with this version.
     def get_state(version)
       # @param [Integer] version to get state block of.
       # @return [Hash] state block.
@@ -71,14 +79,19 @@ module OcflTools
       return my_version['state']
     end
 
+    # Sets the state block for a given version when provided with a hash of digest keys and an array of associated filenames.
+    # @param [Integer] version of object to set state for.
+    # @param [Hash] hash of digests (keys) and an array of pathnames (values) associated with those digests.
+    # @note It is prefered to update version state via add/update/delete/copy/move file operations.
     def set_state(version, hash)
       # SAN Check needed here to make sure passed Hash has all expected keys.
       @versions[OcflTools::Utils.version_int_to_string(version)]['state'] = hash
     end
 
+    # Gets a hash of all logical files and their associated physical filepaths with the given version.
+    # @param [Integer] version from which to generate file list.
+    # @return [Hash] of files, with logical file as key, physical location within object dir as value.
     def get_files(version)
-      # @param [Integer] version from which to generate file list.
-      # @return [Hash] of files, with logical file as key, physical location within object dir as value.
       my_state = self.get_state(version)
       my_files = Hash.new
 
@@ -93,21 +106,24 @@ module OcflTools
       my_files
     end
 
+    # Gets all files for the current (highest) version of the OCFL object. Represents the state of the object at 'head',
+    # with the logical files that consist of the most recent version and their physical representations on disk, relative
+    # to the object's root directory.
+    # @return [Hash] of files from most recent version, with logical file as key, associated physical filepath as value.
     def get_current_files
-      # @return [Hash] of files from most recent version, with logical file as key,
-      # physical location within object dir as value.
       self.get_files(OcflTools::Utils.version_string_to_int(@head))
     end
 
+    # Adds a file to a version.
+    # @param [Pathname] file is the logical filename within the object.
+    # @param [String] digest of filename, presumably computed with the {digestAlgorithm} for the object.
+    # @param [Integer] version to add file to.
+    # @return [Hash] state block reflecting the version after the changes.
+    # @note will raise an error if an attempt is made to add a file to a prior (non-head) version. Will also raise an error if the requested file already exists in this version with a different digest: use {update_file} instead.
     def add_file(file, digest, version)
-      # @param [String] logical filename
-      # @param [String] digest of filename
-      # @param [Integer] version to add file to.
-      # @return [Hash] state block reflecting changes.
       # new digest, new filename, update manifest.
       # We use get_state here instead of asking @versions directly
       # because get_state will create version hash if it doesn't already exist.
-
       my_state = self.get_state(version)
 
       raise "Can't edit prior versions! Only version #{version} can be modified now." unless version == self.version_id_list.sort[-1]
@@ -124,8 +140,9 @@ module OcflTools
         self.update_manifest(file, digest, version)
         return self.get_state(version)
       end
-      # FIRST! Check to make sure the file isn't already in this state with a different digest!
-      # can use self.get_files(version)
+
+      # Check to make sure the file isn't already in this state with a different digest!
+      # If so; fail. We don't do implicit / soft adds. You want that, be explict: do an update_file instead.
       existing_files = self.get_files(version)
       if existing_files.key?(file)
         raise "File already exists with different digest in this version! Consider update instead."
@@ -137,6 +154,11 @@ module OcflTools
       return self.get_state(version)
     end
 
+    # Updates an existing file with a new bitstream and digest.
+    # @param [String] file filepath to update.
+    # @param [String] digest of updated file.
+    # @param [Integer] version of object to update.
+    # @note this method explicitly deletes the prior file if found, and re-creates it with a new digest via the {add_file} method.
     def update_file(file, digest, version)
       # Same filename, different digest, update manifest.
       # Do a Delete, then an Add.
@@ -168,6 +190,11 @@ module OcflTools
       return @manifest[digest]
     end
 
+    # Given a filepath, deletes that file from the given version. If multiple copies of the same file
+    # (as identified by a common digest) exist in the version, only the requested filepath is removed.
+    # @param [Pathname] file logical path of file to be deleted.
+    # @param [Integer] version version of object to delete file from.
+    # @return [Hash] state of version after delete has completed.
     def delete_file(file, version)
       # remove filename, may remove digest if that was last file associated with that digest.
       my_state = self.get_state(version) # Creates version & copies state from prior version if doesn't exist.
@@ -189,6 +216,13 @@ module OcflTools
       self.set_state(version, my_state)
     end
 
+    # Copies a file within the same version. If the destination file already exists with a different digest,
+    # it is overwritten with the digest of the source file.
+    # @param [Filepath] source_file filepath of source file.
+    # @param [Filepath] destination_file filepath of destination file.
+    # @param [Integer] version version of OCFL object.
+    # @return [Hash] state block of version after file copy has completed.
+    # @note Raises an error if source_file does not exist in this version.
     def copy_file(source_file, destination_file, version)
       # add new filename to existing digest.
       # If destination file already exists, overwrite it.
@@ -200,12 +234,19 @@ module OcflTools
       self.add_file(destination_file, self.get_digest(source_file, version), version)
     end
 
+    # Moves (renames) a file from one location to another within the same version.
+    # @param [Pathname] old_file filepath to move.
+    # @param [Pathname] new_file new filepath.
+    # @return [Hash] state block of version after file copy has completed.
+    # @note This is functionally a {copy_file} followed by a {delete_file}. Will raise an error if the source file does not exist in this version.
     def move_file(old_file, new_file, version)
       # re-name; functionally a copy and delete.
       self.copy_file(old_file, new_file, version)
       self.delete_file(old_file, version)
     end
 
+    # @param [Pathname] file
+    # @param [Integer] version
     def get_digest(file, version)
       # Make a hash with each individual file as a key, with the appropriate digest as value.
       inverted = self.get_state(version).invert
