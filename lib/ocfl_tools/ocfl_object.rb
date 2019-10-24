@@ -93,10 +93,8 @@ module OcflTools
     # Gets the state block of a given version, comprising of digest keys and an array of filenames associated with those digests.
     # @param [Integer] version of OCFL object to retreive version state block of.
     # @return [Hash] of digests and array of pathnames associated with this version.
+    # @note Creates new version and copies previous versions' state block over if requested version does not yet exist.
     def get_state(version)
-      # @param [Integer] version to get state block of.
-      # @return [Hash] state block.
-      # Creates version and copies prior state if it doesn't already exist.
       my_version = self.get_version(version)
       return my_version['state']
     end
@@ -143,7 +141,6 @@ module OcflTools
     # @return [Hash] state block reflecting the version after the changes.
     # @note will raise an error if an attempt is made to add a file to a prior (non-head) version. Will also raise an error if the requested file already exists in this version with a different digest: use {update_file} instead.
     def add_file(file, digest, version)
-      # new digest, new filename, update manifest.
       # We use get_state here instead of asking @versions directly
       # because get_state will create version hash if it doesn't already exist.
       my_state = self.get_state(version)
