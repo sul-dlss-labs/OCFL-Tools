@@ -188,4 +188,14 @@ describe OcflTools::OcflObject do
 
   end
 
+  describe "bad hashes" do
+    it "tries to create a volume hash with missing state key" do
+      missing_state_hash = Hash.new
+      ["created", "message", "user"].each do |key|
+        missing_state_hash[key] = ''
+      end
+      expect{ocfl.set_version(7, missing_state_hash)}.to raise_error(RuntimeError)
+    end
+  end
+
 end

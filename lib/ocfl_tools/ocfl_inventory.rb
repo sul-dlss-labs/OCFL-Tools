@@ -4,7 +4,7 @@ module OcflTools
 
     # serializes all versions of the object to JSON.
     # @return [JSON] complete OCFL object in serialized JSON format, suitable
-    # for writing to storage.
+    # for writing to a storage layer.
     def serialize
 
       output_hash = Hash.new
@@ -45,9 +45,12 @@ module OcflTools
     # Reads a file in from disk and parses the JSON within.
     # @param [Pathname] file resolvable path to alleged inventory.json.
     # @return [Hash] of JSON keys & values.
-    # @todo fail spectacularly if the file doesn't contain JSON.
     def read_json(file)
+      begin
       JSON.parse(File.read(file))
+      rescue
+        raise "Unable to parse JSON from file #{file}" # catch/encapsulate any JSON::Parser or FileIO issues
+      end
     end
 
     # Reads in a file, parses the JSON and ingests it into an {OcflTools::OcflInventory}

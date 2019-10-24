@@ -1,8 +1,12 @@
 module OcflTools
+  # Class to verify that an OcflObject is composed of valid data and structures.
   class OcflVerify < OcflTools::OcflObject
-    # Pass it an OCFLInventory for it to check.
+
+    # @return [Hash] my_results is a hash of check results.
     attr_reader :my_results
 
+    # Create a new OCFLVerify object, using an OcflTools::Ocflobject as source.
+    # @param [Object] ocfl_object {OcflTools::OcflObject} an ocfl object or inventory to verify.
     def initialize(ocfl_object)
       @my_victim = ocfl_object
       @my_results = {}
@@ -29,72 +33,84 @@ module OcflTools
       return @my_results
     end
 
+    # Checks OCFL Object for valid value in the id attribute.
+    # @return [Hash] of results.
     def check_id
       errors = nil
 
       case
         when @my_victim.id.length < 1
-          self.error('check_id', 'Object ID cannot be 0 length')
+          error('check_id', 'Object ID cannot be 0 length')
           errors = true
         when @my_victim.id == nil
-          self.error('check_id', 'Object ID cannot be nil')
+          error('check_id', 'Object ID cannot be nil')
           errors = true
         when @my_victim.id.length > 128
-          self.error('check_id', 'Object ID cannot exceed 128 characters.') # Not actually a thing.
+          error('check_id', 'Object ID cannot exceed 128 characters.') # Not actually a thing.
           errors = true
       end
 
       if errors == nil
-        self.pass('check_id', 'all checks passed without errors')
+        pass('check_id', 'all checks passed without errors')
       end
       return @my_results
     end
 
+    # Checks OCFL Object for valid value in the head attribute.
+    # @return [Hash] of results.
     def check_head
       case @my_victim.head
         when nil
-          self.error('check_head', '@head cannot be nil')
+          error('check_head', '@head cannot be nil')
         when Integer
-          self.error('check_head', '@head cannot be an Integer')
+          error('check_head', '@head cannot be an Integer')
         when String
           version        = OcflTools::Utils.version_string_to_int(@my_victim.head)
           target_version = @my_victim.version_id_list.sort[-1]
           if version == target_version
-            self.pass('check_head', '@head matches highest version found')
+            pass('check_head', '@head matches highest version found')
           else
-            self.error('check_head', "@head version #{version} does not match expected version #{target_version}")
+            error('check_head', "@head version #{version} does not match expected version #{target_version}")
           end
         else
           # default case error
-          self.error('check_head', 'An unknown @head error has occured.')
+          error('check_head', 'An unknown @head error has occured.')
       end
       return @my_results
     end
 
+    # Checks OCFL Object for valid value in the type attribute.
+    # @return [Hash] of results.
     def check_type
       # String should match spec URL? Shameless green.
       return @my_results
     end
 
+    # Checks OCFL Object for valid value in the digestAlgorithm attribute.
+    # @return [Hash] of results.
     def check_digestAlgorithm
       # must be one of sha256 or sha512
       case
       when @my_victim.digestAlgorithm.downcase == 'sha256'
-        self.pass('check_digestAlgorithm', "#{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
+        pass('check_digestAlgorithm', "#{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
       when @my_victim.digestAlgorithm.downcase == 'sha512'
-        self.pass('check_digestAlgorithm', "#{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
+        pass('check_digestAlgorithm', "#{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
       else
-        self.error('check_digestAlgorithm', "Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use.")
+        error('check_digestAlgorithm', "Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use.")
       end
       return @my_results
     end
 
+    # Checks OCFL Object for a well-formed manifest block.
+    # @return [Hash] of results.
     def check_manifest
       # Should pass digest cross_check.
       # can be null if it passes cross_check? (empty inventories are valid, but warn)
       return @my_results # shameless green
     end
 
+    # Checks OCFL Object for a well-formed versions block.
+    # @return [Hash] of results.
     def check_versions
 
       version_count   = @my_victim.version_id_list.length
@@ -103,9 +119,9 @@ module OcflTools
 
       case
         when version_count != highest_version
-          self.error('check_versions', "Found #{version_count} versions, but highest version is #{highest_version}")
+          error('check_versions', "Found #{version_count} versions, but highest version is #{highest_version}")
         when version_count == highest_version
-          self.pass('check_versions', "Found #{version_count} versions, highest version is #{highest_version}")
+          pass('check_versions', "Found #{version_count} versions, highest version is #{highest_version}")
       end
       # should be contiguous version numbers starting at 1.
       count       = 0
@@ -113,7 +129,7 @@ module OcflTools
         # (count - 1) is a proxy for the index in @my_victim.version_id_list.sort
         count += 1
         if count != my_versions[count-1]
-          self.error('check_versions', "Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}.")
+          error('check_versions', "Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}.")
           else
           #
         end
@@ -124,23 +140,32 @@ module OcflTools
       @my_victim.versions.each do | version, hash |
         ["created", "message", "user", "state"].each do | key |
           if hash.key?(key) == false
-            self.error('check_versions', "version #{version} is missing #{key} block.")
+            error('check_versions', "version #{version} is missing #{key} block.")
           end
         end
       end
       return @my_results
     end
 
+    # Checks OCFL Object for a well-formed fixity block, if present.
+    # @return [Hash] of results.
     def check_fixity
       # If present, should have at least 1 sub-key and 1 value.
       return @my_results # shameless green
     end
 
+    # Checks the OCFL Object on disk to verify that all files exist, and checksums match those in the inventory.
+    # @param [Pathname] object_directory A fully-qualified path to the object root on the local filesystem.
+    # @return [Hash] of results.
+    # @note May move this up to an OcflIntegrity object that inherits OcflVerify.
     def check_disk(object_directory=@object_directory)
       # If you give me an actual physical path, we can verify digests and files on disk.
       return @my_results
     end
 
+    # Checks the contents of the manifest block against the files and digests in the versions block to verify all
+    # files necessary to re-constitute the object at any version are correctly referenced in the OCFL Object.
+    # @return [Hash] of results
     def crosscheck_digests
       # requires values in @versions and @manifest.
       # verifies that every digest in @versions can be found in @manifest.
@@ -156,24 +181,27 @@ module OcflTools
 
       # First check; there should be the same number of entries on both sides.
       if unique_checksums.length != @my_victim.manifest.length
-        self.error('crosscheck_digests', "Digests missing! #{unique_checksums.length} digests in versions vs. #{@my_victim.manifest.length} digests in manifest.")
+        error('crosscheck_digests', "Digests missing! #{unique_checksums.length} digests in versions vs. #{@my_victim.manifest.length} digests in manifest.")
         errors = true
       end
 
       # Second check; each entry in unique_checksums should have a match in @manifest.
       unique_checksums.each do | checksum |
         if @my_victim.manifest.member?(checksum) == false
-          self.error('crosscheck_digests', "Checksum #{checksum} not found in manifest!")
+          error('crosscheck_digests', "Checksum #{checksum} not found in manifest!")
           errors = true
         end
       end
 
       if errors == nil
-        self.pass('crosscheck_digests', "All digests successfully crosschecked.")
+        pass('crosscheck_digests', "All digests successfully crosschecked.")
       end
       return @my_results
     end
 
+    # Verifies that the object passed to this class at instantiation responds to the expected
+    # methods and attributes. Raises an exception on failure.
+    # @return [Boolean] true
     def preflight
       # check for expected instance_variables with .instance_variable_defined?(@some_var)
       [ "@id", "@head", "@type", "@digestAlgorithm", "@contentDirectory", "@manifest", "@versions", "@fixity" ].each do | var |
@@ -187,6 +215,10 @@ module OcflTools
 
     end
 
+    private
+    # Internal logging method.
+    # @param [String] check
+    # @param [String] message
     def error(check, message)
       if @my_results['errors'].key?(check) == false
         @my_results['errors'][check] = []  # add an initial empty array.
@@ -194,6 +226,9 @@ module OcflTools
       @my_results['errors'][check] = ( @my_results['errors'][check] << message )
     end
 
+    # Internal logging method.
+    # @param [String] check
+    # @param [String] message
     def warning(check, message)
       if @my_results['warnings'].key?(check) == false
         @my_results['warnings'][check] = []  # add an initial empty array.
@@ -201,6 +236,9 @@ module OcflTools
       @my_results['warnings'][check] = ( @my_results['warnings'][check] << message )
     end
 
+    # Internal logging method.
+    # @param [String] check
+    # @param [String] message
     def pass(check, message)
       if @my_results['pass'].key?(check) == false
         @my_results['pass'][check] = []  # add an initial empty array.

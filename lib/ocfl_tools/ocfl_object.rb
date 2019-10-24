@@ -1,7 +1,29 @@
 module OcflTools
-  # Class that represents the data structures of an OCFL inventory file.
+  # Class that represents the data structures used by an OCFL inventory file.
   class OcflObject
-    attr_accessor :manifest, :versions, :fixity, :id, :digestAlgorithm, :head, :type, :contentDirectory
+    # @return [Hash] manifest block of the OCFL object.
+    attr_accessor :manifest
+
+    # @return [Hash] versions block of the OCFL object.
+    attr_accessor :versions
+
+    # @return [Hash] fixity block of the OCFL object.
+    attr_accessor :fixity
+
+    # @return [String] id the unique identifer of the OCFL object, as defined by the local repository system.
+    attr_accessor :id
+
+    # @return [String] algorithm used by the OCFL object to generate digests for file manifests and versions.
+    attr_accessor :digestAlgorithm
+
+    # @return [String] the most recent version of the OCFL object, expressed as a string that conforms to the format defined in version_format.
+    attr_accessor :head
+
+    # @return [String] the version of the OCFL spec to which this object conforms, expressed as a URL, as required by the OCFL specification.
+    attr_accessor :type
+
+    # @return [String] the name of the directory, inside each version directory, that the OCFL object should use as the base directory for files.
+    attr_accessor :contentDirectory
 
     def initialize
       # Parameters that must be serialized into JSON
@@ -71,10 +93,8 @@ module OcflTools
     # Gets the state block of a given version, comprising of digest keys and an array of filenames associated with those digests.
     # @param [Integer] version of OCFL object to retreive version state block of.
     # @return [Hash] of digests and array of pathnames associated with this version.
+    # @note Creates new version and copies previous versions' state block over if requested version does not yet exist.
     def get_state(version)
-      # @param [Integer] version to get state block of.
-      # @return [Hash] state block.
-      # Creates version and copies prior state if it doesn't already exist.
       my_version = self.get_version(version)
       return my_version['state']
     end
@@ -121,7 +141,6 @@ module OcflTools
     # @return [Hash] state block reflecting the version after the changes.
     # @note will raise an error if an attempt is made to add a file to a prior (non-head) version. Will also raise an error if the requested file already exists in this version with a different digest: use {update_file} instead.
     def add_file(file, digest, version)
-      # new digest, new filename, update manifest.
       # We use get_state here instead of asking @versions directly
       # because get_state will create version hash if it doesn't already exist.
       my_state = self.get_state(version)
@@ -170,6 +189,10 @@ module OcflTools
       self.add_file(file, digest, version)
     end
 
+    # Add a file and digest to the manifest at the given version.
+    # @param [Pathname] file filepath to add to the manifest.
+    # @param [String] digest of file being added to the manifest.
+    # @param [Integer] version version of the OCFL object that the file is being added to.
     # @note internal API.
     def update_manifest(file, digest, version)
       # We only ever add to the manifest.
@@ -246,8 +269,8 @@ module OcflTools
     end
 
     # When given a file path and version, return the associated digest from version state.
-    # @param [Pathname] filepath
-    # @param [Integer] version
+    # @param [Pathname] file filepath of file to return digest for.
+    # @param [Integer] version version of OCFL object to search for the requested file.
     # @return [String] digest of requested file.
     # @note Will raise an exception if requested filepath is not in given version.
     def get_digest(file, version)
@@ -285,10 +308,11 @@ module OcflTools
       end
     end
 
+
+    # Returns a version hash with the correct keys created, ready for content to be added.
+    # @return [Hash] empty version Hash with 'created', 'message', 'user' and 'state' keys.
     # @note internal API
     def create_version_hash
-      # @return [Hash] blank version Hash.
-      # creates a blank version hash.
       new_version = Hash.new
       new_version['created'] = ''
       new_version['message'] = ''
@@ -300,8 +324,16 @@ module OcflTools
       return new_version
     end
 
+    # When given a correctly-constructed hash, create a new OCFL version. See {create_version_hash} for more context.
+    # @param [Integer] version create a new OCFL version block with this version number.
+    # @param [Hash] hash use this hash for the content of the new OCFL version block.
     def set_version(version, hash)
       # SAN Check to make sure passed Hash has all expected keys.
+      ["created", "message", "user", "state"].each do | key |
+        if hash.key?(key) == false
+          raise "version #{version} hash block is missing required #{key} key"
+        end
+      end
       @versions[OcflTools::Utils.version_int_to_string(version)] = hash
     end
 

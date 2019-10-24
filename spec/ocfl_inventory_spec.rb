@@ -197,4 +197,38 @@ describe OcflTools::OcflInventory do
     end
   end
 
+  describe "fail to read bad JSON" do
+    it "fails to read a bad file" do
+      bad_content = OcflTools::OcflInventory.new
+      bad_file = "./spec/fixtures/bad_json/inventory.json"
+      expect{ocfl.from_file(bad_file)}.to raise_error(RuntimeError)
+    end
+  end
+
+  describe "reads good JSON" do
+    it "reads in correctly-formated JSON" do
+      good_file    = "./spec/fixtures/inventory.json"
+      good_content = File.read("./spec/fixtures/inventory.json")
+      good_ocfl    = OcflTools::OcflInventory.new
+
+      good_ocfl.from_file(good_file)
+      verify_ocfl = OcflTools::OcflVerify.new(good_ocfl)
+  
+      expect(verify_ocfl.check_all).to include(
+        {
+          "errors"=>{},
+          "warnings"=>{},
+          "pass"=>{
+            "check_id"=>["all checks passed without errors"],
+            "check_head"=>["@head matches highest version found"],
+            "check_versions"=>["Found 6 versions, highest version is 6"],
+            "crosscheck_digests"=>["All digests successfully crosschecked."],
+            "check_digestAlgorithm"=>["sha256 is a supported digest algorithm."]
+            }
+          }
+      )
+    end
+  end
+
+
 end
