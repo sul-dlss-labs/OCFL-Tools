@@ -302,6 +302,11 @@ module OcflTools
 
     def set_version(version, hash)
       # SAN Check to make sure passed Hash has all expected keys.
+      ["created", "message", "user", "state"].each do | key |
+        if hash.key?(key) == false
+          raise "version #{version} hash block is missing required #{key} key"
+        end
+      end
       @versions[OcflTools::Utils.version_int_to_string(version)] = hash
     end
 
