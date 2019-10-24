@@ -1,8 +1,8 @@
 module OcflTools
   # Class to verify that an OcflObject is composed of valid data and structures.
   class OcflVerify < OcflTools::OcflObject
-    # Pass it an OCFLInventory for it to check.
-    # @return [Hash] of verification results.
+
+    # @return [Hash] my_results is a hash of check results.
     attr_reader :my_results
 
     # Create a new OCFLVerify object, using an OcflTools::Ocflobject as source.
