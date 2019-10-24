@@ -188,6 +188,17 @@ describe OcflTools::OcflInventory do
 
   end
 
+  describe "bad hashes" do
+    it "tries to create a volume hash with missing state key" do
+      missing_state_hash = Hash.new
+      ["created", "message", "user"].each do |key|
+        missing_state_hash[key] = ''
+      end
+      expect{ocfl.set_version(7, missing_state_hash)}.to raise_error(RuntimeError)
+    end
+  end
+
+
   describe "output inventory.json" do
     it "serializes the thing" do
       # File.read("/path/to/file").should == “content”
@@ -213,7 +224,7 @@ describe OcflTools::OcflInventory do
 
       good_ocfl.from_file(good_file)
       verify_ocfl = OcflTools::OcflVerify.new(good_ocfl)
-  
+
       expect(verify_ocfl.check_all).to include(
         {
           "errors"=>{},
