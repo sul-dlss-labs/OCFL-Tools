@@ -219,7 +219,6 @@ describe OcflTools::OcflInventory do
   describe "reads good JSON" do
     it "reads in correctly-formated JSON" do
       good_file    = "./spec/fixtures/inventory.json"
-      good_content = File.read("./spec/fixtures/inventory.json")
       good_ocfl    = OcflTools::OcflInventory.new
 
       good_ocfl.from_file(good_file)
@@ -228,13 +227,15 @@ describe OcflTools::OcflInventory do
       expect(verify_ocfl.check_all).to include(
         {
           "errors"=>{},
-          "warnings"=>{},
+          "warnings"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]},
           "pass"=>{
-            "check_id"=>["all checks passed without errors"],
-            "check_head"=>["@head matches highest version found"],
-            "check_versions"=>["Found 6 versions, highest version is 6"],
-            "crosscheck_digests"=>["All digests successfully crosschecked."],
-            "check_digestAlgorithm"=>["sha256 is a supported digest algorithm."]
+            "check_id"=>["OCFL 3.5.1 all checks passed without errors"],
+            "check_type"=>["OCFL 3.5.1"],
+            "check_head"=>["OCFL 3.5.1 @head matches highest version found"],
+            "check_manifest"=>["OCFL 3.5.2 object contains valid manifest."],
+            "check_versions"=>["OCFL 3.5.3 Found 6 versions, highest version is 6", "OCFL 3.5.3.1 version structure valid."],
+            "crosscheck_digests"=>["OCFL 3.5.3.1 All digests successfully crosschecked."],
+            "check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]
             }
           }
       )
