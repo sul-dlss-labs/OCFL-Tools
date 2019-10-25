@@ -7,11 +7,15 @@ module OcflTools
     # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
     attr_reader :ocfl_object_root
 
+    # @return [String] version_format the discovered version format of the object, found by inspecting version directory names.
+    attr_reader :version_format
+
     # @param [Pathname] ocfl_storage_root is a the full local filesystem path to the object directory.
     def initialize(ocfl_object_root)
       @digest           = nil
       @version_format   = nil
       @ocfl_object_root = ocfl_object_root
+      @my_results       = Hash.new
     end
 
     # Perform an OCFL-spec validation of the given object directory.
@@ -70,6 +74,56 @@ module OcflTools
     def get_version_format
       # Get all directories starting with 'v', sort them.
       # Take the top of the sort. Count the number of 0s found.
+      # "v%04d" # shameless green
+      version_dirs = []
+      Dir.chdir(@ocfl_object_root)
+      Dir.glob('v*').select do |file|
+         if File.directory? file
+           version_dirs << file
+         end
+      end
+      version_dirs.sort!
+      first_version = version_dirs[0]   # the first element should be the first version directory.
+      first_version.slice!(0,1)         # cut the leading 'v' from the string.
+      case
+      when first_version.length == 1    # A length of 1 for the first version implies 'v1'
+          @version_format = "v%d"
+        when first_version.length == 0
+          raise "#{@ocfl_object_root} appears to contain non-compliant directories! #{version_dirs}"
+        else
+          @version_format = "v%0#{first_version.length}d"
+      end
+    end
+
+    private
+    # Internal logging method.
+    # @param [String] check
+    # @param [String] message
+    def error(check, message)
+      if @my_results['errors'].key?(check) == false
+        @my_results['errors'][check] = []  # add an initial empty array.
+      end
+      @my_results['errors'][check] = ( @my_results['errors'][check] << message )
+    end
+
+    # Internal logging method.
+    # @param [String] check
+    # @param [String] message
+    def warning(check, message)
+      if @my_results['warnings'].key?(check) == false
+        @my_results['warnings'][check] = []  # add an initial empty array.
+      end
+      @my_results['warnings'][check] = ( @my_results['warnings'][check] << message )
+    end
+
+    # Internal logging method.
+    # @param [String] check
+    # @param [String] message
+    def pass(check, message)
+      if @my_results['pass'].key?(check) == false
+        @my_results['pass'][check] = []  # add an initial empty array.
+      end
+      @my_results['pass'][check] = ( @my_results['pass'][check] << message )
     end
 
   end
