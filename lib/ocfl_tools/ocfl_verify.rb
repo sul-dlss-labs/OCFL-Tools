@@ -14,8 +14,6 @@ module OcflTools
       @my_results['warnings'] = {}
       @my_results['pass'] = {}
 
-      @object_directory = '' # optional path to object for digest checking.
-
       # check .respond_to? first for all expected methods.
       self.preflight
 
@@ -135,7 +133,7 @@ module OcflTools
 
       version_count   = @my_victim.version_id_list.length
       highest_version = @my_victim.version_id_list.sort[-1]
-      my_versions = @my_victim.version_id_list.sort
+      my_versions     = @my_victim.version_id_list.sort
 
       version_check = nil
       case
@@ -175,20 +173,11 @@ module OcflTools
       return @my_results
     end
 
-    # Checks OCFL Object for a well-formed fixity block, if present.
+    # Checks OCFL Object for a well-formed fixity block, if present. We do not compute fixity here; only check existence.
     # @return [Hash] of results.
     def check_fixity
       # If present, should have at least 1 sub-key and 1 value.
       return @my_results # shameless green
-    end
-
-    # Checks the OCFL Object on disk to verify that all files exist, and checksums match those in the inventory.
-    # @param [Pathname] object_directory A fully-qualified path to the object root on the local filesystem.
-    # @return [Hash] of results.
-    # @note May move this up to an OcflIntegrity object that inherits OcflVerify.
-    def check_disk(object_directory=@object_directory)
-      # If you give me an actual physical path, we can verify digests and files on disk.
-      return @my_results
     end
 
     # Checks the contents of the manifest block against the files and digests in the versions block to verify all
