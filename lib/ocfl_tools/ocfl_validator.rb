@@ -1,7 +1,7 @@
 module OcflTools
   # Class to perform checksum and structural validation of POSIX OCFL directories.
 
-  class OcflIntegrity < OcflTools::OcflVerify
+  class OcflValidator < OcflTools::OcflVerify
 
     # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
     attr_reader :ocfl_object_root
@@ -9,12 +9,15 @@ module OcflTools
     # @param [Pathname] ocfl_storage_root is a the full local filesystem path to the object directory.
     def initialize(ocfl_object_root)
       @digest           = nil
+      @version_format   = nil
       @ocfl_object_root = ocfl_object_root
     end
 
-    # Perform an OCFL-spec validation of the given directory.
+    # Perform an OCFL-spec validation of the given object directory.
     # If given the optional digest value, verify file content using checksums in inventory file.
     # Will fail if digest is not found in manifest or a fixity block.
+    # This validates all versions and all files in the object_root.
+    # If you want to just check a specific version, call {verify_directory}.
     def validate_ocfl_object_root(digest=nil)
       @digest = digest
     end
@@ -49,6 +52,12 @@ module OcflTools
     # Do all the files mentioned in the inventory(s) exist on disk?
     # This is an existence check, not a checksum verification.
     def verify_files
+    end
+
+    # find the first directory and deduce the version format. set @version_format appropriately.
+    def get_version_format
+      # Get all directories starting with 'v', sort them.
+      # Take the top of the sort. Count the number of 0s found.
     end
 
   end
