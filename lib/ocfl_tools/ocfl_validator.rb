@@ -22,6 +22,10 @@ module OcflTools
 
     end
 
+    def results
+      @my_results
+    end
+
     # Perform an OCFL-spec validation of the given object directory.
     # If given the optional digest value, verify file content using checksums in inventory file.
     # Will fail if digest is not found in manifest or a fixity block.
@@ -45,11 +49,6 @@ module OcflTools
     # Are there inventory.json files in each version directory? (warn if not in version dirs)
     # Deduce version dir naming convention by finding the v1 directory; apply that format to other dirs.
     def verify_structure
-      # Namaste file, inventory.json and sidecar,
-      # logs dir
-      # version directories
-      # nothing else.
-
       begin
         if @version_format == nil
           self.get_version_format
@@ -59,10 +58,86 @@ module OcflTools
         raise "Can't determine appropriate version format"
       end
 
-      # Onwards!
-      puts "this is verify_structure"
+      object_root_dirs  = []
+      object_root_files = []
 
-        # get version_format might raise exception, log that here?
+      Dir.chdir(@ocfl_object_root)
+      Dir.glob('*').select do |file|
+         if File.directory? file
+           object_root_dirs << file
+         end
+         if File.file? file
+           object_root_files << file
+         end
+      end
+
+      error = nil
+      # CHECK for required files.
+        [ "inventory.json", "inventory.json.sha512", "0=ocfl_object_1.0" ].each do | file |
+        if object_root_files.include? file == false
+          error('verify_structure', "OCFL 3.1 Object root does not include required file #{file}")
+          error = true
+        end
+        # we found it, delete it and go to next.
+        object_root_files.delete(file)
+      end
+
+      # Array should be empty! If not, we have extraneous files in object root.
+      if object_root_files.size != 0
+        error('verify_structure', "OCFL 3.1 Object root contains noncompliant files: #{object_root_files}")
+        error = true
+      end
+
+      # CHECK DIRECTORIES
+      # logs are optional.
+      if object_root_dirs.include? 'logs'
+        warning('verify_structure', "OCFL 3.1 optional logs directory found in object root.")
+        object_root_dirs.delete('logs')
+      end
+      # we should be left with *only* version directories.
+      count = 0
+      dirs  = object_root_dirs.length # the number of expected versions.
+      version_directories = [] # we need this for later.
+
+      puts "I have #{object_root_dirs}  directories to check"
+      until count == dirs # as we process dirs, object_root_dirs.length will change. So don't use it here.
+        count += 1
+        expected_directory = @version_format % count # get the version string in expected format.
+        puts "processing dir #{count}, looking for #{expected_directory}"
+        # As we find matching version directories, put them into version_directories []
+        if object_root_dirs.include? expected_directory
+          version_directories << expected_directory
+          object_root_dirs.delete(expected_directory)
+          puts "found version dir #{expected_directory}"
+        end
+      end
+
+      # Any content left in object_root_dirs are not compliant. Log them!
+      if object_root_dirs.size != 0
+        error('verify_structure', "OCFL 3.1 Object root contains noncompliant directories: #{object_root_dirs}")
+        error = true
+      end
+
+      # Now process the version directories we *did* find.
+      # Must be a continuous sequence, starting at v1.
+      version_directories.sort!
+      version_dir_count = version_directories.length
+      count = 0
+
+      until count == version_dir_count
+        count += 1
+        expected_directory = @version_format % count
+        # just check to see if it's in the array version_directories.
+        # We're not *SURE* that what we have is a continous sequence starting at 1;
+        # just that they're valid version dir names and they exist.
+
+      end
+
+
+      # If we get here without errors, we passed!
+      if error == nil
+        pass('verify_structure', "OCFL 3.1 Object root passed file structure test.")
+      end
     end
 
     # We may also want to only verify the most recent directory, not the entire object.
@@ -105,14 +180,17 @@ module OcflTools
          end
       end
       version_dirs.sort!
+      # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage.
+      if version_dirs.include? 'v'
+        version_dirs.delete('v')
+      end
+
       first_version = version_dirs[0]   # the first element should be the first version directory.
       first_version.slice!(0,1)         # cut the leading 'v' from the string.
       case
       when first_version.length == 1    # A length of 1 for the first version implies 'v1'
           raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
           @version_format = "v%d"
-        when first_version.length == 0
-          raise "#{@ocfl_object_root} contains non-compliant directory #{version_dirs[0]}"
         else
           # Make sure this is Integer 1.
           raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
