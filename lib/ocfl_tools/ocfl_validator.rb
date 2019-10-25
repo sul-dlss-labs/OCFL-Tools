@@ -1,7 +1,5 @@
 module OcflTools
   # Class to perform checksum and structural validation of POSIX OCFL directories.
-
-  # I'm a doof - Validator does *not* inherit Ocfl::Verify.
   class OcflValidator
 
     # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
@@ -22,6 +20,7 @@ module OcflTools
 
     end
 
+    # @return [Hash] of validation results.
     def results
       @my_results
     end
@@ -45,17 +44,34 @@ module OcflTools
       # Report out via @my_results.
     end
 
+    # Given a full directory path, parse the top of inventory.json for digestAlgo.
+    def get_digestAlgorithm(directory)
+      result = IO.foreach("#{directory}/inventory.json").lazy.grep(/digestAlgorithm/).take(1).to_a #{ |a| puts "I got #{a}"}
+      # "digestAlgorithm": "sha256",
+      string = result[0]  # our result is an array with an singl element.
+      result_array = string.split('"') # and we need the 4th element.
+      result_array[3]
+      # DO SOMETHING if file is not found;
+    end
+
     # Do all the files and directories in the object_dir conform to spec?
     # Are there inventory.json files in each version directory? (warn if not in version dirs)
     # Deduce version dir naming convention by finding the v1 directory; apply that format to other dirs.
     def verify_structure
+
+      error = nil
+
       begin
         if @version_format == nil
           self.get_version_format
         end
       rescue
-        error('version_format', "OCFL no appropriate version formats")
-        raise "Can't determine appropriate version format"
+        error('version_format', "OCFL unable to determine version format by inspection of directories.")
+        error = true
+        # raise "Can't determine appropriate version format"
+        # The rest of the method simply won't work without @version_format.
+        @version_format = OcflTools.config.version_format
+        warning('version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
       end
 
       object_root_dirs  = []
@@ -71,9 +87,18 @@ module OcflTools
          end
       end
 
-      error = nil
       # CHECK for required files.
-        [ "inventory.json", "inventory.json.sha512", "0=ocfl_object_1.0" ].each do | file |
+      # We have to check the top of inventory.json to get the appropriate digest algo.
+      file_checks = []
+      if File.exist? "#{@ocfl_object_root}/inventory.json"
+        json_digest = self.get_digestAlgorithm(@ocfl_object_root)
+        file_checks << "inventory.json"
+        file_checks << "inventory.json.#{json_digest}"
+      end
+
+        file_checks << "0=ocfl_object_1.0"
+
+        file_checks.each do | file |
         if object_root_files.include? file == false
           error('verify_structure', "OCFL 3.1 Object root does not include required file #{file}")
           error = true
@@ -81,6 +106,9 @@ module OcflTools
         # we found it, delete it and go to next.
         object_root_files.delete(file)
       end
+
+      puts get_digestAlgorithm(@ocfl_object_root)
+      # IO.foreach('large.txt').lazy.grep(/digestAlgorithm/).take(1).to_a
 
       # Array should be empty! If not, we have extraneous files in object root.
       if object_root_files.size != 0
@@ -148,7 +176,18 @@ module OcflTools
         end
 
         # only two files, but only warn if they're not present.
-        ["inventory.json", "inventory.json.sha512"].each do | file |
+
+        file_checks = []
+        if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
+          json_digest = self.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}")
+          file_checks << "inventory.json"
+          file_checks << "inventory.json.#{json_digest}"
+        else
+          file_checks << "inventory.json"
+        end
+
+
+        file_checks.each do | file |
           if version_files.include? file
             version_files.delete(file)
             else
@@ -222,7 +261,7 @@ module OcflTools
          end
       end
       version_dirs.sort!
-      # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage.
+      # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage edge case we'll deal with later.
       if version_dirs.include? 'v'
         version_dirs.delete('v')
       end
