@@ -94,34 +94,27 @@ module OcflTools
         warning('verify_structure', "OCFL 3.1 optional logs directory found in object root.")
         object_root_dirs.delete('logs')
       end
-      # we should be left with *only* version directories.
-      count = 0
-      dirs  = object_root_dirs.length # the number of expected versions.
+
       version_directories = [] # we need this for later.
 
-      puts "I have #{object_root_dirs}  directories to check"
-      until count == dirs # as we process dirs, object_root_dirs.length will change. So don't use it here.
-        count += 1
-        expected_directory = @version_format % count # get the version string in expected format.
-        puts "processing dir #{count}, looking for #{expected_directory}"
-        # As we find matching version directories, put them into version_directories []
-        if object_root_dirs.include? expected_directory
-          version_directories << expected_directory
-          object_root_dirs.delete(expected_directory)
-          puts "found version dir #{expected_directory}"
+      object_root_dirs.each  do |i|
+        if i =~ /[^"{@version_format}"$]/
+          version_directories << i
         end
       end
 
+      remaining_dirs = object_root_dirs - version_directories
+
       # Any content left in object_root_dirs are not compliant. Log them!
-      if object_root_dirs.size != 0
-        error('verify_structure', "OCFL 3.1 Object root contains noncompliant directories: #{object_root_dirs}")
+      if remaining_dirs.size > 0
+        error('verify_structure', "OCFL 3.1 Object root contains noncompliant directories: #{remaining_dirs}")
         error = true
       end
 
       # Now process the version directories we *did* find.
       # Must be a continuous sequence, starting at v1.
       version_directories.sort!
-      version_dir_count = version_directories.length
+      version_dir_count = version_directories.size
       count = 0
 
       until count == version_dir_count
@@ -130,9 +123,58 @@ module OcflTools
         # just check to see if it's in the array version_directories.
         # We're not *SURE* that what we have is a continous sequence starting at 1;
         # just that they're valid version dir names and they exist.
-
+        if version_directories.include? expected_directory
+          # puts "I found expected directory #{expected_directory}"
+        else
+          error('verify_structure', "OCFL 3.1 Expected version directory #{expected_directory} missing from sequence #{version_directories} ")
+          error = true
+        end
       end
 
+      # For the version_directories we *do* have, are they cool?
+      version_directories.each do | ver |
+        # Do a file and dir glob.
+        version_dirs  = []
+        version_files = []
+
+        Dir.chdir("#{@ocfl_object_root}/#{ver}")
+        Dir.glob('*').select do |file|
+           if File.directory? file
+             version_dirs << file
+           end
+           if File.file? file
+             version_files << file
+           end
+        end
+
+        # only two files, but only warn if they're not present.
+        ["inventory.json", "inventory.json.sha512"].each do | file |
+          if version_files.include? file
+            version_files.delete(file)
+            else
+            warning('verify_structure', "OCFL 3.1 optional #{file} missing from #{ver} directory")
+            version_files.delete(file)
+          end
+        end
+
+        if version_files.size > 0
+          error('verify_structure', "OCFL 3.1 non-compliant files #{version_files} in #{ver} directory")
+          error = true
+        end
+
+        if version_dirs.include? OcflTools.config.content_directory
+          version_dirs.delete(OcflTools.config.content_directory)
+        else
+          error('verify_structure', "OCFL 3.1 required content directory #{OcflTools.config.content_directory} not found in #{ver} directory")
+          error = true
+        end
+
+        if version_dirs.size > 0
+          error('version_structure', "OCFL 3.1 noncompliant directories #{version_dirs} found in #{ver} directory")
+          error = true
+        end
+
+      end
 
       # If we get here without errors, we passed!
       if error == nil

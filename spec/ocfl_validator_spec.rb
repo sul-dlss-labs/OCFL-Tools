@@ -5,6 +5,7 @@ describe OcflTools::OcflValidator do
   # resolve our path to test fixtures to a full system path
   object_root_dir =  File.expand_path('./spec/fixtures/validation/object_a')
   validate = OcflTools::OcflValidator.new(object_root_dir)
+  OcflTools.config.content_directory = 'data'
 
   describe ".new" do
     # shameless green
@@ -20,11 +21,23 @@ describe OcflTools::OcflValidator do
       end
   end
 
-  describe "directory structure" do
-      it "verifies the directories" do
+  describe "well-formed object A" do
+      it "verifies the structure" do
         validate.verify_structure
-        puts "this is validate_a results: #{validate.results}"
-        #puts validate.results
+        expect(validate.results).to match(
+          {
+            "errors"=>{},
+            "warnings"=>
+              {
+                "verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]
+              },
+            "pass"=>
+              {
+                "version_format"=>["OCFL conforming first version directory found."],
+                "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]
+                }
+              }
+        )
       end
   end
 
@@ -33,24 +46,52 @@ describe OcflTools::OcflValidator do
   object_b =  File.expand_path('./spec/fixtures/validation/object_b')
   validate_b = OcflTools::OcflValidator.new(object_b)
 
-  describe "fails directory structure" do
-      it "verifies the directories" do
-        validate.verify_structure
-        # b should fail directory check. 
-        #expect{validate_b.verify_structure}.to raise_error(RuntimeError)
-        puts "this is validate_b results: #{validate_b.results}"
+  describe "Object B is not compliant" do
+      it "finds an additional directory 'v' in object root" do
+        validate_b.verify_structure
+        expect(validate_b.results).to match(
+          {
+            "errors"=>
+              {
+                "verify_structure"=>["OCFL 3.1 Object root contains noncompliant directories: [\"v\"]"]
+              },
+            "warnings"=>
+              {
+                "verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]
+              },
+            "pass"=>
+              {
+                "version_format"=>["OCFL conforming first version directory found."]
+              }
+            }
+        )
       end
   end
 
 
+  # Object_c has version dirs 1, 3 and 4, but not 2.
   object_c =  File.expand_path('./spec/fixtures/validation/object_c')
   validate_c = OcflTools::OcflValidator.new(object_c)
 
-  describe "fails directory structure" do
-      it "verifies the directories" do
-      #  expect{validate_c.verify_structure}.to raise_error(RuntimeError)
+  describe "Object C is not compliant" do
+      it "is missing an expected version directory" do
         validate_c.verify_structure
-        puts "this is validate_c results: #{validate_c.results}"
+        expect(validate_c.results).to match(
+          {
+            "errors"=>
+              {
+                "verify_structure"=>["OCFL 3.1 Expected version directory v0002 missing from sequence [\"v0001\", \"v0003\", \"v0004\"] "]
+              },
+            "warnings"=>
+              {
+                "verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]
+              },
+            "pass"=>
+              {
+                "version_format"=>["OCFL conforming first version directory found."]
+              }
+            }
+        )
 
       end
   end
