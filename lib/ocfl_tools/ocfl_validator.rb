@@ -107,9 +107,6 @@ module OcflTools
         object_root_files.delete(file)
       end
 
-      puts get_digestAlgorithm(@ocfl_object_root)
-      # IO.foreach('large.txt').lazy.grep(/digestAlgorithm/).take(1).to_a
-
       # Array should be empty! If not, we have extraneous files in object root.
       if object_root_files.size != 0
         error('verify_structure', "OCFL 3.1 Object root contains noncompliant files: #{object_root_files}")
@@ -185,7 +182,6 @@ module OcflTools
         else
           file_checks << "inventory.json"
         end
-
 
         file_checks.each do | file |
           if version_files.include? file
