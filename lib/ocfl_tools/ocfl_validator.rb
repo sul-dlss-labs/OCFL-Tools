@@ -16,6 +16,10 @@ module OcflTools
       @version_format   = nil
       @ocfl_object_root = ocfl_object_root
       @my_results       = Hash.new
+      @my_results['errors'] = {}
+      @my_results['warnings'] = {}
+      @my_results['pass'] = {}
+
     end
 
     # Perform an OCFL-spec validation of the given object directory.
@@ -41,6 +45,24 @@ module OcflTools
     # Are there inventory.json files in each version directory? (warn if not in version dirs)
     # Deduce version dir naming convention by finding the v1 directory; apply that format to other dirs.
     def verify_structure
+      # Namaste file, inventory.json and sidecar,
+      # logs dir
+      # version directories
+      # nothing else.
+
+      begin
+        if @version_format == nil
+          self.get_version_format
+        end
+      rescue
+        error('version_format', "OCFL no appropriate version formats")
+        raise "Can't determine appropriate version format"
+      end
+
+      # Onwards!
+      puts "this is verify_structure"
+
+        # get version_format might raise exception, log that here?
     end
 
     # We may also want to only verify the most recent directory, not the entire object.
@@ -74,7 +96,7 @@ module OcflTools
     def get_version_format
       # Get all directories starting with 'v', sort them.
       # Take the top of the sort. Count the number of 0s found.
-      # "v%04d" # shameless green
+      # Raises errors if it can't find an appropriate version 1 directory.
       version_dirs = []
       Dir.chdir(@ocfl_object_root)
       Dir.glob('v*').select do |file|
@@ -87,11 +109,15 @@ module OcflTools
       first_version.slice!(0,1)         # cut the leading 'v' from the string.
       case
       when first_version.length == 1    # A length of 1 for the first version implies 'v1'
+          raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
           @version_format = "v%d"
         when first_version.length == 0
-          raise "#{@ocfl_object_root} appears to contain non-compliant directories! #{version_dirs}"
+          raise "#{@ocfl_object_root} contains non-compliant directory #{version_dirs[0]}"
         else
+          # Make sure this is Integer 1.
+          raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
           @version_format = "v%0#{first_version.length}d"
+          pass('version_format', "OCFL conforming first version directory found.")
       end
     end
 
@@ -125,6 +151,5 @@ module OcflTools
       end
       @my_results['pass'][check] = ( @my_results['pass'][check] << message )
     end
-
   end
 end

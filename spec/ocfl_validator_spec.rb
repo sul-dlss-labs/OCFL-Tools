@@ -10,10 +10,16 @@ describe OcflTools::OcflValidator do
     end
   end
 
-  describe "versions" do
+  describe "version_format" do
     it "returns the correct version format" do
       validate.get_version_format
       expect(validate.version_format).to match("v%04d")
+    end
+  end
+
+  describe "directory structure" do
+    it "verifies the directories" do
+      validate.verify_structure 
     end
   end
 end
