@@ -1,7 +1,8 @@
 module OcflTools
   # Class to perform checksum and structural validation of POSIX OCFL directories.
 
-  class OcflValidator < OcflTools::OcflVerify
+  # I'm a doof - Validator does *not* inherit Ocfl::Verify. 
+  class OcflValidator
 
     # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
     attr_reader :ocfl_object_root
@@ -23,7 +24,7 @@ module OcflTools
     end
 
     # Optionally, start by providing a checksum for sidecar file of the inventory.json
-    def verify_checksums(sidecar_checksum: nil)
+    def verify_checksums(inventory_file, sidecar_checksum: nil)
       # validate sidecar_checksum if present.
       # Sidecar checksum ignores @digest setting, and deduces digest to use from filename, per spec.
       # validate inventory.json checksum against inventory.json.<sha256|sha512>
@@ -43,10 +44,14 @@ module OcflTools
     # within the same object. v1 thru v3 might use sha256, v4 thru v7 might use sha512. etc.
     # We may also want to only verify the most recent directory, not the entire object.
     def verify_directory(version)
+      # Try to load the inventory.json in the version directory *first*.
+      # Only go for the root object directory if that fails.
+      # Why? Because if it exists, the inventory in the version directory is the canonical inventory for that version.
     end
 
     # Is the inventory file valid?
-    def verify_inventory(ocfl_inventory_path)
+    def verify_inventory(inventory_file)
+      # Load up the object with ocfl_inventory, push it through ocfl_verify.
     end
 
     # Do all the files mentioned in the inventory(s) exist on disk?
