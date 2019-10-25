@@ -1,7 +1,7 @@
 module OcflTools
   # Class to perform checksum and structural validation of POSIX OCFL directories.
 
-  # I'm a doof - Validator does *not* inherit Ocfl::Verify. 
+  # I'm a doof - Validator does *not* inherit Ocfl::Verify.
   class OcflValidator
 
     # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
@@ -39,14 +39,20 @@ module OcflTools
     def verify_structure
     end
 
-    # because different version directories may use different digests, and may or may not
-    # have fixity blocks in them, we need a way to verify directories using different rules
-    # within the same object. v1 thru v3 might use sha256, v4 thru v7 might use sha512. etc.
     # We may also want to only verify the most recent directory, not the entire object.
-    def verify_directory(version)
+    def verify_directory(version, digest=nil)
       # Try to load the inventory.json in the version directory *first*.
       # Only go for the root object directory if that fails.
       # Why? Because if it exists, the inventory in the version directory is the canonical inventory for that version.
+      # ONLY checks that the files in this directory are present in the Manifest and (if digest is given)
+      # that their checksums match. And that the files in the Manifest for this verion directory exist on disk.
+    end
+
+    # Different from verify_directory.
+    # Verify_version is *all* versions of the object, up to and including this one.
+    # Verify_directory is *just* check the files and checksums of inside that particular version directory.
+    # Verify_version(@head) is the canonical way to check an entire object?
+    def verify_version(version)
     end
 
     # Is the inventory file valid?
@@ -57,6 +63,7 @@ module OcflTools
     # Do all the files mentioned in the inventory(s) exist on disk?
     # This is an existence check, not a checksum verification.
     def verify_files
+      # Calls verify_directory for each version?
     end
 
     # find the first directory and deduce the version format. set @version_format appropriately.
