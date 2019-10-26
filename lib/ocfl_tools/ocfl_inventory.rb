@@ -15,10 +15,10 @@ module OcflTools
       output_hash['head']             = @head
       output_hash['type']             = @type
       output_hash['digestAlgorithm']  = @digestAlgorithm
-      output_hash['contentDirectory'] = @contentDirectory
       output_hash['manifest']         = @manifest
       output_hash['versions']         = @versions
       # optional
+      output_hash['contentDirectory'] = @contentDirectory unless @contentDirectory.size == 0
       output_hash['fixity']           = @fixity unless @fixity.size == 0
 
       JSON.pretty_generate(output_hash)
@@ -63,13 +63,18 @@ module OcflTools
       @head             = import_hash['head']
       @type             = import_hash['type']
       @digestAlgorithm  = import_hash['digestAlgorithm']
-      @contentDirectory = import_hash['contentDirectory']
       @manifest         = import_hash['manifest']
       @versions         = import_hash['versions']
+
+      # Optional keys - contentDirectory and fixity block.
+      if import_hash.has_key?('contentDirectory')
+        @contentDirectory = import_hash['contentDirectory']
+      end
 
       if import_hash.has_key?('fixity')
         @fixity = import_hash['fixity']
       end
+
       return self
     end
 
