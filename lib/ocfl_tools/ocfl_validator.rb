@@ -127,7 +127,7 @@ module OcflTools
         end
       end
 
-      # checksum mismatches; requires the checksum to be in both hashes, so.
+      # checksum mismatches; requires the file to be in both hashes, so.
       manifest_checksums.each do | file, digest |
         if disk_checksums.has_key?(file)
           if disk_checksums[file] != digest
@@ -140,6 +140,9 @@ module OcflTools
     end
 
     # Given a full directory path, parse the top of inventory.json for digestAlgo.
+    # Why not just use OcflTools.config.digest_algorithm? Because we may not know, when given a random
+    # directory, what the digest_algorithm is meant to be. It might not be the site-wide setting. Heck,
+    # there may not even *be* a site. So we do need to try and get it from an inventory.json in the object dir.
     def get_digestAlgorithm(directory)
       # Using IO.foreach and lazy.grep to minimize cost of checking large inventory.json files.
       result = IO.foreach("#{directory}/inventory.json").lazy.grep(/digestAlgorithm/).take(1).to_a #{ |a| puts "I got #{a}"}
@@ -188,9 +191,10 @@ module OcflTools
       # We have to check the top of inventory.json to get the appropriate digest algo.
       # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
       file_checks = []
+      file_checks << "inventory.json"
+
       if File.exist? "#{@ocfl_object_root}/inventory.json"
         json_digest = self.get_digestAlgorithm(@ocfl_object_root)
-        file_checks << "inventory.json"
         file_checks << "inventory.json.#{json_digest}"
       end
 
