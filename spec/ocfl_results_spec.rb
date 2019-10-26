@@ -27,6 +27,8 @@ describe OcflTools::OcflResults do
       results.error('E066', 'check_hamsters', "Yup, hamsters")
       results.error('E066', 'check_hamsters', "Hamsters everywhere.")
       results.error('E066', 'check_hamsters', "This is my life now.")
+      results.error('E066', 'check_hamsters', "This is my life now.")
+      results.error('E066', 'check_hamsters', "This is my life now.")
     puts results.get_errors
     puts results.error_count
 

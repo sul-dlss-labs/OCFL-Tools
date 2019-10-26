@@ -25,38 +25,14 @@ describe OcflTools::OcflValidator do
   describe "well-formed object A" do
       it "verifies the structure" do
         validate.verify_structure
-        expect(validate.results).to match(
-          {
-            "errors"=>{},
-            "warnings"=>
-              {
-                "verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]
-              },
-            "pass"=>
-              {
-                "version_format"=>["OCFL conforming first version directory found."],
-                "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]
-                }
-              }
+        expect(validate.results.all).to match(
+          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]}}}
         )
       end
 
       it "checks the root inventory" do
-          expect(validate.verify_inventory).to match(
-          {
-            "errors"=>{},
-            "warnings"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]},
-            "pass"=>
-              {
-                "check_id"=>["OCFL 3.5.1 all checks passed without errors"],
-                "check_type"=>["OCFL 3.5.1"],
-                "check_head"=>["OCFL 3.5.1 @head matches highest version found"],
-                "check_manifest"=>["OCFL 3.5.2 object contains valid manifest."],
-                "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version structure valid."],
-                "crosscheck_digests"=>["OCFL 3.5.3.1 All digests successfully crosschecked."],
-                "check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]
-              }
-            }
+          expect(validate.verify_inventory.results).to match(
+            {"error"=>{}, "warn"=>{"W111"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]}}, "info"=>{}, "ok"=>{"O111"=>{"check_id"=>["OCFL 3.5.1 all checks passed without errors"], "check_type"=>["OCFL 3.5.1"], "check_head"=>["OCFL 3.5.1 @head matches highest version found"], "check_manifest"=>["OCFL 3.5.2 object contains valid manifest."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version structure valid."], "crosscheck_digests"=>["OCFL 3.5.3.1 All digests successfully crosschecked."], "check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}}
         )
       end
 
@@ -74,21 +50,8 @@ describe OcflTools::OcflValidator do
   describe "Object B is not compliant" do
       it "finds an additional directory 'v' in object root" do
         validate_b.verify_structure
-        expect(validate_b.results).to match(
-          {
-            "errors"=>
-              {
-                "verify_structure"=>["OCFL 3.1 Object root contains noncompliant directories: [\"v\"]"]
-              },
-            "warnings"=>
-              {
-                "verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]
-              },
-            "pass"=>
-              {
-                "version_format"=>["OCFL conforming first version directory found."]
-              }
-            }
+        expect(validate_b.results.all).to match(
+          {"error"=>{"E111"=>{"verify_structure"=>["OCFL 3.1 Object root contains noncompliant directories: [\"v\"]"]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}
         )
       end
   end
@@ -101,21 +64,8 @@ describe OcflTools::OcflValidator do
   describe "Object C is not compliant" do
       it "is missing an expected version directory" do
         validate_c.verify_structure
-        expect(validate_c.results).to match(
-          {
-            "errors"=>
-              {
-                "verify_structure"=>["OCFL 3.1 Expected version directory v0002 missing from sequence [\"v0001\", \"v0003\", \"v0004\"] "]
-              },
-            "warnings"=>
-              {
-                "verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]
-              },
-            "pass"=>
-              {
-                "version_format"=>["OCFL conforming first version directory found."]
-              }
-            }
+        expect(validate_c.results.all).to match(
+          {"error"=>{"E111"=>{"verify_structure"=>["OCFL 3.1 Expected version directory v0002 missing from sequence [\"v0001\", \"v0003\", \"v0004\"] "]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}
         )
 
       end

@@ -13,10 +13,7 @@ module OcflTools
       @digest           = nil
       @version_format   = nil
       @ocfl_object_root = ocfl_object_root
-      @my_results       = Hash.new
-      @my_results['errors'] = {}
-      @my_results['warnings'] = {}
-      @my_results['pass'] = {}
+      @my_results       = OcflTools::OcflResults.new
 
     end
 
@@ -109,8 +106,8 @@ module OcflTools
 
       # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!
       if manifest_checksums == disk_checksums
-        pass('verify_checksums', "#{@ocfl_object_root} All discovered files on disk are referenced in inventory manifest.")
-        pass('verify_checksums', "#{@ocfl_object_root} All discovered files on disk match stored digest values.")
+        @my_results.ok('O111', 'verify_checksums', "#{@ocfl_object_root} All discovered files on disk are referenced in inventory manifest.")
+        @my_results.ok('O111', 'verify_checksums', "#{@ocfl_object_root} All discovered files on disk match stored digest values.")
         return @my_results
       end
 
@@ -127,13 +124,13 @@ module OcflTools
 
       if missing_from_manifest.size > 0
         missing_from_manifest.each do | missing |
-          error('verify_checksums', "#{missing} found on disk but missing from inventory.json.")
+          @my_results.error('E111', 'verify_checksums', "#{missing} found on disk but missing from inventory.json.")
         end
       end
 
       if missing_from_disk.size > 0
         missing_from_disk.each do | missing |
-          error('verify_checksums', "#{missing} in manifest but not found on disk.")
+          @my_results.error('E111', 'verify_checksums', "#{missing} in manifest but not found on disk.")
         end
       end
 
@@ -141,7 +138,7 @@ module OcflTools
       manifest_checksums.each do | file, digest |
         if disk_checksums.has_key?(file)
           if disk_checksums[file] != digest
-            error('verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
+            @my_results.error('E111', 'verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
           end
         end
       end
@@ -176,12 +173,12 @@ module OcflTools
           self.get_version_format
         end
       rescue
-        error('version_format', "OCFL unable to determine version format by inspection of directories.")
+        @my_results.error('E111', 'version_format', "OCFL unable to determine version format by inspection of directories.")
         error = true
         # raise "Can't determine appropriate version format"
         # The rest of the method simply won't work without @version_format.
         @version_format = OcflTools.config.version_format
-        warning('version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
+        @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
       end
 
       object_root_dirs  = []
@@ -212,7 +209,7 @@ module OcflTools
 
       file_checks.each do | file |
         if object_root_files.include? file == false
-          error('verify_structure', "OCFL 3.1 Object root does not include required file #{file}")
+          @my_results.error('E111', 'verify_structure', "OCFL 3.1 Object root does not include required file #{file}")
           error = true
         end
         # we found it, delete it and go to next.
@@ -221,14 +218,14 @@ module OcflTools
 
       # Array should be empty! If not, we have extraneous files in object root.
       if object_root_files.size != 0
-        error('verify_structure', "OCFL 3.1 Object root contains noncompliant files: #{object_root_files}")
+        @my_results.error('E111', 'verify_structure', "OCFL 3.1 Object root contains noncompliant files: #{object_root_files}")
         error = true
       end
 
       # CHECK DIRECTORIES
       # logs are optional.
       if object_root_dirs.include? 'logs'
-        warning('verify_structure', "OCFL 3.1 optional logs directory found in object root.")
+        @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional logs directory found in object root.")
         object_root_dirs.delete('logs')
       end
 
@@ -245,7 +242,7 @@ module OcflTools
 
       # Any content left in object_root_dirs are not compliant. Log them!
       if remaining_dirs.size > 0
-        error('verify_structure', "OCFL 3.1 Object root contains noncompliant directories: #{remaining_dirs}")
+        @my_results.error('E111', 'verify_structure', "OCFL 3.1 Object root contains noncompliant directories: #{remaining_dirs}")
         error = true
       end
 
@@ -264,7 +261,7 @@ module OcflTools
         if version_directories.include? expected_directory
           # puts "I found expected directory #{expected_directory}"
         else
-          error('verify_structure', "OCFL 3.1 Expected version directory #{expected_directory} missing from sequence #{version_directories} ")
+          @my_results.error('E111', 'verify_structure', "OCFL 3.1 Expected version directory #{expected_directory} missing from sequence #{version_directories} ")
           error = true
         end
       end
@@ -299,25 +296,25 @@ module OcflTools
           if version_files.include? file
             version_files.delete(file)
             else
-            warning('verify_structure', "OCFL 3.1 optional #{file} missing from #{ver} directory")
+            @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional #{file} missing from #{ver} directory")
             version_files.delete(file)
           end
         end
 
         if version_files.size > 0
-          error('verify_structure', "OCFL 3.1 non-compliant files #{version_files} in #{ver} directory")
+          @my_results.error('E111', 'verify_structure', "OCFL 3.1 non-compliant files #{version_files} in #{ver} directory")
           error = true
         end
 
         if version_dirs.include? OcflTools.config.content_directory
           version_dirs.delete(OcflTools.config.content_directory)
           else
-          error('verify_structure', "OCFL 3.1 required content directory #{OcflTools.config.content_directory} not found in #{ver} directory")
+          @my_results.error('E111', 'verify_structure', "OCFL 3.1 required content directory #{OcflTools.config.content_directory} not found in #{ver} directory")
           error = true
         end
 
         if version_dirs.size > 0
-          error('version_structure', "OCFL 3.1 noncompliant directories #{version_dirs} found in #{ver} directory")
+          @my_results.error('E111', 'version_structure', "OCFL 3.1 noncompliant directories #{version_dirs} found in #{ver} directory")
           error = true
         end
 
@@ -325,7 +322,7 @@ module OcflTools
 
       # If we get here without errors (warnings are OK), we passed!
       if error == nil
-        pass('verify_structure', "OCFL 3.1 Object root passed file structure test.")
+        @my_results.ok('O111', 'verify_structure', "OCFL 3.1 Object root passed file structure test.")
       end
     end
 
@@ -399,39 +396,9 @@ module OcflTools
           # Make sure this is Integer 1.
           raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
           @version_format = "v%0#{first_version.length}d"
-          pass('version_format', "OCFL conforming first version directory found.")
+          @my_results.ok('O111', 'version_format', "OCFL conforming first version directory found.")
       end
     end
 
-    private
-    # Internal logging method.
-    # @param [String] check
-    # @param [String] message
-    def error(check, message)
-      if @my_results['errors'].key?(check) == false
-        @my_results['errors'][check] = []  # add an initial empty array.
-      end
-      @my_results['errors'][check] = ( @my_results['errors'][check] << message )
-    end
-
-    # Internal logging method.
-    # @param [String] check
-    # @param [String] message
-    def warning(check, message)
-      if @my_results['warnings'].key?(check) == false
-        @my_results['warnings'][check] = []  # add an initial empty array.
-      end
-      @my_results['warnings'][check] = ( @my_results['warnings'][check] << message )
-    end
-
-    # Internal logging method.
-    # @param [String] check
-    # @param [String] message
-    def pass(check, message)
-      if @my_results['pass'].key?(check) == false
-        @my_results['pass'][check] = []  # add an initial empty array.
-      end
-      @my_results['pass'][check] = ( @my_results['pass'][check] << message )
-    end
   end
 end
