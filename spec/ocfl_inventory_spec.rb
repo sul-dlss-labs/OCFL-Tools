@@ -200,6 +200,7 @@ describe OcflTools::OcflInventory do
 
 
   describe "output inventory.json" do
+    ocfl.contentDirectory = 'data'
     it "serializes the thing" do
       # File.read("/path/to/file").should == “content”
       content = ocfl.serialize.to_s
@@ -224,20 +225,8 @@ describe OcflTools::OcflInventory do
       good_ocfl.from_file(good_file)
       verify_ocfl = OcflTools::OcflVerify.new(good_ocfl)
 
-      expect(verify_ocfl.check_all).to include(
-        {
-          "errors"=>{},
-          "warnings"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]},
-          "pass"=>{
-            "check_id"=>["OCFL 3.5.1 all checks passed without errors"],
-            "check_type"=>["OCFL 3.5.1"],
-            "check_head"=>["OCFL 3.5.1 @head matches highest version found"],
-            "check_manifest"=>["OCFL 3.5.2 object contains valid manifest."],
-            "check_versions"=>["OCFL 3.5.3 Found 6 versions, highest version is 6", "OCFL 3.5.3.1 version structure valid."],
-            "crosscheck_digests"=>["OCFL 3.5.3.1 All digests successfully crosschecked."],
-            "check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]
-            }
-          }
+      expect(verify_ocfl.check_all.results).to match(
+        {"error"=>{}, "warn"=>{"W111"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]}}, "info"=>{}, "ok"=>{"O111"=>{"check_id"=>["OCFL 3.5.1 all checks passed without errors"], "check_type"=>["OCFL 3.5.1"], "check_head"=>["OCFL 3.5.1 @head matches highest version found"], "check_manifest"=>["OCFL 3.5.2 object contains valid manifest."], "check_versions"=>["OCFL 3.5.3 Found 6 versions, highest version is 6", "OCFL 3.5.3.1 version structure valid."], "crosscheck_digests"=>["OCFL 3.5.3.1 All digests successfully crosschecked."], "check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}}
       )
     end
   end

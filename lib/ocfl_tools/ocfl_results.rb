@@ -14,6 +14,10 @@ module OcflTools
       @my_results
     end
 
+    def all
+      @my_results
+    end
+
     def get_errors
       @my_results['error']
     end
@@ -80,7 +84,12 @@ module OcflTools
       if @my_results['ok'][code].key?(context) == false
         @my_results['ok'][code][context] = []
       end
-       @my_results['ok'][code][context] = ( @my_results['ok'][code][context] << description )
+      # Only put unique values into description
+      if @my_results['ok'][code][context].include?(description)
+          return description
+        else
+          @my_results['ok'][code][context] = ( @my_results['ok'][code][context] << description )
+      end
     end
 
     # @returns [String] description of posted information.
@@ -91,7 +100,12 @@ module OcflTools
       if @my_results['info'][code].key?(context) == false
         @my_results['info'][code][context] = []
       end
-      @my_results['info'][code][context] = ( @my_results['info'][code][context] << description )
+      # Only put unique values into description
+      if @my_results['info'][code][context].include?(description)
+          return description
+        else
+          @my_results['info'][code][context] = ( @my_results['info'][code][context] << description )
+      end
     end
 
     # @returns [String] description of posted warning.
@@ -102,7 +116,12 @@ module OcflTools
       if @my_results['warn'][code].key?(context) == false
         @my_results['warn'][code][context] = []
       end
-      @my_results['warn'][code][context] = ( @my_results['warn'][code][context] << description )
+      # Only put unique values into description
+      if @my_results['warn'][code][context].include?(description)
+          return description
+        else
+          @my_results['warn'][code][context] = ( @my_results['warn'][code][context] << description )
+      end
     end
 
     # @returns [String] description of posted error.
@@ -113,7 +132,12 @@ module OcflTools
       if @my_results['error'][code].key?(context) == false
         @my_results['error'][code][context] = []
       end
-      @my_results['error'][code][context] = ( @my_results['error'][code][context] << description )
+      # Only put unique values into description
+      if @my_results['error'][code][context].include?(description)
+          return description
+        else
+          @my_results['error'][code][context] = ( @my_results['error'][code][context] << description )
+      end
     end
 
   end
