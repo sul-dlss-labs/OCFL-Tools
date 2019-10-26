@@ -9,7 +9,7 @@ describe OcflTools::OcflValidator do
 
   # TODO: fix expand_path so we're not tying the results to my local machine's directory structure.
   local_path = object_a.delete_suffix('/spec/fixtures/validation/object_a')
-  # local_path should stay the same for all fixtures. 
+  # local_path should stay the same for all fixtures.
 
   describe "perfect object a" do
 
@@ -51,5 +51,18 @@ describe OcflTools::OcflValidator do
         )
     end
   end
+
+  object_g =  File.expand_path('./spec/fixtures/validation/object_g')
+  validate_g = OcflTools::OcflValidator.new(object_g)
+
+  describe "object g has a bad digest in the manifest file" do
+    it "checks checksums from manifest" do
+      # puts validate_g.verify_checksums
+      expect(validate_g.verify_checksums).to match(
+        {"errors"=>{"verify_checksums"=>["#{local_path}/spec/fixtures/validation/object_g/v0003/data/my_content/dickens.txt digest in inventory does not match digest computed from disk"]}, "warnings"=>{}, "pass"=>{}}
+      )
+    end
+  end
+
 
 end

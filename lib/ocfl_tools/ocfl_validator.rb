@@ -131,7 +131,6 @@ module OcflTools
       manifest_checksums.each do | file, digest |
         if disk_checksums.has_key?(file)
           if disk_checksums[file] != digest
-            puts "I'm ADDING IT HERE"
             error('verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
           end
         end
