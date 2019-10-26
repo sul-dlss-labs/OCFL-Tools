@@ -39,6 +39,25 @@ describe OcflTools::OcflValidator do
               }
         )
       end
+
+      it "checks the root inventory" do
+          expect(validate.verify_inventory("#{object_root_dir}/inventory.json")).to match(
+          {
+            "errors"=>{},
+            "warnings"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]},
+            "pass"=>
+              {
+                "check_id"=>["OCFL 3.5.1 all checks passed without errors"],
+                "check_type"=>["OCFL 3.5.1"],
+                "check_head"=>["OCFL 3.5.1 @head matches highest version found"],
+                "check_manifest"=>["OCFL 3.5.2 object contains valid manifest."],
+                "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version structure valid."],
+                "crosscheck_digests"=>["OCFL 3.5.3.1 All digests successfully crosschecked."],
+                "check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]
+              }
+            }
+        )
+      end
   end
 
 

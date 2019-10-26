@@ -46,12 +46,14 @@ module OcflTools
 
     # Given a full directory path, parse the top of inventory.json for digestAlgo.
     def get_digestAlgorithm(directory)
+      # Using IO.foreach and lazy.grep to minimize cost of checking large inventory.json files.
       result = IO.foreach("#{directory}/inventory.json").lazy.grep(/digestAlgorithm/).take(1).to_a #{ |a| puts "I got #{a}"}
-      # "digestAlgorithm": "sha256",
+      # [ " "digestAlgorithm": "sha256"," ] is my return value. It's not great.
       string = result[0]  # our result is an array with an singl element.
       result_array = string.split('"') # and we need the 4th element.
       result_array[3]
       # DO SOMETHING if file is not found;
+      # Also, we are assuming that it's actually a well-enough formed version of inventory.json.
     end
 
     # Do all the files and directories in the object_dir conform to spec?
@@ -89,6 +91,7 @@ module OcflTools
 
       # CHECK for required files.
       # We have to check the top of inventory.json to get the appropriate digest algo.
+      # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
       file_checks = []
       if File.exist? "#{@ocfl_object_root}/inventory.json"
         json_digest = self.get_digestAlgorithm(@ocfl_object_root)
@@ -96,9 +99,9 @@ module OcflTools
         file_checks << "inventory.json.#{json_digest}"
       end
 
-        file_checks << "0=ocfl_object_1.0"
+      file_checks << "0=ocfl_object_1.0"
 
-        file_checks.each do | file |
+      file_checks.each do | file |
         if object_root_files.include? file == false
           error('verify_structure', "OCFL 3.1 Object root does not include required file #{file}")
           error = true
@@ -122,6 +125,7 @@ module OcflTools
 
       version_directories = [] # we need this for later.
 
+      # Find all directories with names that match version_format.
       object_root_dirs.each  do |i|
         if i =~ /[^"{@version_format}"$]/
           version_directories << i
@@ -172,8 +176,7 @@ module OcflTools
            end
         end
 
-        # only two files, but only warn if they're not present.
-
+        # only two files here, but only warn if they're not present.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
           json_digest = self.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}")
@@ -234,8 +237,11 @@ module OcflTools
     end
 
     # Is the inventory file valid?
+    # @return [Hash] of verification results.
     def verify_inventory(inventory_file)
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
+      inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+      OcflTools::OcflVerify.new(inventory).check_all
     end
 
     # Do all the files mentioned in the inventory(s) exist on disk?
