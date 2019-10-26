@@ -39,8 +39,9 @@ puts ocfl.serialize
 
 # Check a directory for a valid OCFL object
 validate = OcflTools::OcflValidator.new(object_root_dir)
-puts validate.verify_structure
-puts validate.verify_inventory
+puts validate.verify_structure  # checks the physical layout of the object root
+puts validate.verify_inventory  # checks the syntax and internal consistency of the inventory.json
+puts validate.verify_checksums  # checks digests in the inventory against files discovered in the object root.
 
 ```
 
