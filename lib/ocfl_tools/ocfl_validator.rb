@@ -14,10 +14,9 @@ module OcflTools
       @version_format   = nil
       @ocfl_object_root = ocfl_object_root
       @my_results       = OcflTools::OcflResults.new
-
     end
 
-    # @return [Hash] of validation results.
+    # @return [OcflTools::OcflResults] results of validation results.
     def results
       @my_results
     end
@@ -30,6 +29,9 @@ module OcflTools
     def validate_ocfl_object_root(digest=nil)
       @digest = digest
       # calls verify_structure, verify_inventory and verify_checksums.
+      self.verify_structure
+      self.verify_inventory # returns a diff. results object; merge it?
+      self.verify_checksums
     end
 
     def get_version_directories
@@ -324,6 +326,7 @@ module OcflTools
       if error == nil
         @my_results.ok('O111', 'verify_structure', "OCFL 3.1 Object root passed file structure test.")
       end
+      return @my_results
     end
 
     # We may also want to only verify the most recent directory, not the entire object.
@@ -352,7 +355,7 @@ module OcflTools
     end
 
     # Is the inventory file valid?
-    # @return [Hash] of verification results.
+    # @return [OcflTools::OcflResults] of verification results.
     def verify_inventory(inventory_file=nil)
       if inventory_file == nil
         inventory_file = "#{@ocfl_object_root}/inventory.json"

@@ -46,9 +46,9 @@ ocfl.to_file('/directory/to/put/inventory/in/')
 
 # Check a directory for a valid OCFL object
 validate = OcflTools::OcflValidator.new(object_root_dir)
-puts validate.verify_structure  # checks the physical layout of the object root
-puts validate.verify_inventory  # checks the syntax and internal consistency of the inventory.json
-puts validate.verify_checksums  # checks digests in the inventory against files discovered in the object root.
+puts validate.verify_structure.results  # checks the physical layout of the object root
+puts validate.verify_inventory.results  # checks the syntax and internal consistency of the inventory.json
+puts validate.verify_checksums.results  # checks digests in the inventory against files discovered in the object root.
 
 ```
 
@@ -69,3 +69,10 @@ It's up to implementing applications to marshal bitstreams and write them to the
 OCFL-Tools just creates the inventory.json files and verifies that the content within them is correctly
 formatted and, optionally, actually exists on disk. It's up to something else to put the bits on disk
 where OCFL-Tools expects them to be.
+
+`OcflValidator` will take a directory and tell you if it's an OCFL object or not. If it is a valid OCFL
+object, `OcflValidator` will check the files on disk against the records in the inventory.json and let
+you know if they are all there and have matching checksums.
+
+`OcflVerify` will take an OCFL object and will let you know if it's syntactically correct
+and internally consistent.
