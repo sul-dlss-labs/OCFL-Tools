@@ -62,10 +62,10 @@ module OcflTools
       @id               = import_hash['id']
       @head             = import_hash['head']
       @type             = import_hash['type']
+      @digestAlgorithm  = import_hash['digestAlgorithm']
       if import_hash.has_key?('contentDirectory')
         @contentDirectory = import_hash['contentDirectory']
       end
-      @digestAlgorithm  = import_hash['digestAlgorithm']
       @manifest         = import_hash['manifest']
       @versions         = import_hash['versions']
       # Optional keys - contentDirectory and fixity block.
