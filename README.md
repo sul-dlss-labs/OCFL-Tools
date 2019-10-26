@@ -5,6 +5,10 @@ compliance of the resulting object and serialize it to an inventory.json file.
 Can also read in an existing inventory.json to verify, manipulate, and produce
 an updated inventory file.
 
+This is very much a work-in-progress PROTOTYPE and is not guaranteed to do anything more
+than take up space on your storage device. Not all methods are implemented, and refactoring
+is a fact of life.
+
 ## Basic Usage
 
 ```
@@ -36,6 +40,9 @@ ocfl.add_file('my_content/a_third_file.txt', 'checksum_cccccccccccc', 3)
 
 # Output the complete inventory.json.
 puts ocfl.serialize
+
+# Or if files are more your bag:
+ocfl.to_file('/directory/to/put/inventory/in/')
 
 # Check a directory for a valid OCFL object
 validate = OcflTools::OcflValidator.new(object_root_dir)
