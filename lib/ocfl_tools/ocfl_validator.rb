@@ -109,6 +109,32 @@ module OcflTools
       # Or a file on disk that's not in the manifest.
       # Or a file that is on disk and in the manifest, but the checksums don't match.
 
+      disk_files      = disk_checksums.keys
+      manifest_files  = manifest_checksums.keys
+
+      missing_from_manifest = disk_files - manifest_files
+      missing_from_disk     = manifest_files - disk_files
+
+      if missing_from_manifest.size > 0
+        missing_from_manifest.each do | missing |
+          error('verify_checksums', "#{missing} found on disk but missing from inventory.json.")
+        end
+      end
+
+      if missing_from_disk.size > 0
+        missing_from_disk.each do | missing |
+          error('verify_checksums', "#{missing} in manifest but not found on disk.")
+        end
+      end
+
+      # checksum mismatches; requires the checksum to be in both hashes, so.
+      manifest_checksums.each do | file, digest |
+        if disk_checksums[file] != digest
+          error('verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
+        end
+      end
+      return @my_results
+
     end
 
     # Given a full directory path, parse the top of inventory.json for digestAlgo.
