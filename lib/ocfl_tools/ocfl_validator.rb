@@ -129,8 +129,11 @@ module OcflTools
 
       # checksum mismatches; requires the checksum to be in both hashes, so.
       manifest_checksums.each do | file, digest |
-        if disk_checksums[file] != digest
-          error('verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
+        if disk_checksums.has_key?(file)
+          if disk_checksums[file] != digest
+            puts "I'm ADDING IT HERE"
+            error('verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
+          end
         end
       end
       return @my_results
