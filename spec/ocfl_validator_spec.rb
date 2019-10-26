@@ -1,4 +1,5 @@
 require 'ocfl-tools'
+require 'digest'
 
 describe OcflTools::OcflValidator do
 
@@ -40,7 +41,7 @@ describe OcflTools::OcflValidator do
         )
       end
 
-      it "checks the root inventory" do 
+      it "checks the root inventory" do
           expect(validate.verify_inventory).to match(
           {
             "errors"=>{},
@@ -57,6 +58,11 @@ describe OcflTools::OcflValidator do
               }
             }
         )
+      end
+
+      it "checks checksums from manifest" do
+        validate.verify_checksums
+
       end
   end
 
