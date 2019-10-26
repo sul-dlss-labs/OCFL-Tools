@@ -40,8 +40,8 @@ describe OcflTools::OcflValidator do
         )
       end
 
-      it "checks the root inventory" do
-          expect(validate.verify_inventory("#{object_root_dir}/inventory.json")).to match(
+      it "checks the root inventory" do 
+          expect(validate.verify_inventory).to match(
           {
             "errors"=>{},
             "warnings"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be SHA512."]},

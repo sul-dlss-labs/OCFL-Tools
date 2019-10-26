@@ -37,6 +37,11 @@ ocfl.add_file('my_content/a_third_file.txt', 'checksum_cccccccccccc', 3)
 # Output the complete inventory.json.
 puts ocfl.serialize
 
+# Check a directory for a valid OCFL object
+validate = OcflTools::OcflValidator.new(object_root_dir)
+puts validate.verify_structure
+puts validate.verify_inventory
+
 ```
 
 ## Implementation notes
