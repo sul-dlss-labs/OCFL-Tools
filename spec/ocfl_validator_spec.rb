@@ -38,8 +38,14 @@ describe OcflTools::OcflValidator do
 
       it "checks checksums from manifest" do
         validate.verify_checksums
-
       end
+
+      it "tries to validate only version 2 files against the inventory" do
+        expect(validate.verify_directory(2).results).to match(
+          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_checksums"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
+        )
+      end
+
   end
 
 
@@ -67,9 +73,34 @@ describe OcflTools::OcflValidator do
         expect(validate_c.results.all).to match(
           {"error"=>{"E111"=>{"verify_structure"=>["OCFL 3.1 Expected version directory v0002 missing from sequence [\"v0001\", \"v0003\", \"v0004\"] "]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}
         )
-
       end
+
+      it "tries to validate only version 2 files against the inventory" do
+        expect{validate_c.verify_directory(2).results}.to raise_error(RuntimeError)
+      end
+
   end
+
+  # Object_h has no inventory files in the version directories.
+  object_h =  File.expand_path('./spec/fixtures/validation/object_h')
+  validate_h = OcflTools::OcflValidator.new(object_h)
+
+  describe "Object H is compliant with warnings" do
+      it "is missing inventory files in version directories" do
+        validate_h.verify_structure
+        expect(validate_h.results.all).to match(
+          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]}}}
+        )
+      end
+
+      it "tries to validate only version 2 files against the inventory" do
+          expect(validate_h.verify_directory(2).results).to match(
+            {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_checksums"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
+          )
+      end
+
+  end
+
 
 
 end

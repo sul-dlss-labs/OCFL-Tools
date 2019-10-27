@@ -123,6 +123,16 @@ module OcflTools
       # Also, we are assuming that it's actually a well-enough formed version of inventory.json.
     end
 
+    def get_contentDirectory(directory)
+      result = IO.foreach("#{directory}/inventory.json").lazy.grep(/contentDirectory/).take(1).to_a #{ |a| puts "I got #{a}"}
+      if result.size < 1
+        return nil # File was found, but contentDirectory was not.
+      end
+      string = result[0]  # our result is an array with an singl element.
+      result_array = string.split('"') # and we need the 4th element.
+      result_array[3]
+    end
+
     # Do all the files and directories in the object_dir conform to spec?
     # Are there inventory.json files in each version directory? (warn if not in version dirs)
     # Deduce version dir naming convention by finding the v1 directory; apply that format to other dirs.
@@ -291,20 +301,74 @@ module OcflTools
 
     # We may also want to only verify the most recent directory, not the entire object.
     def verify_directory(version, digest=nil)
-      # Try to load the inventory.json in the version directory *first*.
-      # Only go for the root object directory if that fails.
-      # Why? Because if it exists, the inventory in the version directory is the canonical inventory for that version.
-      # ONLY checks that the files in this directory are present in the Manifest and (if digest is given)
-      # that their checksums match. And that the files in the Manifest for this verion directory exist on disk.
-      #
-      # Plan:
-      # 1. Load the inventory file in that version dir, if present.
-      #    If not present, load the root inventory file (and verify that version is in it;check @list_version_id)
-      # 2. Glob all files in given object_dir/version_dir/content_dir.
-      # 3. Copy, Flatten and flip inventory.manifest or fixity block. (we want filepaths as keys, digest as values)
-      # 4. Process the flipped manifest to get only files add/modifed in given version.
-      # 5. Now generate digests for the files found on disk.
-      # 6. Do a checksum compare (new Utils#method?).
+
+      # start by getting version format and directories.
+      if @version_format == nil
+        self.get_version_format
+      end
+
+      # result = OcflTools.config.version_format % version.to_i
+      version_name = @version_format % version.to_i
+      # Make sure this directory actually exists.
+      raise "Requested version directory doesn't exist!" unless Dir.exist?("#{@ocfl_object_root}/#{version_name}")
+
+      #OK, now we need an inventory.json to tell use what teh contentDirectory should be.
+      if File.exist?("#{ocfl_object_root}/#{version_name}/inventory.json")
+        my_content_dir = get_contentDirectory("#{ocfl_object_root}/#{version_name}")
+        if my_content_dir == nil
+          my_content_dir = 'content' # The OCFL spec default, if not overwritten my contentDirectory
+        end
+        # While we are here, load up the inventory.
+        my_inventory = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/#{version_name}/inventory.json")
+      end
+
+      if my_content_dir == nil # then we know there was no inventory.json in the version dir.
+        my_content_dir = get_contentDirectory("#{ocfl_object_root}")
+        if my_content_dir == nil # ...but it's not set in this one, either.
+          my_content_dir = 'content'
+        end # And again, take this oppo to load up the inventory.
+        my_inventory = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/inventory.json")
+      end
+
+      my_files_on_disk = []
+      # OK, now we can glob the version/content_dir directory for files!
+      Dir.chdir("#{@ocfl_object_root}/#{version_name}/#{my_content_dir}/")
+      Dir.glob('**/*').select do |file|
+         if File.file? file
+           my_files_on_disk << "#{@ocfl_object_root}/#{version_name}/#{my_content_dir}/#{file}"
+         end
+      end
+
+      # Now process my_inventory.manifest
+      # Flip and invert  it.
+      temp_checksums = OcflTools::Utils.deep_copy(my_inventory.manifest).invert
+
+      # Gives us array of files for key, checksum as value.
+      manifest_checksums = {}
+      temp_checksums.each do | my_array, my_digest |
+        # key is an array that might have multiple values in it; all files with same digest. Expand / flatten it.
+       my_array.each do | f |
+          manifest_checksums["#{@ocfl_object_root}/#{f}"] = my_digest
+        end
+      end
+
+      # Now we need to trim manifest_checksums to the stuff that only matches
+      # ocfl_object_root/version_string/content_dir
+      filtered_checksums = {}
+      manifest_checksums.each do | file, digest |
+        if file =~ /^#{ocfl_object_root}\/#{version_name}\/#{my_content_dir}/
+          filtered_checksums[file] = digest
+        end
+      end
+
+      # Now generate checksums for the files we found on disk, and Hash them.
+      disk_checksums = {}
+      my_files_on_disk.each do | file |
+        disk_checksums[file] = OcflTools::Utils.generate_file_digest(file, my_inventory.digestAlgorithm)
+      end
+
+      #Finally! Pass them to checksum checker.
+      @my_results = OcflTools::Utils.compare_hash_checksums(disk_checksums, filtered_checksums, @my_results)
     end
 
     # Different from verify_directory.
