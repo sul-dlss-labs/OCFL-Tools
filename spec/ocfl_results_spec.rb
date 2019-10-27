@@ -35,6 +35,8 @@ describe OcflTools::OcflResults do
       )
       expect(results.error_count).to equal 7
 
+      puts results.get_context('check_hamsters')
+
     end
   end
 

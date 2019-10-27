@@ -58,8 +58,8 @@ module OcflTools
 
       # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!
       if manifest_checksums == disk_checksums
-        my_results.ok('O111', 'verify_checksums', "#{@ocfl_object_root} All discovered files on disk are referenced in inventory manifest.")
-        my_results.ok('O111', 'verify_checksums', "#{@ocfl_object_root} All discovered files on disk match stored digest values.")
+        my_results.ok('O111', 'verify_checksums', "All discovered files on disk are referenced in inventory manifest.")
+        my_results.ok('O111', 'verify_checksums', "All discovered files on disk match stored digest values.")
         return my_results
       end
 
