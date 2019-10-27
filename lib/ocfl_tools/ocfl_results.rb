@@ -35,6 +35,10 @@ module OcflTools
       @my_results['ok']
     end
 
+    def get_context(context)
+      # Get all results for the given context. (e.g. 'show me all verify_checksum results')
+    end
+
     # @return [Integer] error_count of errors in results.
     def error_count
       my_count = 0

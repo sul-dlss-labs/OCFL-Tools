@@ -47,5 +47,55 @@ module OcflTools
       return checksum
     end
 
+    # @param [Hash] disk_checksums first hash of [ filepath => digest ] to compare.
+    # @param [Hash] manifest_checksums second hash of [ filepath => digest ] to compare.
+    # @param [OcflTools::OcflResults] results optional results instance to put results into.
+    def self.compare_hash_checksums(disk_checksums, manifest_checksums, results=nil)
+      if results == nil
+        my_results = OcflTools::OcflResults.new
+      end
+      raise "You need to give me a results instance!" unless my_results.is_a(OcflTools::OcflResults)
+
+      # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!
+      if manifest_checksums == disk_checksums
+        my_results.ok('O111', 'verify_checksums', "#{@ocfl_object_root} All discovered files on disk are referenced in inventory manifest.")
+        my_results.ok('O111', 'verify_checksums', "#{@ocfl_object_root} All discovered files on disk match stored digest values.")
+        return my_results
+      end
+
+      # If they are NOT the same, we have to increment thru the Hashes to work out what's up.
+      # It might be a file in the manifest that's not found on disk
+      # Or a file on disk that's not in the manifest.
+      # Or a file that is on disk and in the manifest, but the checksums don't match.
+
+      disk_files      = disk_checksums.keys
+      manifest_files  = manifest_checksums.keys
+
+      missing_from_manifest = disk_files - manifest_files
+      missing_from_disk     = manifest_files - disk_files
+
+      if missing_from_manifest.size > 0
+        missing_from_manifest.each do | missing |
+          my_results.error('E111', 'verify_checksums', "#{missing} found on disk but missing from inventory.json.")
+        end
+      end
+
+      if missing_from_disk.size > 0
+        missing_from_disk.each do | missing |
+          my_results.error('E111', 'verify_checksums', "#{missing} in manifest but not found on disk.")
+        end
+      end
+
+      # checksum mismatches; requires the file to be in both hashes, so.
+      manifest_checksums.each do | file, digest |
+        if disk_checksums.has_key?(file)
+          if disk_checksums[file] != digest
+            my_results.error('E111', 'verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
+          end
+        end
+      end
+      return my_results
+    end
+
   end
 end
