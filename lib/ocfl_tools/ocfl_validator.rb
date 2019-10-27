@@ -299,7 +299,9 @@ module OcflTools
       return @my_results
     end
 
-    # We may also want to only verify the most recent directory, not the entire object.
+    # We may also want to only verify a specific directory, not the entire object.
+    # For example, if we've just added a new version, we might want to just check those files
+    # and not the rest of the object (esp. if it has some very large version directories). 
     def verify_directory(version, digest=nil)
 
       # start by getting version format and directories.
