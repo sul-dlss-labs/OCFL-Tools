@@ -204,7 +204,7 @@ describe OcflTools::OcflInventory do
     it "serializes the thing" do
       # File.read("/path/to/file").should == “content”
       content = ocfl.serialize.to_s
-      file    = File.read("./spec/fixtures/inventory.json")
+      file    = File.read('./spec/fixtures/inventory.json')
       expect(file).to include(content)
     end
   end

@@ -29,8 +29,11 @@ describe OcflTools::OcflResults do
       results.error('E066', 'check_hamsters', "This is my life now.")
       results.error('E066', 'check_hamsters', "This is my life now.")
       results.error('E066', 'check_hamsters', "This is my life now.")
-    puts results.get_errors
-    puts results.error_count
+
+      expect(results.get_errors).to match(
+        {"E066"=>{"check_digests"=>["I took an arrow to the knee!", "I took another arrow to the knee!", "I took a 3rd! arrow to the knee!", "I quit. I'm off to join the city watch."], "check_hamsters"=>["Yup, hamsters", "Hamsters everywhere.", "This is my life now."]}}
+      )
+      expect(results.error_count).to equal 7
 
     end
   end
