@@ -42,7 +42,7 @@ describe OcflTools::OcflValidator do
 
       it "tries to validate only version 2 files against the inventory" do
         expect(validate.verify_directory(2).results).to match(
-          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_checksums"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
+          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_checksums"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."], "verify_directory v0002"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
         )
       end
 
@@ -95,7 +95,7 @@ describe OcflTools::OcflValidator do
 
       it "tries to validate only version 2 files against the inventory" do
           expect(validate_h.verify_directory(2).results).to match(
-            {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_checksums"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
+            {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_directory v0002"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
           )
       end
 

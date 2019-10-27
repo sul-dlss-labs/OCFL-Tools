@@ -50,17 +50,18 @@ module OcflTools
     # @param [Hash] disk_checksums first hash of [ filepath => digest ] to compare.
     # @param [Hash] manifest_checksums second hash of [ filepath => digest ] to compare.
     # @param [OcflTools::OcflResults] results optional results instance to put results into.
-    def self.compare_hash_checksums(disk_checksums, manifest_checksums, my_results=nil)
-      if my_results == nil
-        my_results = OcflTools::OcflResults.new
+    def self.compare_hash_checksums(disk_checksums:, manifest_checksums:, results: nil, context: 'verify_checksums')
+
+      if results == nil
+        results = OcflTools::OcflResults.new
       end
-      raise "You need to give me a results instance!" unless my_results.is_a?(OcflTools::OcflResults)
+      raise "You need to give me a results instance!" unless results.is_a?(OcflTools::OcflResults)
 
       # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!
       if manifest_checksums == disk_checksums
-        my_results.ok('O111', 'verify_checksums', "All discovered files on disk are referenced in inventory manifest.")
-        my_results.ok('O111', 'verify_checksums', "All discovered files on disk match stored digest values.")
-        return my_results
+        results.ok('O111', context, "All discovered files on disk are referenced in inventory manifest.")
+        results.ok('O111', context, "All discovered files on disk match stored digest values.")
+        return results
       end
 
       # If they are NOT the same, we have to increment thru the Hashes to work out what's up.
@@ -76,13 +77,13 @@ module OcflTools
 
       if missing_from_manifest.size > 0
         missing_from_manifest.each do | missing |
-          my_results.error('E111', 'verify_checksums', "#{missing} found on disk but missing from inventory.json.")
+          results.error('E111', context, "#{missing} found on disk but missing from inventory.json.")
         end
       end
 
       if missing_from_disk.size > 0
         missing_from_disk.each do | missing |
-          my_results.error('E111', 'verify_checksums', "#{missing} in manifest but not found on disk.")
+          results.error('E111', context, "#{missing} in manifest but not found on disk.")
         end
       end
 
@@ -90,11 +91,11 @@ module OcflTools
       manifest_checksums.each do | file, digest |
         if disk_checksums.has_key?(file)
           if disk_checksums[file] != digest
-            my_results.error('E111', 'verify_checksums', "#{file} digest in inventory does not match digest computed from disk")
+            results.error('E111', context, "#{file} digest in inventory does not match digest computed from disk")
           end
         end
       end
-      return my_results
+      return results
     end
 
   end
