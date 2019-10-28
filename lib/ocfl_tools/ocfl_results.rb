@@ -8,6 +8,9 @@ module OcflTools
       @my_results['warn']     = {}
       @my_results['info']     = {}
       @my_results['ok']       = {}
+
+      @my_contexts            = {}
+
     end
 
     def results
@@ -35,10 +38,46 @@ module OcflTools
       @my_results['ok']
     end
 
-    def get_context(context)
-      # Get all results for the given context. (e.g. 'show me all verify_checksum results')
-      # No easy way to get this without iterating over everything?
+    # Processes all of @my_results and creates a nested hash of
+    # context => level => code => [ descriptions ]
+    # Useful if you want to get all the info/error/warn/ok results for a specific context.
+    def get_contexts
+      @my_results.each do | level, codes | # levels are warn, info, ok, error
+        codes.each do | code, contexts |
+          contexts.each do | context, description |
+            #puts "got  : #{level} #{code} #{context} #{description}"
+            #puts "want : #{context} #{level} #{code} #{description}"
+            if @my_contexts.key?(context)
+              my_levels = @my_contexts[context]
+              if my_levels.key?(level)
+                my_codes = my_levels[level]
+                if my_codes.key?(code)
+                  # what should I do here? Nothing, apparently, as it's soft-copied already.
+                else
+                  my_codes[code] = description # new code for this level! Add it.
+                end
+              else
+                # if the context key already exists, but the level key
+                # does not, we can add everything beneath context in one go.
+                my_levels[level] = { code => description }
+              end
+            else
+              # If the context (the top level key) doesn't exist already,
+              # we can just slam everything in at once.
+              @my_contexts[context] = Hash.new
+              my_level = Hash.new
+              my_level[code] = description
+              @my_contexts[context] = { level => my_level }
+            end
+          end
+        end
+      end
+      return @my_contexts
+    end
 
+    # Get all results for a specific context (e.g. 'verify_checksums')
+    def get_context(my_context)
+      self.get_contexts[my_context]
     end
 
     # @return [Integer] error_count of errors in results.

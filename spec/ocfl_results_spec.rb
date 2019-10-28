@@ -30,12 +30,31 @@ describe OcflTools::OcflResults do
       results.error('E066', 'check_hamsters', "This is my life now.")
       results.error('E066', 'check_hamsters', "This is my life now.")
 
+      results.warn('W111', 'check_hamsters', "I think I see a hamster")
+      puts "GET RESULTS"
+      puts results.get_contexts
+      results.warn('W111', 'check_hamsters', "I think I see another hamster")
+      puts "GET RESULTS"
+      puts results.get_contexts
+      results.warn('W222', 'check_hamsters', "A different warning")
+      puts "GET RESULTS"
+      puts results.get_contexts
+      results.warn('W222', 'check_hamsters', "Another different warning")
+      puts "GET RESULTS"
+      puts results.get_contexts
+      results.warn('W111', 'check_hamsters', "whaaat")
+      results.warn('W111', 'check_hamsters', "whaaat")
+
+      results.info('I911', 'check_hamsters', "Thank you for subscribing to Hamster Facts")
+
       expect(results.get_errors).to match(
         {"E066"=>{"check_digests"=>["I took an arrow to the knee!", "I took another arrow to the knee!", "I took a 3rd! arrow to the knee!", "I quit. I'm off to join the city watch."], "check_hamsters"=>["Yup, hamsters", "Hamsters everywhere.", "This is my life now."]}}
       )
       expect(results.error_count).to equal 7
 
       puts results.get_context('check_hamsters')
+
+      #puts results.get_contexts
 
     end
   end
