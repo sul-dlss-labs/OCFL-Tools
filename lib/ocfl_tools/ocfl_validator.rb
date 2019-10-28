@@ -181,7 +181,7 @@ module OcflTools
 
       file_checks.each do | file |
         if object_root_files.include? file == false
-          @my_results.error('E111', 'verify_structure', "OCFL 3.1 Object root does not include required file #{file}")
+          @my_results.error('E102', 'verify_structure', "Object root does not include required file #{file}")
           error = true
         end
         # we found it, delete it and go to next.
@@ -190,7 +190,7 @@ module OcflTools
 
       # Array should be empty! If not, we have extraneous files in object root.
       if object_root_files.size != 0
-        @my_results.error('E111', 'verify_structure', "OCFL 3.1 Object root contains noncompliant files: #{object_root_files}")
+        @my_results.error('E101', 'verify_structure', "Object root contains noncompliant files: #{object_root_files}")
         error = true
       end
 
@@ -214,7 +214,7 @@ module OcflTools
 
       # Any content left in object_root_dirs are not compliant. Log them!
       if remaining_dirs.size > 0
-        @my_results.error('E111', 'verify_structure', "OCFL 3.1 Object root contains noncompliant directories: #{remaining_dirs}")
+        @my_results.error('E100', 'verify_structure', "Object root contains noncompliant directories: #{remaining_dirs}")
         error = true
       end
 
@@ -233,7 +233,7 @@ module OcflTools
         if version_directories.include? expected_directory
           # puts "I found expected directory #{expected_directory}"
         else
-          @my_results.error('E111', 'verify_structure', "OCFL 3.1 Expected version directory #{expected_directory} missing from sequence #{version_directories} ")
+          @my_results.error('E013', 'verify_structure', "Expected version directory #{expected_directory} missing from directory list #{version_directories} ")
           error = true
         end
       end
@@ -274,19 +274,19 @@ module OcflTools
         end
 
         if version_files.size > 0
-          @my_results.error('E111', 'verify_structure', "OCFL 3.1 non-compliant files #{version_files} in #{ver} directory")
+          @my_results.error('E011', 'verify_structure', "non-compliant files #{version_files} in #{ver} directory")
           error = true
         end
 
         if version_dirs.include? OcflTools.config.content_directory
           version_dirs.delete(OcflTools.config.content_directory)
           else
-          @my_results.error('E111', 'verify_structure', "OCFL 3.1 required content directory #{OcflTools.config.content_directory} not found in #{ver} directory")
+          @my_results.error('E012', 'verify_structure', "required content directory #{OcflTools.config.content_directory} not found in #{ver} directory")
           error = true
         end
 
         if version_dirs.size > 0
-          @my_results.error('E111', 'version_structure', "OCFL 3.1 noncompliant directories #{version_dirs} found in #{ver} directory")
+          @my_results.error('E010', 'version_structure', "noncompliant directories #{version_dirs} found in #{ver} directory")
           error = true
         end
 

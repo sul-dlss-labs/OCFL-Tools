@@ -57,8 +57,7 @@ describe OcflTools::OcflValidator do
       it "finds an additional directory 'v' in object root" do
         validate_b.verify_structure
         expect(validate_b.results.all).to match(
-          {"error"=>{"E111"=>{"verify_structure"=>["OCFL 3.1 Object root contains noncompliant directories: [\"v\"]"]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}
-        )
+{"error"=>{"E100"=>{"verify_structure"=>["Object root contains noncompliant directories: [\"v\"]"]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}        )
       end
   end
 
@@ -71,8 +70,7 @@ describe OcflTools::OcflValidator do
       it "is missing an expected version directory" do
         validate_c.verify_structure
         expect(validate_c.results.all).to match(
-          {"error"=>{"E111"=>{"verify_structure"=>["OCFL 3.1 Expected version directory v0002 missing from sequence [\"v0001\", \"v0003\", \"v0004\"] "]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}
-        )
+{"error"=>{"E013"=>{"verify_structure"=>["Expected version directory v0002 missing from directory list [\"v0001\", \"v0003\", \"v0004\"] "]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}        )
       end
 
       it "tries to validate only version 2 files against the inventory" do
