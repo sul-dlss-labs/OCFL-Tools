@@ -47,13 +47,18 @@ describe OcflTools::OcflResults do
 
       results.info('I911', 'check_hamsters', "Thank you for subscribing to Hamster Facts")
 
+        results.ok('O001', 'check_hamsters', "All hamsters present and accounted for.")
+
       expect(results.get_errors).to match(
         {"E066"=>{"check_digests"=>["I took an arrow to the knee!", "I took another arrow to the knee!", "I took a 3rd! arrow to the knee!", "I quit. I'm off to join the city watch."], "check_hamsters"=>["Yup, hamsters", "Hamsters everywhere.", "This is my life now."]}}
       )
       expect(results.error_count).to equal 7
 
-      puts results.get_context('check_hamsters')
-
+      # puts results.get_context('check_hamsters')
+      puts "results.get_contexts"
+      puts JSON.pretty_generate(results.get_contexts)
+      puts "Now all results:"
+      puts JSON.pretty_generate(results.results)
       #puts results.get_contexts
 
     end

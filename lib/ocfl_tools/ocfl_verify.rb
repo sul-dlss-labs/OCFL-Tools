@@ -37,18 +37,15 @@ module OcflTools
 
       case
         when @my_victim.id.length < 1
-          @my_results.error('E111', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
+          @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
           errors = true
         when @my_victim.id == nil
-          @my_results.error('E111', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
-          errors = true
-        when @my_victim.id.length > 128
-          @my_results.error('E111', 'check_id', 'OCFL 3.5.1 Object ID cannot exceed 128 characters.') # Not actually a thing.
+          @my_results.error('E202', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
           errors = true
       end
 
       if errors == nil
-        @my_results.ok('O111', 'check_id', 'OCFL 3.5.1 all checks passed without errors')
+        @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
       end
       return @my_results
     end
@@ -58,20 +55,21 @@ module OcflTools
     def check_head
       case @my_victim.head
         when nil
-          @my_results.error('E111', 'check_head', 'OCFL 3.5.1 @head cannot be nil')
+          @my_results.error('E212', 'check_head', 'OCFL 3.5.1 @head cannot be nil')
         when Integer
-          @my_results.error('E111', 'check_head', 'OCFL 3.5.1 @head cannot be an Integer')
+          @my_results.error('E213', 'check_head', 'OCFL 3.5.1 @head cannot be an Integer')
         when String
           version        = OcflTools::Utils.version_string_to_int(@my_victim.head)
           target_version = @my_victim.version_id_list.sort[-1]
           if version == target_version
-            @my_results.ok('O111', 'check_head', 'OCFL 3.5.1 @head matches highest version found')
+            @my_results.ok('O200', 'check_head', 'OCFL 3.5.1 Inventory Head is OK.')
+            @my_results.info('I200', 'check_head', "OCFL 3.5.1 Inventory Head version #{version} matches highest version in versions.")
           else
-            @my_results.error('E111', 'check_head', "OCFL 3.5.1 @head version #{version} does not match expected version #{target_version}")
+            @my_results.error('E214', 'check_head', "OCFL 3.5.1 Inventory Head version #{version} does not match expected version #{target_version}")
           end
         else
           # default case error
-          @my_results.error('E111', 'check_head', 'An unknown @head error has occured.')
+          @my_results.error('E911', 'check_head', 'An unknown error has occurred.')
       end
       return @my_results
     end
@@ -80,7 +78,7 @@ module OcflTools
     # @return [Hash] of results.
     def check_type
       # String should match spec URL? Shameless green.
-      @my_results.ok('O111', 'check_type', 'OCFL 3.5.1' )
+      @my_results.ok('O200', 'check_type', 'OCFL 3.5.1 Inventory Type is OK.' )
       return @my_results
     end
 
@@ -90,13 +88,16 @@ module OcflTools
       # must be one of sha256 or sha512
       case
       when @my_victim.digestAlgorithm.downcase == 'sha256'
-        @my_results.ok('O111', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
-        @my_results.warn('W111', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be SHA512.")
+        @my_results.ok('O200', 'check_digestAlgorithm', "OCFL 3.5.1 Inventory Algorithm is OK.")
+        @my_results.info('I220', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
+
+        @my_results.warn('W220', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be Sha512.")
 
       when @my_victim.digestAlgorithm.downcase == 'sha512'
-        @my_results.ok('O111', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
+        @my_results.ok('O200', 'check_digestAlgorithm', "OCFL 3.5.1 Inventory Algorithm is OK.")
+        @my_results.info('I220', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
       else
-        @my_results.error('E111', 'check_digestAlgorithm', "OCFL 3.5.1 Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use.")
+        @my_results.error('E223', 'check_digestAlgorithm', "OCFL 3.5.1 Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use.")
       end
       return @my_results
     end
@@ -110,15 +111,19 @@ module OcflTools
       errors = nil
       case
         when @my_victim.manifest == nil
-          @my_results.error('E111', 'check_manifest', 'OCFL 3.5.2 there MUST be a manifest block.')
+          @my_results.error('E250', 'check_manifest', 'OCFL 3.5.2 there MUST be a manifest block.')
           errors = true
         when @my_victim.manifest == {}
-          @my_results.error('E111', 'check_manifest', 'OCFL 3.5.2 manifest block cannot be empty.')
+          @my_results.error('E251', 'check_manifest', 'OCFL 3.5.2 manifest block cannot be empty.')
           errors = true
       end
 
+      # Should check that it's a hash of digests and filepaths somehow...?
+      # Get digest Algo type, use that to get key length.
+      # check all keys in manifest to make sure they're all that length.
+
       if errors == nil
-         @my_results.ok('O111', 'check_manifest', 'OCFL 3.5.2 object contains valid manifest.')
+         @my_results.ok('O200', 'check_manifest', 'OCFL 3.5.2 Inventory Manifest syntax is OK.')
        end
 
       return @my_results # shameless green
@@ -135,10 +140,10 @@ module OcflTools
       version_check = nil
       case
         when version_count != highest_version
-          @my_results.error('E111', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, but highest version is #{highest_version}")
+          @my_results.error('E014', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, but highest version is #{highest_version}")
           version_check = true
         when version_count == highest_version
-          @my_results.ok('O111', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, highest version is #{highest_version}")
+          @my_results.ok('I200', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, highest version is #{highest_version}")
       end
       # should be contiguous version numbers starting at 1.
       count       = 0
@@ -146,7 +151,7 @@ module OcflTools
         # (count - 1) is a proxy for the index in @my_victim.version_id_list.sort
         count += 1
         if count != my_versions[count-1]
-          @my_results.error('E111', 'check_versions', "OCFL 3.5.3 Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}.")
+          @my_results.error('E015', 'check_versions', "OCFL 3.5.3 Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}.")
           version_check = true
           else
           #
@@ -159,13 +164,13 @@ module OcflTools
       @my_victim.versions.each do | version, hash |
         ["created", "message", "user", "state"].each do | key |
           if hash.key?(key) == false
-            @my_results.error('E111', 'check_versions', "OCFL 3.5.3.1 version #{version} is missing #{key} block.")
+            @my_results.error('E016', 'check_versions', "OCFL 3.5.3.1 version #{version} is missing #{key} block.")
             version_check = true
           end
         end
       end
       if version_check == nil
-        @my_results.ok('O111', 'check_versions', 'OCFL 3.5.3.1 version structure valid.')
+        @my_results.ok('O200', 'check_versions', 'OCFL 3.5.3.1 version syntax is OK.')
       end
       return @my_results
     end
@@ -195,20 +200,20 @@ module OcflTools
 
       # First check; there should be the same number of entries on both sides.
       if unique_checksums.length != @my_victim.manifest.length
-        @my_results.error('E111', 'crosscheck_digests', "OCFL 3.5.3.1 Digests missing! #{unique_checksums.length} digests in versions vs. #{@my_victim.manifest.length} digests in manifest.")
+        @my_results.error('E050', 'crosscheck_digests', "OCFL 3.5.3.1 Digests missing! #{unique_checksums.length} digests in versions vs. #{@my_victim.manifest.length} digests in manifest.")
         errors = true
       end
 
       # Second check; each entry in unique_checksums should have a match in @manifest.
       unique_checksums.each do | checksum |
         if @my_victim.manifest.member?(checksum) == false
-          @my_results.error('E111', 'crosscheck_digests', "OCFL 3.5.3.1 Checksum #{checksum} not found in manifest!")
+          @my_results.error('E051', 'crosscheck_digests', "OCFL 3.5.3.1 Checksum #{checksum} not found in manifest!")
           errors = true
         end
       end
 
       if errors == nil
-        @my_results.ok('O111', 'crosscheck_digests', "OCFL 3.5.3.1 All digests successfully crosschecked.")
+        @my_results.ok('O200', 'crosscheck_digests', "OCFL 3.5.3.1 Digests are OK.")
       end
       return @my_results
     end
