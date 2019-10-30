@@ -50,7 +50,7 @@ module OcflTools
     # @param [Hash] disk_checksums first hash of [ filepath => digest ] to compare.
     # @param [Hash] manifest_checksums second hash of [ filepath => digest ] to compare.
     # @param [OcflTools::OcflResults] results optional results instance to put results into.
-    def self.compare_hash_checksums(disk_checksums:, manifest_checksums:, results: nil, context: 'verify_checksums')
+    def self.compare_hash_checksums(disk_checksums:, inventory_checksums:, results: nil, context: 'verify_checksums')
 
       if results == nil
         results = OcflTools::OcflResults.new
@@ -58,8 +58,8 @@ module OcflTools
       raise "You need to give me a results instance!" unless results.is_a?(OcflTools::OcflResults)
 
       # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!
-      if manifest_checksums == disk_checksums
-        results.ok('O111', context, "All discovered files on disk are referenced in inventory manifest.")
+      if inventory_checksums == disk_checksums
+        results.ok('O111', context, "All discovered files on disk are referenced in inventory.")
         results.ok('O111', context, "All discovered files on disk match stored digest values.")
         return results
       end
@@ -70,25 +70,25 @@ module OcflTools
       # Or a file that is on disk and in the manifest, but the checksums don't match.
 
       disk_files      = disk_checksums.keys
-      manifest_files  = manifest_checksums.keys
+      inventory_files  = inventory_checksums.keys
 
-      missing_from_manifest = disk_files - manifest_files
-      missing_from_disk     = manifest_files - disk_files
+      missing_from_inventory = disk_files - inventory_files
+      missing_from_disk      = inventory_files - disk_files
 
-      if missing_from_manifest.size > 0
-        missing_from_manifest.each do | missing |
+      if missing_from_inventory.size > 0
+        missing_from_inventory.each do | missing |
           results.error('E111', context, "#{missing} found on disk but missing from inventory.json.")
         end
       end
 
       if missing_from_disk.size > 0
         missing_from_disk.each do | missing |
-          results.error('E111', context, "#{missing} in manifest but not found on disk.")
+          results.error('E111', context, "#{missing} in inventory but not found on disk.")
         end
       end
 
       # checksum mismatches; requires the file to be in both hashes, so.
-      manifest_checksums.each do | file, digest |
+      inventory_checksums.each do | file, digest |
         if disk_checksums.has_key?(file)
           if disk_checksums[file] != digest
             results.error('E111', context, "#{file} digest in inventory does not match digest computed from disk")

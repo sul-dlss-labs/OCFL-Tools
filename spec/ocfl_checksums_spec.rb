@@ -15,7 +15,7 @@ describe OcflTools::OcflValidator do
 
     it "checks checksums from manifest" do
       expect(validate_a.verify_checksums.all).to match(
-        {"error"=>{}, "warn"=>{}, "info"=>{}, "ok"=>{"O111"=>{"verify_checksums"=>["All discovered files on disk are referenced in inventory manifest.", "All discovered files on disk match stored digest values."]}}}
+        {"error"=>{}, "warn"=>{}, "info"=>{}, "ok"=>{"O111"=>{"verify_checksums"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."]}}}
       )
     end
   end
@@ -26,7 +26,7 @@ describe OcflTools::OcflValidator do
   describe "object e is missing a file on disk" do
     it "checks checksums from manifest" do
       expect(validate_e.verify_checksums.all).to match(
-        {"error"=>{"E111"=>{"verify_checksums"=>["#{local_path}/spec/fixtures/validation/object_e/v0003/data/my_content/dickens.txt in manifest but not found on disk."]}}, "warn"=>{}, "info"=>{}, "ok"=>{}}
+        {"error"=>{"E111"=>{"verify_checksums"=>["#{local_path}/spec/fixtures/validation/object_e/v0003/data/my_content/dickens.txt in inventory but not found on disk."]}}, "warn"=>{}, "info"=>{}, "ok"=>{}}
       )
     end
   end
