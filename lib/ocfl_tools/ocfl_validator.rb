@@ -27,6 +27,7 @@ module OcflTools
 
     # @return [OcflTools::OcflResults] results of validation results.
     def results
+      OcflTools::Utils.copy_results(@verify.results, @my_results) unless @verify == nil
       @my_results
     end
 
@@ -40,44 +41,64 @@ module OcflTools
       self.verify_structure
       self.verify_inventory # returns a diff. results object; merge it?
       self.verify_checksums
-      results = [ @my_results, @verify.my_results ]
+      self.results # this copies verify.results into our main results object, if it exists.
     end
 
     def verify_fixity(inventory_file, digest='md5')
       # Gets the appropriate fixity block, calls verify_directory?
     end
 
-    def verify_manifest(inventory_file="default_value")
-      # If inventory_file not set, verify as @head vs all files in all version directories.
-      # If inventory is set, verify as verify_version for that inventory file (v1 thru N)
-      # Gets the appropriate manifest from inventory, calls verify_directory?
+    # Given an inventory file, do the files mentioned in the manifest exist on disk?
+    # This is a basic file existence cross-check.
+    def verify_manifest(inventory_file="#{@ocfl_object_root}/inventory.json")
+      @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
+      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
+      files_in_manifest  = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root).keys
+      # we only need the files (keys), not the digests here.
+      if files_on_disk == files_in_manifest
+        @my_results.ok('O111', 'verify_manifest', "All discovered files on disk are referenced in inventory.")
+        @my_results.ok('O111', 'verify_manifest', "All discovered files on disk match stored digest values.")
+        return @my_results
+      end
+
+      missing_from_disk     = files_in_manifest - files_on_disk
+      missing_from_manifest = files_on_disk - files_in_manifest
+
+      if missing_from_manifest.size > 0
+        missing_from_manifest.each do | missing |
+          @my_results.error('E111', 'verify_manifest', "#{missing} found on disk but missing from inventory.json.")
+        end
+      end
+
+      if missing_from_disk.size > 0
+        missing_from_disk.each do | missing |
+          @my_results.error('E111', 'verify_manifest', "#{missing} in inventory but not found on disk.")
+        end
+      end
+      return @my_results
     end
 
     # The default checksum test assumes you want to test all likely files on disk against
     # whatever version of the inventory.json (hopefully the latest!) is in the root directory.
     # Otherwise, if you give it a version 3 inventory, it'll check v1...v3 directories on disk
     # against the inventory's manifest, but won't check >v4.
+    # @return [OcflTools::OcflResults] results
     def verify_checksums(inventory_file="#{@ocfl_object_root}/inventory.json")
       # validate inventory.json checksum against inventory.json.<sha256|sha512>
       # validate files in manifest against physical copies on disk.
       # cross_check digestss.
       # Report out via @my_results.
       @inventory          = OcflTools::OcflInventory.new.from_file(inventory_file)
-
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
       # Otherwise, use the value of inventory.digestAlgorithm
-
       files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
-
       # Now generate checksums for the files we found on disk, and Hash them.
       disk_checksums     = OcflTools::Utils::Files.create_digests(files_on_disk, @inventory.digestAlgorithm)
-
       # Get an equivalent hash by manipulating the inventory.manifest hash.
       manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root)
-
-      @my_results        = OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: manifest_checksums, results: @my_results)
-
+      # Returns OcflTools::OcflResults object; either new or the one passed in with new content.
+      OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: manifest_checksums, results: @my_results)
     end
 
     # Do all the files and directories in the object_dir conform to spec?

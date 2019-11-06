@@ -26,7 +26,6 @@ module OcflTools
     end
 
     def get_warnings
-      # return warnings only
       @my_results['warn']
     end
 

@@ -4,8 +4,9 @@ require 'digest'
 describe OcflTools::OcflValidator do
 
   # resolve our path to test fixtures to a full system path
-  object_root_dir =  File.expand_path('./spec/fixtures/validation/object_a')
-  validate = OcflTools::OcflValidator.new(object_root_dir)
+  object_a =  File.expand_path('./spec/fixtures/validation/object_a')
+  #puts "Object a is at: #{object_a}"
+  validate = OcflTools::OcflValidator.new(object_a)
   OcflTools.config.content_directory = 'data'
 
   describe ".new" do
@@ -48,9 +49,9 @@ describe OcflTools::OcflValidator do
       end
   end
 
-
   # object_b has a directory called 'v' in it
   object_b =  File.expand_path('./spec/fixtures/validation/object_b')
+  #puts "Object b is at: #{object_b}"
   validate_b = OcflTools::OcflValidator.new(object_b)
 
   describe "Object B is not compliant" do
@@ -64,13 +65,14 @@ describe OcflTools::OcflValidator do
 
   # Object_c has version dirs 1, 3 and 4, but not 2.
   object_c =  File.expand_path('./spec/fixtures/validation/object_c')
+  #puts "Object c is at: #{object_c}"
   validate_c = OcflTools::OcflValidator.new(object_c)
 
   describe "Object C is not compliant" do
       it "is missing an expected version directory" do
         validate_c.verify_structure
         expect(validate_c.results.all).to match(
-{"error"=>{"E013"=>{"verify_structure"=>["Expected version directory v0002 missing from directory list [\"v0001\", \"v0003\", \"v0004\"] "]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}        )
+          {"error"=>{"E013"=>{"verify_structure"=>["Expected version directory v0002 missing from directory list [\"v0001\", \"v0003\", \"v0004\"] "]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}        )
       end
 
       it "tries to validate only version 2 files against the inventory" do
@@ -81,6 +83,7 @@ describe OcflTools::OcflValidator do
 
   # Object_h has no inventory files in the version directories.
   object_h =  File.expand_path('./spec/fixtures/validation/object_h')
+  #puts "Object h is at: #{object_h}"
   validate_h = OcflTools::OcflValidator.new(object_h)
 
   describe "Object H is compliant with warnings" do
@@ -97,6 +100,29 @@ describe OcflTools::OcflValidator do
           )
       end
 
+  end
+
+  # Back to A!
+  object_a =  File.expand_path('./spec/fixtures/validation/object_a')
+  #puts "Object a is at: #{object_a}"
+  validate_a = OcflTools::OcflValidator.new(object_a)
+  OcflTools.config.content_directory = 'data'
+
+  describe "check results" do
+  #puts  validate.verify_inventory.results
+  puts "This is verify structure:"
+  puts validate_a.verify_structure.results
+  puts "This is verify inventory:"
+  puts validate_a.verify_inventory.results
+  puts "This is a combined results:"
+  puts validate_a.validate_ocfl_object_root.results
+  puts "This is a validate_a.results.warn_count : #{validate_a.results.warn_count}"
+  puts "This is a validate_a.results.error_count: #{validate_a.results.error_count}"
+  puts "This is a validate_a.results.info_count : #{validate_a.results.info_count}"
+  puts "This is a validate_a.results.ok_count   : #{validate_a.results.ok_count}"
+
+  puts validate_a.verify_manifest
+  puts validate_a.validate_ocfl_object_root.results
   end
 
 
