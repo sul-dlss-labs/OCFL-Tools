@@ -283,10 +283,7 @@ module OcflTools
 
     # Is the inventory file valid?
     # @return [OcflTools::OcflResults] of verification results.
-    def verify_inventory(inventory_file=nil)
-      if inventory_file == nil
-        inventory_file = "#{@ocfl_object_root}/inventory.json"
-      end
+    def verify_inventory(inventory_file="#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
       inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
       OcflTools::OcflVerify.new(inventory).check_all
