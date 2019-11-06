@@ -15,12 +15,6 @@ describe OcflTools::OcflValidator do
     end
   end
 
-  describe "version_format" do
-      it "returns the correct version format" do
-        validate.get_version_format
-        expect(validate.version_format).to match("v%04d")
-      end
-  end
 
   describe "well-formed object A" do
       it "verifies the structure" do
@@ -46,6 +40,12 @@ describe OcflTools::OcflValidator do
         )
       end
 
+  end
+
+  describe "version_format" do
+      it "returns the correct version format" do
+        expect(validate.version_format).to match("v%04d")
+      end
   end
 
 

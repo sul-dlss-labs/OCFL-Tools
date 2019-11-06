@@ -114,12 +114,24 @@ module OcflTools
         return_hash
       end
 
+      # Given a hash of digest => [ Filepaths ], invert and expand, then prepend a string to all filepaths.
+      def self.invert_and_expand_and_prepend(digest_hash, prepend_string)
+        raise "This only works on Hashes, buck-o" unless digest_hash.is_a?(Hash)
+        return_hash = {}
+        filepath_hash = OcflTools::Utils::Files.invert_and_expand(digest_hash)
+        filepath_hash.each do | file, digest |
+          filepaths = OcflTools::Utils::Files.expand_filepaths(file, prepend_string)
+          return_hash[filepaths[0]] = digest
+        end
+        return_hash
+      end
+
       # Given an array of files and a digestAlgorithm, create digests and return results in a [Hash]
       def self.create_digests(files, digestAlgorithm)
         my_digests = {}
         array = Array(files) # make sure it's an array, so we can handle single files as well.
         array.each do | file |
-          my_digests[file] = OcflObject::Utils.generate_file_digest(file, digestAlgorithm)
+          my_digests[file] = OcflTools::Utils.generate_file_digest(file, digestAlgorithm)
         end
         my_digests
       end

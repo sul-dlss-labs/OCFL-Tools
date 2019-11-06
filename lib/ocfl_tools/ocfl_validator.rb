@@ -34,25 +34,6 @@ module OcflTools
       self.verify_checksums
     end
 
-    def get_version_directories
-      object_root_dirs = []
-      Dir.chdir(@ocfl_object_root)
-      Dir.glob('*').select do |file|
-         if File.directory? file
-           object_root_dirs << file
-         end
-      end
-      version_directories = [] # we need this for later.
-
-      # Find all directories with names that match version_format.
-      object_root_dirs.each  do |i|
-        if i =~ /[^"{@version_format}"$]/
-          version_directories << i
-        end
-      end
-      return version_directories
-    end
-
     def verify_fixity(inventory_file, digest='md5')
       # Gets the appropriate fixity block, calls verify_directory?
     end
@@ -73,7 +54,7 @@ module OcflTools
 
       inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
       # We're checking all files, so just get the manifest.
-      version_directories = self.get_version_directories
+      version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
 
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
@@ -115,31 +96,6 @@ module OcflTools
 
     end
 
-    # Given a full directory path, parse the top of inventory.json for the OCFL digestAlgorithm value.
-    # Why not just use OcflTools.config.digest_algorithm? Because we may not know, when given a random
-    # directory, what the digest_algorithm is meant to be. It might not be the site-wide setting. Heck,
-    # there may not even *be* a site. So we do need to try and get it from an inventory.json in the object dir.
-    def get_digestAlgorithm(directory)
-      # Using IO.foreach and lazy.grep to minimize cost of checking large inventory.json files.
-      result = IO.foreach("#{directory}/inventory.json").lazy.grep(/digestAlgorithm/).take(1).to_a #{ |a| puts "I got #{a}"}
-      # [ " "digestAlgorithm": "sha256"," ] is my return value. It's not great.
-      string = result[0]  # our result is an array with an singl element.
-      result_array = string.split('"') # and we need the 4th element.
-      result_array[3]
-      # DO SOMETHING if file is not found;
-      # Also, we are assuming that it's actually a well-enough formed version of inventory.json.
-    end
-
-    def get_contentDirectory(directory)
-      result = IO.foreach("#{directory}/inventory.json").lazy.grep(/contentDirectory/).take(1).to_a #{ |a| puts "I got #{a}"}
-      if result.size < 1
-        return nil # File was found, but contentDirectory was not.
-      end
-      string = result[0]  # our result is an array with an singl element.
-      result_array = string.split('"') # and we need the 4th element.
-      result_array[3]
-    end
-
     # Do all the files and directories in the object_dir conform to spec?
     # Are there inventory.json files in each version directory? (warn if not in version dirs)
     # Deduce version dir naming convention by finding the v1 directory; apply that format to other dirs.
@@ -149,7 +105,8 @@ module OcflTools
 
       begin
         if @version_format == nil
-          self.get_version_format
+          @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
+          @my_results.ok('O111', 'version_format', "OCFL conforming first version directory found.")
         end
       rescue
         @my_results.error('E111', 'version_format', "OCFL unable to determine version format by inspection of directories.")
@@ -176,15 +133,13 @@ module OcflTools
       # CHECK for required files.
       # We have to check the top of inventory.json to get the appropriate digest algo.
       # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
-      file_checks = []
-      file_checks << "inventory.json"
+      file_checks = [ 'inventory.json', '0=ocfl_object_1.0']
 
+      # What digest should the inventory.json sidecar be using? Ask inventory.json.
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-        json_digest = self.get_digestAlgorithm(@ocfl_object_root)
+        json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
         file_checks << "inventory.json.#{json_digest}"
       end
-
-      file_checks << "0=ocfl_object_1.0"
 
       file_checks.each do | file |
         if object_root_files.include? file == false
@@ -208,14 +163,7 @@ module OcflTools
         object_root_dirs.delete('logs')
       end
 
-      version_directories = [] # we need this for later.
-
-      # Find all directories with names that match version_format.
-      object_root_dirs.each  do |i|
-        if i =~ /[^"{@version_format}"$]/
-          version_directories << i
-        end
-      end
+      version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
 
       remaining_dirs = object_root_dirs - version_directories
 
@@ -227,7 +175,6 @@ module OcflTools
 
       # Now process the version directories we *did* find.
       # Must be a continuous sequence, starting at v1.
-      version_directories.sort!
       version_dir_count = version_directories.size
       count = 0
 
@@ -264,7 +211,7 @@ module OcflTools
         # only two files here, but only warn if they're not present.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-          json_digest = self.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}")
+          json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
           file_checks << "inventory.json"
           file_checks << "inventory.json.#{json_digest}"
         else
@@ -313,7 +260,7 @@ module OcflTools
 
       # start by getting version format and directories.
       if @version_format == nil
-        self.get_version_format
+        @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
       end
 
       # result = OcflTools.config.version_format % version.to_i
@@ -323,43 +270,19 @@ module OcflTools
 
       #OK, now we need an inventory.json to tell use what teh contentDirectory should be.
       if File.exist?("#{ocfl_object_root}/#{version_name}/inventory.json")
-        my_content_dir = get_contentDirectory("#{ocfl_object_root}/#{version_name}")
-        if my_content_dir == nil
-          my_content_dir = 'content' # The OCFL spec default, if not overwritten my contentDirectory
-        end
-        # While we are here, load up the inventory.
-        my_inventory = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/#{version_name}/inventory.json")
+        my_content_dir = OcflTools::Utils::Inventory.get_contentDirectory("#{ocfl_object_root}/#{version_name}/inventory.json")
+        my_inventory   = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/#{version_name}/inventory.json")
+      else
+        my_content_dir = OcflTools::Utils::Inventory.get_contentDirectory("#{ocfl_object_root}/inventory.json")
+        my_inventory   = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/inventory.json")
       end
 
-      if my_content_dir == nil # then we know there was no inventory.json in the version dir.
-        my_content_dir = get_contentDirectory("#{ocfl_object_root}")
-        if my_content_dir == nil # ...but it's not set in this one, either.
-          my_content_dir = 'content'
-        end # And again, take this oppo to load up the inventory.
-        my_inventory = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/inventory.json")
-      end
-
-      my_files_on_disk = []
-      # OK, now we can glob the version/content_dir directory for files!
-      Dir.chdir("#{@ocfl_object_root}/#{version_name}/#{my_content_dir}/")
-      Dir.glob('**/*').select do |file|
-         if File.file? file
-           my_files_on_disk << "#{@ocfl_object_root}/#{version_name}/#{my_content_dir}/#{file}"
-         end
-      end
+      # Get a list of fully-resolvable files for this version directory from disk.
+      my_files_on_disk = OcflTools::Utils::Files.get_version_dir_files(@ocfl_object_root, version)
 
       # Now process my_inventory.manifest
       # Flip and invert  it.
-      temp_checksums = OcflTools::Utils.deep_copy(my_inventory.manifest).invert
-
-      # Gives us array of files for key, checksum as value.
-      manifest_checksums = {}
-      temp_checksums.each do | my_array, my_digest |
-        # key is an array that might have multiple values in it; all files with same digest. Expand / flatten it.
-       my_array.each do | f |
-          manifest_checksums["#{@ocfl_object_root}/#{f}"] = my_digest
-        end
-      end
+      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(my_inventory.manifest, @ocfl_object_root )
 
       # Now we need to trim manifest_checksums to the stuff that only matches
       # ocfl_object_root/version_string/content_dir
@@ -371,10 +294,7 @@ module OcflTools
       end
 
       # Now generate checksums for the files we found on disk, and Hash them.
-      disk_checksums = {}
-      my_files_on_disk.each do | file |
-        disk_checksums[file] = OcflTools::Utils.generate_file_digest(file, my_inventory.digestAlgorithm)
-      end
+      disk_checksums = OcflTools::Utils::Files.create_digests(my_files_on_disk, my_inventory.digestAlgorithm)
 
       #Finally! Pass them to checksum checker.
       @my_results = OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: filtered_checksums, results: @my_results, context: "verify_directory #{version_name}")
@@ -402,38 +322,6 @@ module OcflTools
     # This is an existence check, not a checksum verification.
     def verify_files
       # Calls verify_directory for each version?
-    end
-
-    # find the first directory and deduce the version format. set @version_format appropriately.
-    def get_version_format
-      # Get all directories starting with 'v', sort them.
-      # Take the top of the sort. Count the number of 0s found.
-      # Raises errors if it can't find an appropriate version 1 directory.
-      version_dirs = []
-      Dir.chdir(@ocfl_object_root)
-      Dir.glob('v*').select do |file|
-         if File.directory? file
-           version_dirs << file
-         end
-      end
-      version_dirs.sort!
-      # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage edge case we'll deal with later.
-      if version_dirs.include? 'v'
-        version_dirs.delete('v')
-      end
-
-      first_version = version_dirs[0]   # the first element should be the first version directory.
-      first_version.slice!(0,1)         # cut the leading 'v' from the string.
-      case
-      when first_version.length == 1    # A length of 1 for the first version implies 'v1'
-          raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
-          @version_format = "v%d"
-        else
-          # Make sure this is Integer 1.
-          raise "#{@ocfl_object_root}/#{first_version} is not the first version directory!" unless first_version.to_i == 1
-          @version_format = "v%0#{first_version.length}d"
-          @my_results.ok('O111', 'version_format', "OCFL conforming first version directory found.")
-      end
     end
 
   end

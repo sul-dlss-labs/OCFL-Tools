@@ -51,6 +51,10 @@ module OcflTools
       def self.get_fixity_digests(inventory_file, digestAlgorithm)
       end
 
+      # Given an inventory & version, return files from that version.
+
+      # Given an inventory and 2 versions, return all files for range of versions.
+
     end
   end
 end
