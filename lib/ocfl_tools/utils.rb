@@ -50,11 +50,8 @@ module OcflTools
     # @param [Hash] disk_checksums first hash of [ filepath => digest ] to compare.
     # @param [Hash] manifest_checksums second hash of [ filepath => digest ] to compare.
     # @param [OcflTools::OcflResults] results optional results instance to put results into.
-    def self.compare_hash_checksums(disk_checksums:, inventory_checksums:, results: nil, context: 'verify_checksums')
+    def self.compare_hash_checksums(disk_checksums:, inventory_checksums:, results: OcflTools::OcflResults.new, context: 'verify_checksums')
 
-      if results == nil
-        results = OcflTools::OcflResults.new
-      end
       raise "You need to give me a results instance!" unless results.is_a?(OcflTools::OcflResults)
 
       # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!

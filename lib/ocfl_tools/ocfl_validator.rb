@@ -8,12 +8,21 @@ module OcflTools
     # @return [String] version_format the discovered version format of the object, found by inspecting version directory names.
     attr_reader :version_format
 
+    # @return [OcflTools::OcflInventory] inventory an OcflInventory object, if created.
+    attr_reader :inventory
+
+    # @return [OcflTools::OcflVerify] verify an OcflVerify object, if created.
+    attr_reader :verify
+
     # @param [Pathname] ocfl_storage_root is a the full local filesystem path to the object directory.
     def initialize(ocfl_object_root)
       @digest           = nil
       @version_format   = nil
       @ocfl_object_root = ocfl_object_root
       @my_results       = OcflTools::OcflResults.new
+      @inventory        = nil # some checks create an inventory object; have a way to get at that.
+      @verify           = nil # some checks create a verify object; have a way to get at that.
+      # Should check that ocfl_object_root is a readable directory.
     end
 
     # @return [OcflTools::OcflResults] results of validation results.
@@ -31,6 +40,7 @@ module OcflTools
       self.verify_structure
       self.verify_inventory # returns a diff. results object; merge it?
       self.verify_checksums
+      results = [ @my_results, @verify.my_results ]
     end
 
     def verify_fixity(inventory_file, digest='md5')
@@ -52,19 +62,19 @@ module OcflTools
       # validate files in manifest against physical copies on disk.
       # cross_check digestss.
       # Report out via @my_results.
-      inventory          = OcflTools::OcflInventory.new.from_file(inventory_file)
+      @inventory          = OcflTools::OcflInventory.new.from_file(inventory_file)
 
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
       # Otherwise, use the value of inventory.digestAlgorithm
 
-      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, inventory.version_id_list.min, inventory.version_id_list.max)
+      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
 
       # Now generate checksums for the files we found on disk, and Hash them.
-      disk_checksums     = OcflTools::Utils::Files.create_digests(files_on_disk, inventory.digestAlgorithm)
+      disk_checksums     = OcflTools::Utils::Files.create_digests(files_on_disk, @inventory.digestAlgorithm)
 
       # Get an equivalent hash by manipulating the inventory.manifest hash.
-      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(inventory.manifest, @ocfl_object_root)
+      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root)
 
       @my_results        = OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: manifest_checksums, results: @my_results)
 
@@ -189,7 +199,7 @@ module OcflTools
           file_checks << "inventory.json"
           file_checks << "inventory.json.#{json_digest}"
         else
-          file_checks << "inventory.json"
+          file_checks << "inventory.json" # We look for it, even though we know we won't find it, so we can log the omission.
         end
 
         file_checks.each do | file |
@@ -206,6 +216,7 @@ module OcflTools
           error = true
         end
 
+        # TODO: Is there a better way to get the content_directory? We should be getting this from a local inventory file?
         if version_dirs.include? OcflTools.config.content_directory
           version_dirs.delete(OcflTools.config.content_directory)
           else
@@ -245,10 +256,10 @@ module OcflTools
       #OK, now we need an inventory.json to tell use what teh contentDirectory should be.
       if File.exist?("#{ocfl_object_root}/#{version_name}/inventory.json")
         my_content_dir = OcflTools::Utils::Inventory.get_contentDirectory("#{ocfl_object_root}/#{version_name}/inventory.json")
-        my_inventory   = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/#{version_name}/inventory.json")
+        @inventory     = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/#{version_name}/inventory.json")
       else
         my_content_dir = OcflTools::Utils::Inventory.get_contentDirectory("#{ocfl_object_root}/inventory.json")
-        my_inventory   = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/inventory.json")
+        @inventory     = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/inventory.json")
       end
 
       # Get a list of fully-resolvable files for this version directory from disk.
@@ -256,7 +267,7 @@ module OcflTools
 
       # Now process my_inventory.manifest
       # Flip and invert  it.
-      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(my_inventory.manifest, @ocfl_object_root )
+      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root )
 
       # Now we need to trim manifest_checksums to the stuff that only matches
       # ocfl_object_root/version_string/content_dir
@@ -268,7 +279,7 @@ module OcflTools
       end
 
       # Now generate checksums for the files we found on disk, and Hash them.
-      disk_checksums = OcflTools::Utils::Files.create_digests(my_files_on_disk, my_inventory.digestAlgorithm)
+      disk_checksums = OcflTools::Utils::Files.create_digests(my_files_on_disk, @inventory.digestAlgorithm)
 
       #Finally! Pass them to checksum checker.
       @my_results = OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: filtered_checksums, results: @my_results, context: "verify_directory #{version_name}")
@@ -285,8 +296,9 @@ module OcflTools
     # @return [OcflTools::OcflResults] of verification results.
     def verify_inventory(inventory_file="#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
-      inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-      OcflTools::OcflVerify.new(inventory).check_all
+      @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+      @verify    = OcflTools::OcflVerify.new(@inventory)
+      @verify.check_all # creates & returns @results object from OcflVerify
     end
 
     # Do all the files mentioned in the inventory(s) exist on disk?

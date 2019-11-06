@@ -2,7 +2,7 @@ module OcflTools
   # Class to verify that an OcflObject is composed of valid data and structures.
   class OcflVerify < OcflTools::OcflObject
 
-    # @return [Hash] my_results is a hash of check results.
+    # @return [OcflTools::OcflResults] my_results is a OcflResults object of check results.
     attr_reader :my_results
 
     # Create a new OCFLVerify object, using an OcflTools::Ocflobject as source.
@@ -14,6 +14,10 @@ module OcflTools
       # check .respond_to? first for all expected methods.
       self.preflight
 
+    end
+
+    def results
+      @my_results
     end
 
     # Performs all OCFLVerify checks on the given object and reports results.
