@@ -16,13 +16,13 @@ module OcflTools
 
     # @param [Pathname] ocfl_storage_root is a the full local filesystem path to the object directory.
     def initialize(ocfl_object_root)
+      raise "#{ocfl_object_root} is not a directory!" unless File.directory? ocfl_object_root
       @digest           = nil
       @version_format   = nil
       @ocfl_object_root = ocfl_object_root
       @my_results       = OcflTools::OcflResults.new
       @inventory        = nil # some checks create an inventory object; have a way to get at that.
       @verify           = nil # some checks create a verify object; have a way to get at that.
-      # Should check that ocfl_object_root is a readable directory.
     end
 
     # @return [OcflTools::OcflResults] results of validation results.
