@@ -212,8 +212,15 @@ module OcflTools
         end
       end
 
-      # TODO: The last version directory on disk should equal the head value in the root inventory file.
-      # version_directories[-1] should == expected_head if set.
+      # CHECK ROOT INVENTORY HEAD vs HIGHEST VERSION DIRECTORY
+      if expect_head != nil # No point checking this is we've already failed the root inventory.json check.
+        if version_directories[-1] != expect_head
+          @my_results.error('E111', 'verify_structure', "Inventory file expects a highest version of #{expect_head} but directory list contains #{version_directories} ")
+          error = true
+        else
+          # could log an 'expected head version found' here.
+        end
+      end
 
       # CHECK VERSION DIRECTORY CONTENTS
       # For the version_directories we *do* have, are they cool?
