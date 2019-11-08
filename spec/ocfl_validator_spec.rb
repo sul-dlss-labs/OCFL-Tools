@@ -58,7 +58,7 @@ describe OcflTools::OcflValidator do
       it "finds an additional directory 'v' in object root" do
         validate_b.verify_structure
         expect(validate_b.results.all).to match(
-{"error"=>{"E100"=>{"verify_structure"=>["Object root contains noncompliant directories: [\"v\"]"]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}        )
+          {"error"=>{"E100"=>{"verify_structure"=>["Object root contains noncompliant directories: [\"v\"]"]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."]}}}        )
       end
   end
 

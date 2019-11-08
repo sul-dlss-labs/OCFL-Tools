@@ -48,6 +48,7 @@ ocfl.to_file('/directory/to/put/inventory/in/')
 validate = OcflTools::OcflValidator.new(object_root_dir)
 puts validate.verify_structure.results  # checks the physical layout of the object root
 puts validate.verify_inventory.results  # checks the syntax and internal consistency of the inventory.json
+puts validate.verify_manifest.results   # cross-checks existence of files on disk against the manifest in the inventory.json
 puts validate.verify_checksums.results  # checks digests in the inventory against files discovered in the object root.
 
 ```
@@ -76,3 +77,5 @@ you know if they are all there and have matching checksums.
 
 `OcflVerify` will take an OCFL object and will let you know if it's syntactically correct
 and internally consistent.
+
+`OcflResults` is a class to capture logging events for a specific OcflValidator or OcflVerify instance.

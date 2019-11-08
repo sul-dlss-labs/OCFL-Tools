@@ -135,14 +135,22 @@ module OcflTools
          end
       end
 
-      # CHECK for required files.
+      # CHECK ROOT DIR for required files.
       # We have to check the top of inventory.json to get the appropriate digest algo.
       # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
       file_checks = [ 'inventory.json', '0=ocfl_object_1.0']
 
       # What digest should the inventory.json sidecar be using? Ask inventory.json.
+      # Also, what's the highest version we should find here?
+      # And what should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-        json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
+        json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
+        contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
+        expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
+        file_checks << "inventory.json.#{json_digest}"
+      else
+        contentDirectory = 'content'
+        json_digest      = 'sha512'
         file_checks << "inventory.json.#{json_digest}"
       end
 
@@ -162,10 +170,16 @@ module OcflTools
       end
 
       # CHECK DIRECTORIES
-      # logs are optional.
+      # logs dir is optional.
       if object_root_dirs.include? 'logs'
         @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional logs directory found in object root.")
         object_root_dirs.delete('logs')
+      end
+
+      # extensions dir is optional.
+      if object_root_dirs.include? 'extensions'
+        @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional extensions directory found in object root.")
+        object_root_dirs.delete('extensions')
       end
 
       version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
@@ -178,7 +192,7 @@ module OcflTools
         error = true
       end
 
-      # Now process the version directories we *did* find.
+      # CHECK VERSION DIRECTORIES
       # Must be a continuous sequence, starting at v1.
       version_dir_count = version_directories.size
       count = 0
@@ -188,18 +202,22 @@ module OcflTools
         expected_directory = @version_format % count
         # just check to see if it's in the array version_directories.
         # We're not *SURE* that what we have is a continous sequence starting at 1;
-        # just that they're valid version dir names and they exist.
+        # just that they're valid version dir names, sorted in ascending order, and they exist.
         if version_directories.include? expected_directory
-          # puts "I found expected directory #{expected_directory}"
+          # Could verbose log this here.
+          # @my_results.ok('O200', 'verify_sructure', "Expected version directory #{expected_directory} found.")
         else
           @my_results.error('E013', 'verify_structure', "Expected version directory #{expected_directory} missing from directory list #{version_directories} ")
           error = true
         end
       end
 
+      # TODO: The last version directory on disk should equal the head value in the root inventory file.
+      # version_directories[-1] should == expected_head if set.
+
+      # CHECK VERSION DIRECTORY CONTENTS
       # For the version_directories we *do* have, are they cool?
       version_directories.each do | ver |
-        # Do a file and dir glob.
         version_dirs  = []
         version_files = []
 
@@ -219,6 +237,11 @@ module OcflTools
           json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
           file_checks << "inventory.json"
           file_checks << "inventory.json.#{json_digest}"
+          # Get contentDirectory, check if it matches root's contentDir and alert if not.
+          versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
+          if versionContentDirectory != contentDirectory
+            @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
+          end
         else
           file_checks << "inventory.json" # We look for it, even though we know we won't find it, so we can log the omission.
         end
@@ -237,11 +260,10 @@ module OcflTools
           error = true
         end
 
-        # TODO: Is there a better way to get the content_directory? We should be getting this from a local inventory file?
-        if version_dirs.include? OcflTools.config.content_directory
-          version_dirs.delete(OcflTools.config.content_directory)
+        if version_dirs.include? contentDirectory
+          version_dirs.delete(contentDirectory)
           else
-          @my_results.error('E012', 'verify_structure', "required content directory #{OcflTools.config.content_directory} not found in #{ver} directory")
+          @my_results.error('E012', 'verify_structure', "required content directory #{contentDirectory} not found in #{ver} directory")
           error = true
         end
 
@@ -272,9 +294,9 @@ module OcflTools
       # result = OcflTools.config.version_format % version.to_i
       version_name = @version_format % version.to_i
       # Make sure this directory actually exists.
-      raise "Requested version directory doesn't exist!" unless Dir.exist?("#{@ocfl_object_root}/#{version_name}")
+      raise "Requested version directory doesn't exist!" unless File.directory?("#{@ocfl_object_root}/#{version_name}")
 
-      #OK, now we need an inventory.json to tell use what teh contentDirectory should be.
+      #OK, now we need an inventory.json to tell use what the contentDirectory should be.
       if File.exist?("#{ocfl_object_root}/#{version_name}/inventory.json")
         my_content_dir = OcflTools::Utils::Inventory.get_contentDirectory("#{ocfl_object_root}/#{version_name}/inventory.json")
         @inventory     = OcflTools::OcflInventory.new.from_file("#{ocfl_object_root}/#{version_name}/inventory.json")
@@ -288,7 +310,7 @@ module OcflTools
 
       # Now process my_inventory.manifest
       # Flip and invert  it.
-      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root )
+      manifest_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root)
 
       # Now we need to trim manifest_checksums to the stuff that only matches
       # ocfl_object_root/version_string/content_dir
@@ -303,14 +325,20 @@ module OcflTools
       disk_checksums = OcflTools::Utils::Files.create_digests(my_files_on_disk, @inventory.digestAlgorithm)
 
       #Finally! Pass them to checksum checker.
-      @my_results = OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: filtered_checksums, results: @my_results, context: "verify_directory #{version_name}")
+      OcflTools::Utils.compare_hash_checksums(disk_checksums: disk_checksums, inventory_checksums: filtered_checksums, results: @my_results, context: "verify_directory #{version_name}")
     end
 
     # Different from verify_directory.
     # Verify_version is *all* versions of the object, up to and including this one.
     # Verify_directory is *just* check the files and checksums of inside that particular version directory.
     # Verify_version(@head) is the canonical way to check an entire object?
-    def verify_version(version)
+    def verify_version(version, digest=nil)
+      # calls verify_directory for 1...n versions.
+      count = 1       # start at the bottom
+      until count > version # count to the top
+        self.verify_directory(count, digest=nil)
+        count += 1
+      end
     end
 
     # Is the inventory file valid?
@@ -322,10 +350,14 @@ module OcflTools
       @verify.check_all # creates & returns @results object from OcflVerify
     end
 
-    # Do all the files mentioned in the inventory(s) exist on disk?
+    # Do all the files on disk exist in the most recent manifest?
     # This is an existence check, not a checksum verification.
+    # It creates a list of files from all version directories on disk
+    # and tries to match them to entries in the most recent inventory.json.
     def verify_files
-      # Calls verify_directory for each version?
+      # Get most recent inventory; get version directories and contentDir
+      # Get all files in all contentDir
+      # Check against manifest block.
     end
 
   end
