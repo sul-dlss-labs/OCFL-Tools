@@ -47,6 +47,9 @@ describe OcflTools::OcflResults do
 
       results.info('I911', 'check_hamsters', "Thank you for subscribing to Hamster Facts")
 
+      results.info('I911', 'check_location', "Welcome to Noneshall Pass")
+      results.info('I911', 'check_location', "Gateway to Noneshall Valley!")
+
         results.ok('O001', 'check_hamsters', "All hamsters present and accounted for.")
 
       expect(results.get_errors).to match(
@@ -64,8 +67,8 @@ describe OcflTools::OcflResults do
       # Check that we can combine data from different results objects.
       new_results = OcflTools::OcflResults.new
       new_results.warn('W111', 'check_hamsters', "This is strangely unpleasant")
-      puts results.add_results(new_results).results
-
+      results.add_results(new_results).results
+      puts JSON.pretty_generate(results.results)
     end
   end
 
