@@ -241,6 +241,7 @@ module OcflTools
           versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
           if versionContentDirectory != contentDirectory
             @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
+            error = true
           end
         else
           file_checks << "inventory.json" # We look for it, even though we know we won't find it, so we can log the omission.
