@@ -47,52 +47,6 @@ module OcflTools
       return checksum
     end
 
-    # Given two Results objects, copy entries from source into destination.
-    def self.copy_results(source, destination)
-      # get_ok code, context, [desc]
-      # SAN check?
-      # descriptions is an array.
-      source.get_ok.each do | code, contexts |
-        contexts.each do | context, descriptions |
-#          puts "OK: #{code} #{context} #{description[0]}"
-          descriptions.each do | description |
-            destination.ok(code, context, description)
-          end
-        end
-      end
-
-      source.get_info.each do | code, contexts |
-        contexts.each do | context, descriptions |
-#          puts "INFO: #{code} #{context} #{description[0]}"
-#          destination.info(code, context, descriptions[0])
-          descriptions.each do | description |
-            destination.info(code, context, description)
-          end
-        end
-      end
-
-      source.get_warnings.each do | code, contexts |
-        contexts.each do | context, descriptions |
-#          puts "WARN: #{code} #{context} #{description[0]}"
-#          destination.warn(code, context, descriptions[0])
-          descriptions.each do | description |
-            destination.warn(code, context, description)
-          end
-        end
-      end
-
-      source.get_errors.each do | code, contexts |
-        contexts.each do | context, descriptions |
-#          puts "ERROR: #{code} #{context} #{description[0]}"
-#          destination.error(code, context, descriptions[0])
-          descriptions.each do | description |
-            destination.error(code, context, description)
-          end 
-        end
-      end
-
-    end
-
     # @param [Hash] disk_checksums first hash of [ filepath => digest ] to compare.
     # @param [Hash] manifest_checksums second hash of [ filepath => digest ] to compare.
     # @param [OcflTools::OcflResults] results optional results instance to put results into.

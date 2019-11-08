@@ -184,5 +184,46 @@ module OcflTools
       end
     end
 
+    # Given another Results object, copy that object's results into this one.
+    # @param [OcflTools::OcflResults] source Results instance to copy into this instance.
+    # @returns [OcflTools::OcflResults] self
+    def add_results(source)
+      raise "#{source} is not a Results object!" unless source.is_a?(OcflTools::OcflResults)
+      source.get_ok.each do | code, contexts |
+        contexts.each do | context, descriptions |
+          descriptions.each do | description |
+            self.ok(code, context, description)
+          end
+        end
+      end
+
+      source.get_info.each do | code, contexts |
+        contexts.each do | context, descriptions |
+          descriptions.each do | description |
+            self.info(code, context, description)
+          end
+        end
+      end
+
+      source.get_warnings.each do | code, contexts |
+        contexts.each do | context, descriptions |
+          descriptions.each do | description |
+            self.warn(code, context, description)
+          end
+        end
+      end
+
+      source.get_errors.each do | code, contexts |
+        contexts.each do | context, descriptions |
+          descriptions.each do | description |
+            self.error(code, context, description)
+          end
+        end
+      end
+      return self
+    end
+
+
+
   end
 end

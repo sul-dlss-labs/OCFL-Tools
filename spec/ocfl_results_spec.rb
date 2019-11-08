@@ -61,6 +61,11 @@ describe OcflTools::OcflResults do
       puts JSON.pretty_generate(results.results)
       #puts results.get_contexts
 
+      # Check that we can combine data from different results objects.
+      new_results = OcflTools::OcflResults.new
+      new_results.warn('W111', 'check_hamsters', "This is strangely unpleasant")
+      puts results.add_results(new_results).results
+
     end
   end
 

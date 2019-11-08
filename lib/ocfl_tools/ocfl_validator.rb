@@ -27,7 +27,7 @@ module OcflTools
 
     # @return [OcflTools::OcflResults] results of validation results.
     def results
-      OcflTools::Utils.copy_results(@verify.results, @my_results) unless @verify == nil
+      @my_results.add_results(@verify.results) unless @verify == nil
       @my_results
     end
 
@@ -254,8 +254,8 @@ module OcflTools
             error = true
           end
         else
-          file_checks << "inventory.json" # We look for it, even though we know we won't find it, so we can log the omission.
-          file_checks << "inventory.json.sha512" # We look for it, even though we know we won't find it, so we can log the omission.
+          file_checks << "inventory.json"         # We look for it, even though we know we won't find it, so we can log the omission.
+          file_checks << "inventory.json.sha512"  # We look for it, even though we know we won't find it, so we can log the omission.
         end
 
         # Warn if optional inventory & digest not found in version directory.
