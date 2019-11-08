@@ -247,7 +247,7 @@ module OcflTools
           json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
           file_checks << "inventory.json"
           file_checks << "inventory.json.#{json_digest}"
-          # Get contentDirectory, check if it matches root's contentDir and alert if not.
+          # Error if the contentDirectory value in the version's inventory does not match the value given in the object root's inventory file.
           versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
           if versionContentDirectory != contentDirectory
             @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
@@ -255,6 +255,7 @@ module OcflTools
           end
         else
           file_checks << "inventory.json" # We look for it, even though we know we won't find it, so we can log the omission.
+          file_checks << "inventory.json.sha512" # We look for it, even though we know we won't find it, so we can log the omission.
         end
 
         # Warn if optional inventory & digest not found in version directory.

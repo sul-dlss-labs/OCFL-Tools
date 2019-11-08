@@ -90,13 +90,14 @@ describe OcflTools::OcflValidator do
       it "is missing inventory files in version directories" do
         validate_h.verify_structure
         expect(validate_h.results.all).to match(
-          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]}}}
+          {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json.sha512 missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json.sha512 missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory", "OCFL 3.1 optional inventory.json.sha512 missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]}}}
         )
       end
 
       it "tries to validate only version 2 files against the inventory" do
+          puts validate_h.verify_directory(2).results
           expect(validate_h.verify_directory(2).results).to match(
-            {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_directory v0002"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."]}}}
+            {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root.", "OCFL 3.1 optional inventory.json missing from v0001 directory", "OCFL 3.1 optional inventory.json.sha512 missing from v0001 directory", "OCFL 3.1 optional inventory.json missing from v0002 directory", "OCFL 3.1 optional inventory.json.sha512 missing from v0002 directory", "OCFL 3.1 optional inventory.json missing from v0003 directory", "OCFL 3.1 optional inventory.json.sha512 missing from v0003 directory"]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_directory v0002"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."]}}}
           )
       end
 
@@ -109,11 +110,11 @@ describe OcflTools::OcflValidator do
   OcflTools.config.content_directory = 'data'
 
   describe "check results" do
-  #puts  validate.verify_inventory.results
-  puts "This is verify structure:"
-  puts validate_a.verify_structure.results
-  puts "This is verify inventory:"
-  puts validate_a.verify_inventory.results
+#   validate_a.verify_inventory.results
+#  puts "This is verify structure:"
+#  puts validate_a.verify_structure.results
+#  puts "This is verify inventory:"
+#  puts validate_a.verify_inventory.results
   puts "This is a combined results:"
   puts validate_a.validate_ocfl_object_root.results
   puts "This is a validate_a.results.warn_count : #{validate_a.results.warn_count}"
@@ -121,8 +122,8 @@ describe OcflTools::OcflValidator do
   puts "This is a validate_a.results.info_count : #{validate_a.results.info_count}"
   puts "This is a validate_a.results.ok_count   : #{validate_a.results.ok_count}"
 
-  puts validate_a.verify_manifest
-  puts validate_a.validate_ocfl_object_root.results
+  #puts validate_a.verify_manifest
+  #puts validate_a.validate_ocfl_object_root.results
   end
 
 
