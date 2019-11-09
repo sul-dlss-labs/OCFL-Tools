@@ -95,6 +95,7 @@ describe OcflTools::OcflObject do
       expect(ocfl.head).to eql('v0003')
     end
 
+
   end
 
   describe "test file operations" do
@@ -195,6 +196,15 @@ describe OcflTools::OcflObject do
         missing_state_hash[key] = ''
       end
       expect{ocfl.set_version(7, missing_state_hash)}.to raise_error(RuntimeError)
+    end
+  end
+
+  describe "basic fixity block" do
+    it "adds some fixity values" do
+      ocfl.update_fixity('checksum_aaaaaaaaaaaa', 'md5', 'md5md5md5')
+      ocfl.update_fixity('checksum_bbbbbbbbbbbb', 'md5', 'moar_md5_checksum')
+      ocfl.update_fixity('checksum_aaaaaaaaaaaa', 'sha1', 'this_is_a_sha1_checksum')
+      ocfl.update_fixity('checksum_bbbbbbbbbbbb', 'sha1', 'another_sha1_checksum')
     end
   end
 
