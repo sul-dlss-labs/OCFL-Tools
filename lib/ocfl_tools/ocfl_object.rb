@@ -213,6 +213,36 @@ module OcflTools
       return @manifest[digest]
     end
 
+    # Given a digest, fixityAlgo and fixityDigest, add to fixity block.
+    # @param [String] digest value from Manifest for the file we are adding fixity info for.
+    # @param [String] fixityAlgorithm a valid fixity algorithm for this site (see Config.fixity_algorithms).
+    # @param [String] fixityDigest the digest value of the file, using the provided fixityAlgorithm.
+    # @return [Hash] fixity block for the object.
+    def update_fixity(digest, fixityAlgorithm, fixityDigest)
+      # Does Digest exist in @manifest? Fail if not.
+      # Doe fixityAlgorithm exist as a key in @fixity? Add if not.
+      raise "Unable to find digest #{digest} in manifest!" unless @manifest.has_key?(digest) == true
+      filepaths = @manifest[digest]
+
+      # Construct the nested hash, if necessary.
+      if @fixity.has_key?(fixityAlgorithm) != true
+        @fixity[fixityAlgorithm] = {}
+      end
+
+      if @fixity[fixityAlgorithm].has_key?(fixityDigest) != true
+        @fixity[fixityAlgorithm][fixityDigest] = []
+      end
+
+      # Append the filepath to the appropriate fixityDigest, if it's not already there.
+      filepaths.each do | filepath |
+        if @fixity[fixityAlgorithm][fixityDigest].include?(filepath)
+          next   # don't add it if the filepath is already in the array.
+        end
+        @fixity[fixityAlgorithm][fixityDigest] = ( @fixity[fixityAlgorithm][fixityDigest] << filepath )
+      end
+      @fixity
+    end
+
     # Given a filepath, deletes that file from the given version. If multiple copies of the same file
     # (as identified by a common digest) exist in the version, only the requested filepath is removed.
     # @param [Pathname] file logical path of file to be deleted.
