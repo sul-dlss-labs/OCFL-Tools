@@ -3,6 +3,8 @@ require 'digest'
 
 describe OcflTools::OcflValidator do
 
+  basedir = Dir.pwd
+
   # resolve our path to test fixtures to a full system path
   object_a =  File.expand_path('./spec/fixtures/validation/object_a')
   #puts "Object a is at: #{object_a}"
@@ -123,6 +125,47 @@ describe OcflTools::OcflValidator do
 
   #puts validate_a.verify_manifest
   #puts validate_a.validate_ocfl_object_root.results
+  end
+
+  # Fixity!
+  # Object i has a fixity block.
+  # Dracula has md5
+  # Poe has md5 and sha1
+  # Dickens has no fixity value.
+  object_i =  "#{basedir}/spec/fixtures/validation/object_i"
+  validate_i = OcflTools::OcflValidator.new(object_i)
+
+  describe "check fixity" do
+    it "checks fixity using default md5" do
+        expect(validate_i.verify_fixity.results).to match(
+        {"error"=>{}, "warn"=>{"W111"=>{"verify_fixity md5"=>["1 files in manifest are missing from fixity block."]}}, "info"=>{}, "ok"=>{"O111"=>{"verify_fixity md5"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."]}}}
+      )
+    end
+
+   validate_i_sha1 = OcflTools::OcflValidator.new(object_i)
+
+    it "checks fixity using sha1" do
+        expect(validate_i_sha1.verify_fixity(digest: 'sha1').results).to match(
+          {"error"=>{}, "warn"=>{"W111"=>{"verify_fixity sha1"=>["2 files in manifest are missing from fixity block."]}}, "info"=>{}, "ok"=>{"O111"=>{"verify_fixity sha1"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."]}}}
+        )
+    end
+
+    validate_i_bad = OcflTools::OcflValidator.new(object_i)
+
+    it "tries to check using an algorithm not present in the fixity block" do
+      expect(validate_i_bad.verify_fixity(digest: 'sha999').results).to match(
+        {"error"=>{"E111"=>{"verify_fixity sha999"=>["Requested algorithm sha999 not found in fixity block."]}}, "warn"=>{}, "info"=>{}, "ok"=>{}}
+      )
+    end
+
+    validate_i_all = OcflTools::OcflValidator.new(object_i)
+
+    it "validates the entire object using the fixity block instead of manifest checksums" do
+      expect(validate_i_all.validate_ocfl_object_root(digest:'md5').results).to match(
+        {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."], "verify_fixity md5"=>["1 files in manifest are missing from fixity block."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I111"=>{"check_fixity"=>["Fixity block is present."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_fixity md5"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."], "check_fixity"=>["Fixity block is present and contains valid algorithms."]}, "O200"=>{"check_id"=>["OCFL 3.5.1 Inventory ID is OK."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}, "I200"=>{"check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3"]}}}
+    )
+    end
+
   end
 
 

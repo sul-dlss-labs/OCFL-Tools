@@ -36,16 +36,67 @@ module OcflTools
     # Will fail if digest is not found in manifest or a fixity block.
     # This validates all versions and all files in the object_root.
     # If you want to just check a specific version, call {verify_directory}.
-    def validate_ocfl_object_root(digest=@digest)
+    def validate_ocfl_object_root(digest: nil)
       # calls verify_structure, verify_inventory and verify_checksums.
       self.verify_structure
       self.verify_inventory # returns a diff. results object; merge it?
-      self.verify_checksums
+      if digest != nil
+        self.verify_fixity(digest: digest)
+        else
+        self.verify_checksums
+      end
       self.results # this copies verify.results into our main results object, if it exists.
     end
 
-    def verify_fixity(inventory_file, digest='md5')
-      # Gets the appropriate fixity block, calls verify_directory?
+    # Performs checksum validation of files listed in the inventory's fixity block.
+    def verify_fixity(inventory_file:"#{@ocfl_object_root}/inventory.json", digest:'md5')
+      # Gets the appropriate fixity block, calls compare_hash_checksums
+      @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
+      # Since fixity blocks are not required to be complete, we just validate what's there.
+      # So get the fixity block, flip it, expand it, checksum it against the same files on disk.
+
+      unless @inventory.fixity.size > 0
+        @my_results.error('E111', "verify_fixity #{digest}", "No fixity block in #{inventory_file}!")
+        return @my_results
+      end
+
+      unless @inventory.fixity.has_key?(digest)
+        @my_results.error('E111', "verify_fixity #{digest}", "Requested algorithm #{digest} not found in fixity block.")
+        return @my_results
+      end
+
+      fixity_checksums = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.fixity[digest], @ocfl_object_root)
+
+      my_files_on_disk = fixity_checksums.keys
+
+      # Warn if there are less files in requested fixity block than in manifest.
+      if @inventory.manifest.keys.size > fixity_checksums.keys.size
+        missing_files = @inventory.manifest.keys.size - fixity_checksums.keys.size
+        @my_results.warn(
+          'W111',
+          "verify_fixity #{digest}",
+          "#{missing_files} files in manifest are missing from fixity block."
+        )
+      end
+
+      # check these files exist on disk before trying to make checksums!
+      my_files_on_disk.each do | file |
+        unless File.file? file
+          @my_results.error('E111', "verify_fixity #{digest}", "File #{file} in fixity block not found on disk.")
+          my_files_on_disk.delete(file)
+        end
+      end
+
+      disk_checksums = OcflTools::Utils::Files.create_digests(my_files_on_disk, digest)
+
+      # And now we can compare values!
+      OcflTools::Utils.compare_hash_checksums(
+        disk_checksums:      disk_checksums,
+        inventory_checksums: fixity_checksums,
+        results:  @my_results,
+        context: "verify_fixity #{digest}"
+      )
+
     end
 
     # Given an inventory file, do the files mentioned in the manifest exist on disk?

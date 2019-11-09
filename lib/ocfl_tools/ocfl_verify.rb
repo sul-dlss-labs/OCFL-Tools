@@ -27,6 +27,7 @@ module OcflTools
       self.check_id
       self.check_type
       self.check_head
+      self.check_fixity
       self.check_manifest
       self.check_versions
       self.crosscheck_digests
@@ -183,6 +184,22 @@ module OcflTools
     # @return [Hash] of results.
     def check_fixity
       # If present, should have at least 1 sub-key and 1 value.
+      errors = nil
+      if @my_victim.fixity.size > 0
+        @my_results.info('I111', 'check_fixity', "Fixity block is present.")
+      end
+      # Set OcflTools.config.fixity_algorithms for what to look for.
+      @my_victim.fixity.each do | algorithm, digest |
+        if !OcflTools.config.fixity_algorithms.include? algorithm
+          @my_results.error('E111', 'check_fixity', "Fixity block contains unsupported algorithm #{algorithm}")
+          errors = true
+        end
+      end
+
+      if errors == nil && @my_victim.fixity.size > 0
+        @my_results.ok('O111', 'check_fixity', "Fixity block is present and contains valid algorithms.")
+      end
+
       return @my_results # shameless green
     end
 
