@@ -45,10 +45,16 @@ module OcflTools
 
       # Given an inventory file, return [Array] of the digest types found in the fixity block, or nil.
       def self.get_fixity_digestAlgorithms(inventory_file)
+        inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+        return nil unless inventory.fixity.size > 0
+        inventory.fixity.keys
       end
 
       # Given an inventory file and a digestAlgorithm, return [Hash] of digests and [ filepaths ], or nil.
       def self.get_fixity_digests(inventory_file, digestAlgorithm)
+        inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+        return nil unless inventory.fixity.size > 0
+        inventory.fixity[digestAlgorithm]
       end
 
       # Given an inventory & version, return files from that version.
