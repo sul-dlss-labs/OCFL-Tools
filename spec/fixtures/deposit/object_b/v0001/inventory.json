@@ -1,0 +1,27 @@
+{
+  "id": "bb123cd4567",
+  "head": "v0001",
+  "type": "https://ocfl.io/1.0/spec/#inventory",
+  "digestAlgorithm": "sha256",
+  "contentDirectory": "data",
+  "manifest": {
+    "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+      "v0001/data/my_content/dracula.txt"
+    ]
+  },
+  "versions": {
+    "v0001": {
+      "created": "",
+      "message": "",
+      "user": {
+        "name": "",
+        "address": ""
+      },
+      "state": {
+        "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+          "my_content/dracula.txt"
+        ]
+      }
+    }
+  }
+}
