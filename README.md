@@ -15,13 +15,16 @@ is a fact of life.
 require 'ocfl-tools'
 
 # Set our version string format; 5 characters, 4 of which are 0-padded integers.
-OcflTools.config.version_format     = "v%04d"     # default value
+OcflTools.config.version_format     = "v%04d"     # default value, yields 'v0001' etc.
 
 # Set our digest algorithm
 OcflTools.config.digest_algorithm   = 'sha256'    # default is sha512
 
 # set our object's content directory name
 OcflTools.config.content_directory  = 'data'     # default is 'content'
+
+# Optionally, set allowed digest algorithms for the fixity block.
+OcflTools.config.fixity_algorithms  = ['md5', 'sha1', 'sha256'] # default values
 
 ocfl = OcflTools::OcflInventory.new
 
@@ -37,6 +40,20 @@ ocfl.add_file('my_content/a_second_file.txt', 'checksum_bbbbbbbbbbbb', 2)
 
 # Create a third version and add a 3rd file.
 ocfl.add_file('my_content/a_third_file.txt', 'checksum_cccccccccccc', 3)
+
+# Make a (deduplicated) copy of that 3rd file in version 3.
+ocfl.copy_file('my_content/a_third_file.txt', 'my_content/a_copy_of_third_file.txt', 3)
+# or if you don't realize that file is already present, this also works:
+ocfl.add_file('my_content/a_copy_of_third_file.txt', 'checksum_cccccccccccc', 3)
+
+# Delete a file from version 3.
+ocfl.delete_file('my_content/this_is_a_file.txt', 3)
+
+# Create a 4th version where the bitstream of an existing file is modified:
+ocfl.update_file('my_content/a_second_file.txt', 'checksum_dddddddddddd', 4)
+
+# Still in version 4, move a file to a new location (functionally an add-then-delete).
+ocfl.move_file('my_content/a_copy_of_third_file.txt', 'another_dir/a_copy_of_third_file.txt', 4)
 
 # Add (optional) additional fixity checksums to an existing file:
 ocfl.update_fixity('checksum_cccccccccccc', 'md5', 'an_md5_checksum_for_this_file')
