@@ -145,7 +145,7 @@ module OcflTools
       # because get_state will create version hash if it doesn't already exist.
       my_state = self.get_state(version)
 
-      raise "Can't edit prior versions! Only version #{version} can be modified now." unless version == self.version_id_list.sort[-1]
+      raise "Can't edit prior versions! Only version #{self.version_id_list.sort[-1]} can be modified now." unless version == self.version_id_list.sort[-1]
 
       if my_state.key?(digest)
         # file's already in this version. Add file to existing digest.
