@@ -25,55 +25,6 @@ module OcflTools
       san_check
     end
 
-    private
-    def san_check
-      # If deposit directory contains inventory.json:
-      #  - it's an update to an existing object. Do existing_object_san_check.
-      # If deposit directory !contain inventory.json:
-      #  - it's a new object. Do a new_object_san_check.
-
-      if File.file? "#{@deposit_dir}/inventory.json"
-        puts "I've found an inventory file!"
-        existing_object_san_check
-      else
-        puts "No inventory found!"
-        new_object_san_check
-      end
-
-    end
-
-    def new_object_san_check
-      # object_directory must be empty (no existing versions or inventory)
-      # deposit dir can only contain 'head' directory and an id.namaste file.
-      # 'head' directory can only contain 'add' and optionally 'fixity' files,
-      # and the contentDirectory defined by site settings.
-      puts "This is new_object_san_check"
-    end
-
-    def existing_object_san_check
-      # must contain inventory.json and sidecar.
-      # sidecar digest must match inventory.json
-      # must contain 'head' directory
-      # must not contain any other files at this level.
-      # Inside 'head', must contain 'content' directory.
-      # head must also contain at least one of the actions files.
-      puts 'This is existing_object_san_check'
-    end
-
-    def stage_new_object
-      # create new OcflInventory instance.
-      # read id.namaste file, set @id.
-      # read head/add_files.txt, process into OcflInventory.
-      # - check their checksums as they are processed.
-      # read head/fixity_files.txt, process into OcflInventory.
-    end
-
-    def stage_update_object
-      # read existing inventory into OcflInventory instance.
-      # Determine next version, stage files into it.
-      # - check checksums when staging.
-
-    end
 
     def deposit_new_version
       # verify that our object_directory head is still what we expect.
@@ -82,7 +33,78 @@ module OcflTools
       # write the inventory.json & sidecar into version directory.
       # do a directory verify on the new directory.
       # write the new inventory.json to object root.
+      # Can only be called if there are no errors in @my_results; raise exception if otherwise?
     end
+
+
+    private
+    def san_check
+      # If deposit directory contains inventory.json:
+      #  - it's an update to an existing object. Do existing_object_san_check.
+      # If deposit directory !contain inventory.json:
+      #  - it's a new object. Do a new_object_san_check.
+
+      if File.file? "#{@deposit_dir}/inventory.json"
+        @my_results.info('I111', 'san_check', "Existing inventory found at #{@deposit_dir}/inventory.json")
+        existing_object_san_check
+      else
+        @my_results.info('I111', 'san_check', "No inventory.json found in #{@deposit_dir}; assuming new object workflow.")
+        new_object_san_check
+      end
+
+    end
+
+    def new_object_san_check
+      puts "This is new_object_san_check"
+      # 1. Object directory must be empty.
+      # 2. Deposit directory must contain 'head' directory.
+      # 3. Deposit directory must contain an id namaste file.
+      # 4. Deposit directory must NOT contain any other files or directories.
+      # 5. 'head' directory must contain a 'content' directory that matches site setting.
+      # 6. 'head' directory must contain an 'add_files.txt' file.
+      # 7. 'head' directory MAY contain a 'fixity_files.txt' file.
+      # 8. 'head' directory must NOT contain any other files.
+
+      # Only call this if we got here without errors.
+      stage_new_object
+    end
+
+    def existing_object_san_check
+      puts 'This is existing_object_san_check'
+      # Deposit directory MUST contain an inventory.json
+      # Deposit directory MUST contain a matching inventory.json sidecar file.
+      # inventory.json MUST validate against sidecar digest value.
+      # inventory.json MUST be a valid OCFL inventory (passes OcflVerify).
+      # Deposit directory MUST NOT contain any other files.
+      # Deposit directory MUST contain a 'head' directory.
+      # 'head' directory must contain a 'content' directory that
+      #    matches value in inventory.json or site default if not otherwise set.
+      # 'head' MUST contain at least one of the 'actions' txt files (inc. fixity).
+      # Object directory OCFL MUST match Deposit directory OCFL object (sidecar check)
+      # - doing a digest check is the fastest way to ensure it's the same inventory file & contents.
+      # Object directory OCFL must pass a structure & verify test (don't do checksum verification)
+
+      # Only call this if we got here without errors.
+      stage_update_object
+    end
+
+    def stage_new_object
+      # create new OcflInventory instance.
+      # read id.namaste file, set @id.
+      # read head/add_files.txt, process into OcflInventory.
+      # - check their checksums as they are processed.
+      # read head/fixity_files.txt, process into OcflInventory.
+      puts "This is stage_new_object"
+    end
+
+    def stage_update_object
+      # read existing inventory into OcflInventory instance.
+      # Determine next version, stage files into it.
+      # - check checksums when staging.
+      puts "This is stage_update_object"
+
+    end
+
 
   end
 end
