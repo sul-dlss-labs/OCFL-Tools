@@ -38,18 +38,39 @@ ocfl.add_file('my_content/a_second_file.txt', 'checksum_bbbbbbbbbbbb', 2)
 # Create a third version and add a 3rd file.
 ocfl.add_file('my_content/a_third_file.txt', 'checksum_cccccccccccc', 3)
 
+# Add (optional) additional fixity checksums to an existing file:
+ocfl.update_fixity('checksum_cccccccccccc', 'md5', 'an_md5_checksum_for_this_file')
+ocfl.update_fixity('checksum_cccccccccccc', 'sha1', 'a_sha1_checksum_for_this_file')
+
+# Remember we're using the digest of the file to positively identify it, which
+# is why we use the digest, not the file path, to associate an additional checksum with that file.
+
 # Output the complete inventory.json.
 puts ocfl.serialize
 
-# Or if files are more your bag:
+# If you want the object output to an inventory.json file, call #to_file.
+# This will also generate the appropriate digest sidecar file.
 ocfl.to_file('/directory/to/put/inventory/in/')
+
 
 # Check a directory for a valid OCFL object
 validate = OcflTools::OcflValidator.new(object_root_dir)
 puts validate.verify_structure.results  # checks the physical layout of the object root
 puts validate.verify_inventory.results  # checks the syntax and internal consistency of the inventory.json
 puts validate.verify_manifest.results   # cross-checks existence of files on disk against the manifest in the inventory.json
-puts validate.verify_checksums.results  # checks digests in the inventory against files discovered in the object root.
+puts validate.verify_checksums.results  # checks digests in the inventory manifest against files discovered in the object root.
+
+# Optionally, if you have additional fixity checksums in the inventory:
+puts validate.verify_fixity.results                   # checks files using MD5 checksums (default).
+puts validate.verify_fixity(digest: 'sha1').results   # checks files using sha1 checksums.
+
+# If you just want to do a complete check of a suspected OCFL object root, do:
+validate = OcflTools::OcflValidator.new(object_root_dir)
+puts validate.validate_ocfl_object_root # Will do structure, inventory and manifest checksum checks.
+
+# If you'd like to use values in the fixity block instead of the manifest checksums, do:
+puts validate.validate_ocfl_object_root(digest: 'sha1').results
+
 
 ```
 
@@ -71,11 +92,15 @@ OCFL-Tools just creates the inventory.json files and verifies that the content w
 formatted and, optionally, actually exists on disk. It's up to something else to put the bits on disk
 where OCFL-Tools expects them to be.
 
-`OcflValidator` will take a directory and tell you if it's an OCFL object or not. If it is a valid OCFL
+`OcflTools::OcflValidator` will take a directory and tell you if it's an OCFL object or not. If it is a valid OCFL
 object, `OcflValidator` will check the files on disk against the records in the inventory.json and let
 you know if they are all there and have matching checksums.
 
-`OcflVerify` will take an OCFL object and will let you know if it's syntactically correct
-and internally consistent.
+`OcflTools::OcflVerify` will take an `OcflObject` and will let you know if it's syntactically correct
+and internally consistent. `OcflVerify` doesn't care or know about files or directories on disk.
+`OcflValidator` uses `OcflVerify` as part of its validation process, once it has identified a suitable
+ inventory.json file.
 
-`OcflResults` is a class to capture logging events for a specific OcflValidator or OcflVerify instance.
+`OcflTools::OcflResults` is a class to capture logging events for a specific OcflValidator or
+OcflVerify instance. Any reported error (inspect `OcflResults#get_errors`) indicates the object
+under consideration is not OCFL compliant.
