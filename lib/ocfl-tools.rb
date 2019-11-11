@@ -11,3 +11,4 @@
 require 'ocfl_tools'
 require 'json'
 require 'anyway'
+require 'fileutils'
