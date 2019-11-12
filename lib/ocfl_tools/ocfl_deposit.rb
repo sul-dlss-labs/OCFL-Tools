@@ -376,8 +376,7 @@ module OcflTools
 
     def process_action_files
       # Process add_files, if present.
-      # TODO: What do we do if the file already exists in the object?
-      # add_file will catch the de-dupe, but the new deposit copy will still be transfered into the object.
+      # add_files requires { "digest_value": [ "filepaths" ]}
       if File.exists? "#{@deposit_dir}/head/add_files.json"
         add_files = self.read_json("#{@deposit_dir}/head/add_files.json")
         add_files.each do | digest, filepaths |
@@ -400,6 +399,7 @@ module OcflTools
       end
 
       # process update_files, if present.
+      # update_files requires { "digest_value": [ "filepaths" ]}
       if File.exists? "#{@deposit_dir}/head/update_files.json"
         update_files = self.read_json("#{@deposit_dir}/head/update_files.json")
         update_files.each do | digest, filepaths |
@@ -422,15 +422,20 @@ module OcflTools
       end
 
       # Process delete_files, if present.
-      # TODO: Define format for delete_files.json
+      # TODO: Define format for delete_files.json. It only needs 1 value,
+      # so put it in one big 'delete' array:
+      # { "delete": [ filepaths to delete ]}
       if File.exists? "#{@deposit_dir}/head/delete_files.json"
         delete_files = self.read_json("#{@deposit_dir}/head/delete_files.json")
-        delete_files.each do | filepath |
-         self.delete_file(filepath, @new_version)
+        delete_files.each do | action, filepaths |
+          filepaths.each do | filepath |
+            self.delete_file(filepath, @new_version)
+          end
         end
       end
 
       # Process move_files, if present.
+      # move_file requires { "source_file": "destination_file" }
       if File.exists? "#{@deposit_dir}/head/move_files.json"
         move_files = self.read_json("#{@deposit_dir}/head/move_files.json")
         move_files.each do | source_file, destination_file |
@@ -439,10 +444,13 @@ module OcflTools
       end
 
       # Process copy_files, if present.
+      # copy_files requires { "source_file": ["destination_files"]}
       if File.exists? "#{@deposit_dir}/head/copy_files.json"
         copy_files = self.read_json("#{@deposit_dir}/head/copy_files.json")
-        copy_files.each do | source_file, destination_file |
-          self.copy_file(source_file, destination_file, @new_version)
+        copy_files.each do | source_file, destination_files |
+          destination_files.each do | destination_file |
+            self.copy_file(source_file, destination_file, @new_version)
+          end
         end
       end
 
@@ -473,7 +481,7 @@ module OcflTools
       # If we get here, we know that the local inventory.json is the same as the dest. inventory.json.
       self.from_file("#{@deposit_dir}/inventory.json")
       @new_version = OcflTools::Utils.version_string_to_int(self.head) + 1
-  
+
       self.get_version(@new_version) # Add a new version.
 
       process_action_files
@@ -485,8 +493,15 @@ module OcflTools
     def process_new_version
       # I've got a valid OCFL object tee'd up.
 
-      target_content = "#{@object_dir}/#{@head}/#{@contentDirectory}"
       # Create version & content directory.
+      target_content = "#{@object_dir}/#{@head}/#{@contentDirectory}"
+
+      # Abort if target_content already exists!
+      if Dir.exists? target_content
+        @my_results.error('E111', 'process_new_version', "#{target_content} already exists! Unable to process new version.")
+        raise "#{target_content} already exists! Unable to process new version."
+      end
+
       raise "Errror creating #{target_content}!" unless FileUtils.mkdir_p target_content
 
       source_content = "#{@deposit_dir}/head/#{@contentDirectory}"

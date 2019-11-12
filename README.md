@@ -43,7 +43,8 @@ ocfl.add_file('my_content/a_third_file.txt', 'checksum_cccccccccccc', 3)
 
 # Make a (deduplicated) copy of that 3rd file in version 3.
 ocfl.copy_file('my_content/a_third_file.txt', 'my_content/a_copy_of_third_file.txt', 3)
-# or if you don't realize that file is already present, this also works:
+
+# or if you don't want to deduplicate the file, this also works:
 ocfl.add_file('my_content/a_copy_of_third_file.txt', 'checksum_cccccccccccc', 3)
 
 # Delete a file from version 3.
@@ -95,6 +96,73 @@ puts validate.validate_ocfl_object_root(digest: 'sha1').results
 
 This gem includes basic deposit and update functionality. It requires content for deposit
 to be arranged in a specific syntax in a `deposit` directory.
+
+### Add files
+
+Create a file named `add_files.json` and place in `deposit/head`. Place the file to be added
+to the object in `deposit/head/{content_directory}` in the desired directory structure.
+
+```
+{ "digest of file to add": [ filepaths of file to add ] }
+```
+
+### Update files
+
+Create a file named `update_files.json` and place in `deposit/head`. Place the updated file
+in `deposit/head/{content_directory}` in the desired directory structure.
+
+```
+{ "digest of file to update": [ existing filepaths of file to update ] }
+```
+
+### Copy files
+
+Create a file named `copy_files.json` and place in `deposit/head`. This makes a deduplicated
+copy of a bitstream that already exists in the object. If you do NOT want to make a deduplicated
+copy, use `add_files.json` instead, and provide the bitstream in `deposit/head/{content_directory}`.
+
+```
+{ "filepath of existing file": [ filepaths of new copies ] }
+```
+
+### Move files
+
+Create a file named `move_files.json` and place in `deposit/head`. Note that `move_files.json` does
+not take an array of files as a value. It's a 1:1 mapping of source and destination filepaths.
+
+```
+{ "filepath of old file location": "filepath of new file location" }
+```
+
+### Delete files
+
+Create a file named `delete_files.json` and place in `deposit/head`. Note that `delete_files.json`
+only contains one key, `delete`, with an array of values.
+
+```
+{ "delete": [ filepaths of files to delete ] }
+```
+
+### Add additional fixity values to object
+
+Create a file named `fixity_files.json` and place in `deposit/head`. The top level keys of this JSON
+should be the string value of the digest algorithm to add. Each key contains a hash of key/value pairs,
+where the key is the string value of the file digest as recorded in the manifest (i.e. either SHA256 or SHA512), and the value is the additional file digest to associate with this file as an additional fixity value. Note that you do not need to provide fixity values for all existing files in the object, and you
+can mix-and-match digest algorithms so long as the algorithm is listed as a supported value in your site.
+
+```
+{
+  "md5": {
+  "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": "fccd3f96d461f495a3bef31dc1d28f01",
+  "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": "d2c79c8519af858fac2993c2373b5203"
+  },
+  "sha1": {
+  "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": "aa9e59cde167454f1f8b1f0eeeb0795e2d2f8c6f"
+  }
+}
+```
+
+### Accessioning a version
 
 Once the content to be accessioned is marshaled correctly in the `deposit` directory,
 simply do:
