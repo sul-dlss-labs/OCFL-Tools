@@ -5,14 +5,14 @@ module OcflTools
   # <ocfl deposit directoy>/
   #     |-- inventory.json (from object_directory root, if adding to existing version)
   #     |-- head/
-  #         |-- manifest.json (all proposed file actions)
+  #         |-- add_files.json     (all proposed file add actions)
+  #         |-- update_files.json  (all proposed file update actions)
+  #         |-- delete_files.json  (all proposed file delete actions)
+  #         |-- move_files.json    (all proposed file move actions)
+  #         |-- fixity_files.json  (optional fixity information)
   #         |-- <content_dir>/
-  #             |-- <files to add or modify>
+  #             |-- <files to add or update>
   #
-  # Maybe manifest.json is too complex, and we should just do
-  # add_files.txt, delete_files.txt, update_files.txt, copy_files.txt, move_files.txt
-  # fixity_files.txt
-  # in format of "digest", "filepath"
   class OcflDeposit < OcflTools::OcflInventory
 
     def initialize(deposit_directory:, object_directory:)
@@ -21,7 +21,7 @@ module OcflTools
       raise "#{@deposit_dir} is not a valid directory!" unless File.directory? deposit_directory
       raise "#{@object_dir} is not a valid directory!" unless File.directory? object_directory
 
-      # Since we are overriding OcflObject's initialize, we need to define these variables again.
+      # Since we are overriding OcflObject's initialize block, we need to define these variables again.
       @id               = nil
       @head             = nil
       @type             = OcflTools.config.content_type
@@ -32,6 +32,11 @@ module OcflTools
       @fixity           = Hash.new # Optional. Same format as Manifest.
 
       @my_results  = OcflTools::OcflResults.new
+
+      # san_check works out if the deposit_dir and object_dir represents a
+      # new object with a first version, or an update to an existing object.
+      # It then verifies and stages all files so that, if it doesn't raise an
+      # exception, the calling app can simply invoke #deposit_new_version to proceed.
       san_check
     end
 
@@ -47,7 +52,6 @@ module OcflTools
       # do a directory verify on the new directory.
       # write the new inventory.json to object root.
       # Can only be called if there are no errors in @my_results; raise exception if otherwise?
-      puts "This is deposit_new_version"
       self.set_head_version
 
       # Am I put together correctly?
@@ -57,11 +61,11 @@ module OcflTools
         raise "Errors detected in OCFL object verification. Cannot process deposit: #{@my_results.get_errors}"
       end
 
-      if OcflTools::Utils.version_string_to_int(@head) == 1
-        new_object_new_version
-      else
-        existing_object_new_version
+      if OcflTools::Utils.version_string_to_int(@head) == 1 && !Dir.empty?(@object_dir)
+          raise "#{@object_dir} is not empty! Unable to create new object."
       end
+
+      process_new_version
 
     end
 
@@ -189,7 +193,7 @@ module OcflTools
         raise "#{deposit_dir}/head contains extraneous directories: #{deposit_head_directories}"
       end
 
-      # 6. 'head' directory MUST contain an 'add_files.txt' file.
+      # 6. 'head' directory MUST contain an 'add_files.json' file.
       if deposit_head_files.include? 'add_files.json'
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains expected add_files.json")
         deposit_head_files.delete('add_files.json')
@@ -198,7 +202,7 @@ module OcflTools
         raise "#{@deposit_dir}/head/add_files.json required, but not found."
       end
 
-      # 7. 'head' directory MAY contain a 'fixity_files.txt' file.
+      # 7. 'head' directory MAY contain a 'fixity_files.json' file.
       if deposit_head_files.include? 'fixity_files.json'
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional fixity_files.json")
         deposit_head_files.delete('fixity_files.json')
@@ -217,18 +221,146 @@ module OcflTools
 
     def existing_object_san_check
       puts 'This is existing_object_san_check'
-      # Deposit directory MUST contain an inventory.json
-      # Deposit directory MUST contain a matching inventory.json sidecar file.
-      # inventory.json MUST validate against sidecar digest value.
-      # inventory.json MUST be a valid OCFL inventory (passes OcflVerify; copy results into our results instance).
-      # Deposit directory MUST NOT contain any other files.
-      # Deposit directory MUST contain a 'head' directory.
-      # 'head' directory must contain a 'content' directory that
-      #    matches value in inventory.json or site default if not otherwise set.
-      # 'head' MUST contain at least one of the 'actions' txt files (inc. fixity).
-      # Object directory OCFL MUST match Deposit directory OCFL object (sidecar check)
+
+      deposit_root_files = []
+      deposit_root_directories = []
+      Dir.chdir(@deposit_dir)
+      Dir.glob('*').select do |file|
+         if File.file? file
+           deposit_root_files << file
+         end
+         if File.directory? file
+           deposit_root_directories << file
+         end
+      end
+
+      # 1. Deposit directory MUST contain an inventory.json
+      if deposit_root_files.include? 'inventory.json'
+        @my_results.info('I111', 'existing_object_san_check', "#{@deposit_dir}/inventory.json found")
+        deposit_root_files.delete('inventory.json')
+      else
+        @my_results.error('E111', 'existing_object_san_check', "#{@deposit_dir}/inventory.json required, but not found.")
+        raise "#{@deposit_dir}/inventory.json required, but not found."
+      end
+
+      # 2. Deposit directory MUST contain a matching inventory.json sidecar file.
+      inventory_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@deposit_dir}/inventory.json")
+
+      if deposit_root_files.include? "inventory.json.#{inventory_digest}"
+        @my_results.info('I111', 'existing_object_san_check', "#{@deposit_dir}/inventory.json.#{inventory_digest} found")
+        deposit_root_files.delete("inventory.json.#{inventory_digest}")
+      else
+        @my_results.error('E111', 'existing_object_san_check', "#{@deposit_dir}/inventory.json.#{inventory_digest} required, but not found")
+        raise "#{@deposit_dir}/inventory.json.#{inventory_digest} required, but not found."
+      end
+
+      # 3. inventory.json MUST validate against sidecar digest value.
+      generated_digest = OcflTools::Utils.generate_file_digest("#{@deposit_dir}/inventory.json", inventory_digest)
+      sidecar_digest   = File.open("#{@deposit_dir}/inventory.json.#{inventory_digest}", &:readline).split(' ')[0]
+
+      if generated_digest == sidecar_digest
+        @my_results.info('I111', 'existing_object_san_check', "#{@deposit_dir}/inventory.json checksum matches generated value.")
+      else
+        @my_results.error('E111', 'existing_object_san_check', "#{@deposit_dir}/inventory.json checksum does not match generated value.")
+        raise "#{@deposit_dir}/inventory.json checksum does not match generated value."
+      end
+
+      # 4. inventory.json MUST be a valid OCFL inventory (passes OcflVerify; copy results into our results instance).
+      deposit_inventory = OcflTools::OcflInventory.new.from_file("#{@deposit_dir}/inventory.json")
+
+      @my_results.add_results(OcflTools::OcflVerify.new(deposit_inventory).check_all)
+
+      raise "Errors detected in deposit inventory verification!" unless @my_results.error_count == 0
+
+      # 5. Deposit directory MUST NOT contain any other files.
+      if deposit_root_files.size > 0
+        @my_results.error('E111', 'existing_object_san_check', "Deposit directory contains extraneous files: #{deposit_root_files}")
+        raise "Deposit directory contains extraneous files: #{deposit_root_files}."
+      end
+
+      # 6. Deposit directory MUST contain a 'head' directory.
+      if deposit_root_directories.include? 'head'
+        @my_results.info('I111', 'existing_object_san_check', "#{@deposit_dir} contains expected 'head' directory.")
+        deposit_root_directories.delete('head')
+        else
+        @my_results.error('E111', 'existing_object_san_check', "#{@deposit_dir} must contain 'head' directory!")
+        raise "Deposit directory must contain a 'head' directory."
+      end
+
+      # 7. Deposit directory MUST NOT contain any other directories.
+      if deposit_root_directories.size > 0
+        @my_results.error('E111', 'existing_object_san_check', "#{@deposit_dir} contains extraneous directories: #{deposit_root_directories}")
+        raise "#{deposit_dir} contains extraneous directories: #{deposit_root_directories}"
+      end
+
+      # Intermission: into the head directory!
+
+      deposit_head_files = []
+      deposit_head_directories = []
+      Dir.chdir("#{@deposit_dir}/head")
+      Dir.glob('*').select do |file|
+         if File.file? file
+           deposit_head_files << file
+         end
+         if File.directory? file
+           deposit_head_directories << file
+         end
+      end
+
+      # 8. 'head' directory must contain a 'content' directory that
+      #    matches value in inventory.json or OCFL default if not otherwise set.
+      content_directory = OcflTools::Utils::Inventory.get_contentDirectory("#{@deposit_dir}/inventory.json")
+
+      if deposit_head_directories.include? content_directory
+        @my_results.info('I111', 'existing_object_san_check', "#{@deposit_dir}/head contains expected #{content_directory} directory.")
+        deposit_head_directories.delete(content_directory)
+      else
+        @my_results.error('E111', 'existing_object_san_check', "#{@deposit_dir}/head does NOT contain expected #{content_directory} directory.")
+        raise "#{@deposit_dir}/head does NOT contain expected #{content_directory} directory."
+      end
+
+      # 9. 'head' MUST contain at least one of the 'actions' json files (inc. fixity).
+      # Any one of these is needed.
+      action_files = [ 'add_files.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
+      action_found = nil
+
+      deposit_head_files.each do | file |
+        if action_files.include? file       # We found an action file!
+          deposit_head_files.delete(file)
+          action_found = true
+        end
+      end
+
+      if action_found == true
+        @my_results.info('I111', 'existing_object_san_check', "#{@deposit_dir}/head contains at least 1 action file.")
+      else
+        @my_results.error('E111', 'existing_object_san_check', "Unable to find any action files in #{@deposit_dir}/head")
+        raise "Unable to find any action files in #{@deposit_dir}/head"
+      end
+
+      # 10. Object root MUST contain an inventory.json
+      if File.exists? "#{@object_dir}/inventory.json"
+        @my_results.info('I111', 'existing_object_san_check', "#{@object_dir}/inventory.json exists.")
+      else
+        @my_results.error('E111', 'existing_object_san_check', "#{@object_dir}/inventory.json does not exist.")
+        raise "#{@object_dir}/inventory.json does not exist."
+      end
+
+      # 11. Object directory OCFL MUST match Deposit directory OCFL object (sidecar check)
       # - doing a digest check is the fastest way to ensure it's the same inventory file & contents.
-      # Object directory OCFL must pass a structure & verify test (don't do checksum verification)
+      object_root_digest = OcflTools::Utils.generate_file_digest("#{@object_dir}/inventory.json", inventory_digest)
+
+      if object_root_digest == generated_digest
+        @my_results.info('I111', 'existing_object_san_check', "#{@object_dir}/inventory.json matches #{@deposit_dir}/inventory.json")
+      else
+        @my_results.error('E111', 'existing_object_san_check', "#{@object_dir}/inventory.json does not match #{@deposit_dir}/inventory.json")
+        raise "#{@object_dir}/inventory.json does not match #{@deposit_dir}/inventory.json"
+      end
+
+      # 12. Object directory OCFL must pass a structure test (don't do checksum verification)
+      destination_ocfl = OcflTools::OcflValidator.new(@object_dir)
+      @my_results.add_results(destination_ocfl.verify_structure)
+      raise "Errors detected in destination object structure!" unless @my_results.error_count == 0
 
       # Only call this if we got here without errors.
       stage_existing_object
@@ -236,26 +368,83 @@ module OcflTools
 
     def stage_new_object
       # read id.namaste file, set @id.
-      # read head/add_files.txt, process into OcflInventory.
-      # - check their checksums as they are processed.
-      # read head/fixity_files.txt, process into OcflInventory.
-
+      # set new version
+      # process action files
       self.id = @namaste
+      @new_version = 1
+      self.get_version(@new_version) # It's a new OCFL object; we start at version 1.
+      process_action_files
+    end
 
-      add_files = self.read_json("#{@deposit_dir}/head/add_files.json")
-
-      self.get_version(1) # It's a new OCFL object; we start at version 1.
-
-      add_files.each do | digest, filepaths |
-        filepaths.each do | file |
-          # Here's where we'd compute checksum.
-          if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
-            self.add_file( file, digest, 1)
-            @my_results.info('I111', 'stage_new_object', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
-          else
-            @my_results.error('E111', 'stage_new_object', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
-            raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
+    def process_action_files
+      # Process add_files, if present.
+      # TODO: What do we do if the file already exists in the object?
+      # add_file will catch the de-dupe, but the new deposit copy will still be transfered into the object.
+      if File.exists? "#{@deposit_dir}/head/add_files.json"
+        add_files = self.read_json("#{@deposit_dir}/head/add_files.json")
+        add_files.each do | digest, filepaths |
+          filepaths.each do | file |
+            # Make sure it actually exists!
+            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
+              @my_results.error('E111', 'process_action_files', "File #{file} referenced in add_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
+              raise "File #{file} referenced in add_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
+            end
+            # Here's where we'd compute checksum.
+            if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
+              self.add_file( file, digest, @new_version)
+              @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
+            else
+              @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
+              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
+            end
           end
+        end
+      end
+
+      # process update_files, if present.
+      if File.exists? "#{@deposit_dir}/head/update_files.json"
+        update_files = self.read_json("#{@deposit_dir}/head/update_files.json")
+        update_files.each do | digest, filepaths |
+          filepaths.each do | file |
+            # Make sure it actually exists!
+            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
+              @my_results.error('E111', 'process_action_files', "File #{file} referenced in update_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
+              raise "File #{file} referenced in update_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
+            end
+            # Here's where we'd compute checksum.
+            if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
+              self.update_file( file, digest, @new_version)
+              @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
+            else
+              @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
+              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
+            end
+          end
+        end
+      end
+
+      # Process delete_files, if present.
+      # TODO: Define format for delete_files.json
+      if File.exists? "#{@deposit_dir}/head/delete_files.json"
+        delete_files = self.read_json("#{@deposit_dir}/head/delete_files.json")
+        delete_files.each do | filepath |
+         self.delete_file(filepath, @new_version)
+        end
+      end
+
+      # Process move_files, if present.
+      if File.exists? "#{@deposit_dir}/head/move_files.json"
+        move_files = self.read_json("#{@deposit_dir}/head/move_files.json")
+        move_files.each do | source_file, destination_file |
+          self.move_file(source_file, destination_file, @new_version)
+        end
+      end
+
+      # Process copy_files, if present.
+      if File.exists? "#{@deposit_dir}/head/copy_files.json"
+        copy_files = self.read_json("#{@deposit_dir}/head/copy_files.json")
+        copy_files.each do | source_file, destination_file |
+          self.copy_file(source_file, destination_file, @new_version)
         end
       end
 
@@ -265,7 +454,7 @@ module OcflTools
         fixity_files.each do | algorithm, checksums |
           # check if algorithm is in list of acceptable fixity algos for this site.
           if !OcflTools.config.fixity_algorithms.include? algorithm
-            @my_results.error('E111', 'stage_new_object', "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}")
+            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}")
             raise "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}"
           end
           # Algo is permitted in the fixity block; add it.
@@ -273,7 +462,7 @@ module OcflTools
             self.update_fixity( manifest_checksum, algorithm, fixity_checksum )
           end
         end
-        @my_results.info('I111', 'stage_new_object', "#{@deposit_dir}/head/fixity_files.json successfully processed.")
+        @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json successfully processed.")
       end
 
     end
@@ -283,16 +472,22 @@ module OcflTools
       # Determine next version, stage files into it.
       # - check checksums when staging.
       puts "This is stage_update_object"
+      # If we get here, we know that the local inventory.json is the same as the dest. inventory.json.
+      self.from_file("#{@deposit_dir}/inventory.json")
+      @new_version = OcflTools::Utils.version_string_to_int(self.head) + 1
+      puts "new version is #{@new_version}"
+
+      self.get_version(@new_version) # Add a new version.
+
+      process_action_files
+
+      # See if we're adding any files that already exist in the manifest here?
 
     end
 
-    def new_object_new_version
-      puts "This is new_object_new_version"
+    def process_new_version
       # I've got a valid OCFL object tee'd up.
-      # Is my destination directory still empty?
-      if !Dir.empty?(@object_dir)
-        raise "#{@object_dir} is not empty! Unable to create new object."
-      end
+
       target_content = "#{@object_dir}/#{@head}/#{@contentDirectory}"
       # Create version & content directory.
       raise "Errror creating #{target_content}!" unless FileUtils.mkdir_p target_content
@@ -306,18 +501,15 @@ module OcflTools
       self.to_file("#{@object_dir}/#{@head}")
       # Verify version directory.
       validation = OcflTools::OcflValidator.new(@object_dir)
-      validation.verify_directory(1)
+      validation.verify_directory(@new_version)
 
       @my_results.add_results(validation.results)
       raise "Errors detected in validation!" unless @my_results.error_count == 0
-      # Add inventory.json to root directory.
+      # Add new inventory.json to object root directory. This should always be the final step.
       self.to_file(@object_dir)
 
     end
 
-    def existing_object_new_version
-      puts "This is existing_object_new_version"
-    end
 
   end
 end
