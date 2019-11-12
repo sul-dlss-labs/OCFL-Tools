@@ -95,15 +95,72 @@ puts validate.validate_ocfl_object_root(digest: 'sha1').results
 ## Depositing and Updating Objects
 
 This gem includes basic deposit and update functionality. It requires content for deposit
-to be arranged in a specific syntax in a `deposit` directory.
+to be arranged in a specific syntax in a `deposit` directory. The `deposit` directory can
+be any name, but MUST contain a 'head' directory, which MUST contain a directory with a name
+that matches your site's `OcflTools::config.content_directory` setting (defaults to `content`).
+
+### First Version
+
+If this is to be the first version of a new OCFL object you MUST provide at least one file
+in the `content` directory to add, and you MUST include the `head/add_files.json` file (described below).
+The first version of an OCFL object MAY also contain fixity information; provide a `head/fixity_files.json` with details, but MUST NOT include any other action files (e.g `delete_files.json`, `copy_files.json`). Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`, describing the digital object identifier to use to uniquely identify this OCFL object at
+this site. An example layout, where the id of the OCFL object being created is `123cd4567`, is below. In
+this example the site is using the default value `content` for `content_directory`.
+
+```
+deposit_dir/
+  4=123cd4567
+  head/
+    add_files.json
+    fixity_files.json [optional]
+    content/
+      my_content/a_file_to_add.txt
+```
+
+### Subsequent versions of an existing object
+
+To version an existing object, you must provide a `deposit` directory with the following layout:
+
+```
+deposit_dir/
+  inventory.json
+  inventory.json.{sha256|sha512}
+  head/
+    {action files}
+    content/
+      {files and directories to or update, if applicable}
+```
+
+`{action files}` are AT LEAST ONE of `add_files.json`, `delete_files.json`, `update_files.json`,
+`move_files.json`,  `copy_files.json` and `fixity_files.json`.
+
+The `inventory.json` and sidecar digest file must be the most recent versions of the inventory and
+sidecar from the OCFL object that you are updating, copied from the object root that you intend
+to update. New version creation will fail if the destination object directory does not contain
+the expected OCFL object at the `head` value of this `inventory.json`.
+
+The `head/content` directory MUST exist, but is not required to contain any bitstreams unless there
+is a correctly-formatted `add_files.json` or `update_files.json`.
+
+Note that it is possible to version an object merely by providing a `fixity_files.json`.
 
 ### Add files
 
 Create a file named `add_files.json` and place in `deposit/head`. Place the file to be added
-to the object in `deposit/head/{content_directory}` in the desired directory structure.
+to the object in `deposit/head/{content_directory}` in the desired directory structure. If multiple
+filepaths are provided for any one digest value, and if only one matching bitstream is provided in `head/content`, then the file is deduplicated and only 1 bitstream of that file will exist in the final object version.
 
 ```
 { "digest of file to add": [ filepaths of file to add ] }
+
+e.g.:
+
+{
+  "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
+    "my_content/dunwich.txt",
+    "my_content/a_deduplicated_copy_of_dunwich.txt"
+  ]
+}
 ```
 
 ### Update files
@@ -113,6 +170,14 @@ in `deposit/head/{content_directory}` in the desired directory structure.
 
 ```
 { "digest of file to update": [ existing filepaths of file to update ] }
+
+e.g.: this updates the previously versioned file 'my_content/dunwich.txt' with a new bitstream:
+
+{
+  "334566a04a5e76a392c43ec4d8b8e7d666f1ff2cf83b87fe99b97d00a5443f43": [
+    "my_content/dunwich.txt"
+  ]
+}
 ```
 
 ### Copy files
@@ -123,6 +188,16 @@ copy, use `add_files.json` instead, and provide the bitstream in `deposit/head/{
 
 ```
 { "filepath of existing file": [ filepaths of new copies ] }
+
+e.g.
+
+{
+  "my_content/dunwich.txt": [
+    "my_content/a_second_copy_of_dunwich.txt",
+    "my_content/a_third_copy_of_dunwich.txt"
+  ]
+}
+
 ```
 
 ### Move files
@@ -132,6 +207,14 @@ not take an array of files as a value. It's a 1:1 mapping of source and destinat
 
 ```
 { "filepath of old file location": "filepath of new file location" }
+
+e.g.
+
+{
+  "my_content/a_third_copy_of_dunwich.txt":
+    "my_content/moved_third_copy_of_dunwich_to_here.txt"
+}
+
 ```
 
 ### Delete files
@@ -141,6 +224,15 @@ only contains one key, `delete`, with an array of values.
 
 ```
 { "delete": [ filepaths of files to delete ] }
+
+e.g.
+
+{ "delete": [
+  "my_content/a_third_copy_of_dunwich.txt",
+  "my_content/moved_third_copy_of_dunwich_to_here.txt"
+ ]
+}
+
 ```
 
 ### Add additional fixity values to object
@@ -179,6 +271,8 @@ deposit.deposit_new_version
 # This returns a results object with additional details.
 deposit.results
 ```
+
+Note that for the first version of an object, the destination `object_directory` MUST be empty.
 
 
 ## Implementation notes
