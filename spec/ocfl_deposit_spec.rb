@@ -70,7 +70,7 @@ describe OcflTools::OcflDeposit do
   end
 
   describe "creates a new object C" do
-
+    # Creates a new OCFL object and adds Dracula and Poe to it.
     deposit_dir =  "#{basedir}/spec/fixtures/deposit/source_c_v1"
     object_dir  =  "#{basedir}/spec/fixtures/deposit/object_c"
 
@@ -80,13 +80,8 @@ describe OcflTools::OcflDeposit do
       FileUtils.mkdir_p object_dir
     end
 
-    # This would raise exceptions on any errors.
     deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
-
-    # This creates the new version.
     deposit.deposit_new_version
-
-    # puts deposit.results.results
 
     it "expects zero errors" do
       expect(deposit.results.error_count).to eq 0
@@ -95,12 +90,13 @@ describe OcflTools::OcflDeposit do
   end
 
   describe "versions object C with a move and a copy action" do
-
+    # Moves 1st Poe to poe-nevermore.txt, adds 2 copies of Dracula, one in new subfolder.
     deposit_dir =  "#{basedir}/spec/fixtures/deposit/source_c_v2"
     object_dir  =  "#{basedir}/spec/fixtures/deposit/object_c"
 
     deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
     deposit.deposit_new_version
+
     it "expects zero errors" do
       expect(deposit.results.error_count).to eq 0
     end
@@ -108,11 +104,13 @@ describe OcflTools::OcflDeposit do
   end
 
   describe "versions object C with an update and a delete action" do
+    # Updates 1st Poe, deletes 2nd Dracula.
     deposit_dir =  "#{basedir}/spec/fixtures/deposit/source_c_v3"
     object_dir  =  "#{basedir}/spec/fixtures/deposit/object_c"
 
     deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
     deposit.deposit_new_version
+
     it "expects zero errors" do
       expect(deposit.results.error_count).to eq 0
     end
@@ -123,10 +121,22 @@ describe OcflTools::OcflDeposit do
     # Adds Dunwich, historic fixity values for Dracula and the 1st Poe.
     deposit_dir =  "#{basedir}/spec/fixtures/deposit/source_c_v4"
     object_dir  =  "#{basedir}/spec/fixtures/deposit/object_c"
+
     deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
     deposit.deposit_new_version
+
+
     it "expects zero errors" do
       expect(deposit.results.error_count).to eq 0
+    end
+
+    # Now validate the full object!
+    validate = OcflTools::OcflValidator.new(object_dir)
+
+    it "validates the entire object using the fixity block instead of manifest checksums" do
+      expect(validate.validate_ocfl_object_root.results).to match(
+        {"error"=>{}, "warn"=>{"W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 4 matches highest version in versions."]}, "I111"=>{"check_fixity"=>["Fixity block is present."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "verify_checksums"=>["All discovered files on disk are referenced in inventory.", "All discovered files on disk match stored digest values."], "check_fixity"=>["Fixity block is present and contains valid algorithms."]}, "O200"=>{"check_id"=>["OCFL 3.5.1 Inventory ID is OK."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}, "I200"=>{"check_versions"=>["OCFL 3.5.3 Found 4 versions, highest version is 4"]}}}
+    )
     end
 
   end
