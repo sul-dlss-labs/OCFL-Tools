@@ -1,4 +1,4 @@
 {
-  "my_content/dracula.txt": 
-    "my_content/copy_of_dracula.txt"
+  "my_content/dracula.txt":
+    [ "my_content/copy_of_dracula.txt", "my_content/a_third_copy_of_dracula.txt" ]
 }

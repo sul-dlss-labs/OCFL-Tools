@@ -3,21 +3,32 @@
 
 ## OK
 
+For times where you want to explicitly report success.
+
+```
 O111 Placeholder code
 
 O200 'OCFL 3.5.1 Inventory ID is OK.'
 O200 'OCFL 3.5.1 Inventory Type is OK.'
 O200 = <Inventory Value> is OK.
+```
 
 ## Informational
 
+We're not passing judgement, we're just letting you know something neat.
+
+```
 I111 Placeholder code
 
 I200 = <generic informational msg>
 I220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
+```
 
 ## Errors
 
+Any error code means the resulting object has failed validation, and is not a valid OCFL object.
+
+```
 E111 Placeholder code
 
 E010	OCFL 3.1 Version directory #{directory} contains directories other than designated content directory
@@ -43,15 +54,20 @@ E214 "OCFL 3.5.1 Inventory Head version #{version} does not match expected versi
 E220  Algorithm not found
 E221  Algorithm cannot be 0 length
 E222  Algorithm cannot be nil
-E223  "OCFL 3.5.1 Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use.
+E223  "OCFL 3.5.1 Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use."
 
 E250 'OCFL 3.5.2 there MUST be a manifest block.'
 E251 'OCFL 3.5.2 manifest block cannot be empty.'
 
 E911 'An unknown error has occurred.'
+```
 
 ## Warnings
 
+Issues that do not make the resulting object non-compliant, but are not ideal.
+
+```
 W111 Placeholder code
 
 W220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be SHA512."
+```

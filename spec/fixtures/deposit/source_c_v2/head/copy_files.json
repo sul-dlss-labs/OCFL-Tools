@@ -1,0 +1,6 @@
+{
+  "my_content/dracula.txt": [
+    "my_content/a_second_copy_of_dracula.txt",
+    "my_content/another_directory/a_third_copy_of_dracula.txt"
+  ]
+}
