@@ -26,6 +26,8 @@ describe OcflTools::OcflDeposit do
     # This creates the new version.
     deposit.deposit_new_version
 
+    puts deposit.results.results
+
     it "expects zero errors" do
       expect(deposit.results.error_count).to eq 0
     end
@@ -52,8 +54,9 @@ describe OcflTools::OcflDeposit do
     end
 
     deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
-    puts deposit.results.results
     deposit.deposit_new_version
+
+    puts deposit.results.results
 
     # shameless green
     it "returns a deposit object" do

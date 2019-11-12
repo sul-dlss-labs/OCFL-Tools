@@ -91,6 +91,24 @@ puts validate.validate_ocfl_object_root(digest: 'sha1').results
 
 ```
 
+## Depositing and Updating Objects
+
+This gem includes basic deposit and update functionality. It requires content for deposit
+to be arranged in a specific syntax in a `deposit` directory.
+
+Once the content to be accessioned is marshalled correctly in the `deposit` directory,
+simply do:
+
+```
+# Creating this object performs extensive sanity checks on both deposit layout and destination.
+# Any error will cause it to raise an exception and perform no action on the destination object.
+deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
+
+# This creates the new version and verifies successful accessioning.
+deposit.deposit_new_version
+```
+
+
 ## Implementation notes
 
 `OcflTools::OcflInventory` is a child class of `OcflTools::OcflObject`, designed

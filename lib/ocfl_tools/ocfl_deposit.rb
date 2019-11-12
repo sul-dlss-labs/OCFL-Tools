@@ -88,7 +88,7 @@ module OcflTools
     end
 
     def new_object_san_check
-      puts "This is new_object_san_check"
+
       # 1. Object directory must be empty.
       if Dir.empty?(@object_dir)
         @my_results.info('I111', 'new_object_san_check', "target dir #{@object_dir} is empty.")
@@ -135,7 +135,6 @@ module OcflTools
       raise "Object ID cannot be zero length!" unless object_id.size > 0
 
       File.readlines("#{@deposit_dir}/#{namaste_file}").each do |line|
-        puts "The line from namaste is #{line}"
         line.chomp!
         if object_id != line
           @my_results.error('E111', 'new_object_san_check', "Contents of Namaste ID file do not match filename! #{object_id} vs #{line}.")
@@ -220,7 +219,6 @@ module OcflTools
     end
 
     def existing_object_san_check
-      puts 'This is existing_object_san_check'
 
       deposit_root_files = []
       deposit_root_directories = []
@@ -471,12 +469,11 @@ module OcflTools
       # read existing inventory into OcflInventory instance.
       # Determine next version, stage files into it.
       # - check checksums when staging.
-      puts "This is stage_update_object"
+
       # If we get here, we know that the local inventory.json is the same as the dest. inventory.json.
       self.from_file("#{@deposit_dir}/inventory.json")
       @new_version = OcflTools::Utils.version_string_to_int(self.head) + 1
-      puts "new version is #{@new_version}"
-
+  
       self.get_version(@new_version) # Add a new version.
 
       process_action_files
@@ -507,6 +504,8 @@ module OcflTools
       raise "Errors detected in validation!" unless @my_results.error_count == 0
       # Add new inventory.json to object root directory. This should always be the final step.
       self.to_file(@object_dir)
+
+      @my_results.ok('0111', 'process_new_version', "object #{self.id} version #{@new_version} successfully processed.")
 
     end
 
