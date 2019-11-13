@@ -1,13 +1,11 @@
 # OCFL-Tools
-Ruby gem to manipulate Oxford Common File Layout preservation objects.
+Ruby gem to manipulate Oxford Common File Layout preservation objects (https://ocfl.io).
 Classes provide APIs to create objects and versions, perform typical file operations, verify
 compliance of the resulting object and serialize it to an inventory.json file.
 Can also read in an existing inventory.json to verify, manipulate, and produce
 an updated inventory file.
 
-This is very much a work-in-progress PROTOTYPE and is not guaranteed to do anything more
-than take up space on your storage device. Not all methods are implemented, and refactoring
-is a fact of life.
+This is not-quite-beta software. No guarantee of fitness for purpose is made.
 
 ## Basic Usage
 
@@ -83,7 +81,7 @@ There are four levels of verification available, each checking a different aspec
 ### Verify Structure
 
 This check inspects a given directory on disk for "OCFL-ness". It attempts to deduce the version
-directory naming convention, checks for the presence of required OCFL files (primarily the inventory.json, sidecar disgest and NamAsTe identifier), and verifies that there is a complete
+directory naming convention, checks for the presence of required OCFL files (primarily the inventory.json, sidecar digest and NamAsTe identifier), and verifies that there is a complete
 sequence of version directories present.
 
 ### Verify Inventory
@@ -181,7 +179,8 @@ deposit_dir/
 ```
 
 `{action files}` are AT LEAST ONE of `add_files.json`, `delete_files.json`, `update_files.json`,
-`move_files.json`,  `copy_files.json` and `fixity_files.json`. You may also optionally include `version.json`, but this file does not count towards the validity check.
+`move_files.json`, `copy_files.json` and `fixity_files.json`. You may also optionally include `version.json`,
+but this file does not count towards the validity check requirement.
 
 The `inventory.json` and sidecar digest file must be the most recent versions of the inventory and
 sidecar from the OCFL object that you are updating, copied from the object root that you intend
@@ -336,7 +335,9 @@ deposit.deposit_new_version
 deposit.results
 ```
 
-Note that for the first version of an object, the destination `object_directory` MUST be empty.
+Note that for the first version of an object, the destination `object_directory` MUST be empty. For
+subsequent versions of the object, the `object_directory` must contain the most recent version of
+the OCFL object to be updated.
 
 
 ## Implementation notes
