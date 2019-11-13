@@ -14,7 +14,7 @@ module OcflTools
     # @return [OcflTools::OcflVerify] verify an OcflVerify object, if created.
     attr_reader :verify
 
-    # @param [Pathname] ocfl_storage_root is a the full local filesystem path to the object directory.
+    # @param [Pathname] ocfl_object_root is a the full local filesystem path to the object directory.
     def initialize(ocfl_object_root)
       raise "#{ocfl_object_root} is not a directory!" unless File.directory? ocfl_object_root
       @digest           = nil

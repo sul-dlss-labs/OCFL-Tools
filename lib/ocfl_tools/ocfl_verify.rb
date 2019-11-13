@@ -16,6 +16,8 @@ module OcflTools
 
     end
 
+    # @return {OcflTools::OcflResults} results object containing information about actions taken
+    # against this object.
     def results
       @my_results
     end

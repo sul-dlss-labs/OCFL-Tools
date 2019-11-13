@@ -40,10 +40,15 @@ module OcflTools
       san_check
     end
 
+    # @return {OcflTools::OcflResults} results object containing information about actions taken
+    # against this object.
     def results
       @my_results
     end
 
+    # Creates a new version of an OCFL object in the destination object directory.
+    # This method can only be called if the {OcflTools::OcflDeposit} object passed all
+    # necessary sanity checks, which occur when the object is initialized.
     def deposit_new_version
       # verify that our object_directory head is still what we expect.
       # create the version and contentDirectory directories.

@@ -120,7 +120,7 @@ module OcflTools
       my_count
     end
 
-    # @returns [String] description of posted OK statement.
+    # @return [String] description of posted OK statement.
     def ok(code, context, description)
       if @my_results['ok'].key?(code) == false
         @my_results['ok'][code] = Hash.new
@@ -136,7 +136,7 @@ module OcflTools
       end
     end
 
-    # @returns [String] description of posted information.
+    # @return [String] description of posted information.
     def info(code, context, description)
       if @my_results['info'].key?(code) == false
         @my_results['info'][code] = Hash.new
@@ -152,7 +152,7 @@ module OcflTools
       end
     end
 
-    # @returns [String] description of posted warning.
+    # @return [String] description of posted warning.
     def warn(code, context, description)
       if @my_results['warn'].key?(code) == false
         @my_results['warn'][code] = Hash.new
@@ -168,7 +168,7 @@ module OcflTools
       end
     end
 
-    # @returns [String] description of posted error.
+    # @return [String] description of posted error.
     def error(code, context, description)
       if @my_results['error'].key?(code) == false
         @my_results['error'][code] = Hash.new
@@ -186,7 +186,7 @@ module OcflTools
 
     # Given another Results object, copy that object's results into this one.
     # @param [OcflTools::OcflResults] source Results instance to copy into this instance.
-    # @returns [OcflTools::OcflResults] self
+    # @return [OcflTools::OcflResults] self
     def add_results(source)
       raise "#{source} is not a Results object!" unless source.is_a?(OcflTools::OcflResults)
       source.get_ok.each do | code, contexts |

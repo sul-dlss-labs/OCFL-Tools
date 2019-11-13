@@ -27,6 +27,8 @@ module OcflTools
         contentDirectory
       end
 
+      # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
+      # @return [String] digestAlgorithm the string value describing the digest algorithm used in this inventory.
       def self.get_digestAlgorithm(inventory_file)
         digestAlgorithm = OcflTools::Utils::Inventory.get_value(inventory_file, "digestAlgorithm")
         if digestAlgorithm == nil
