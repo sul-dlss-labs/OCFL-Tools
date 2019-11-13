@@ -159,6 +159,8 @@ module OcflTools
 
       error = nil
 
+      # 1. Determine the format used for version directories.
+      #    If we can't deduce it by inspection, warn and try to process object using site-wide default.
       begin
         if @version_format == nil
           @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
@@ -186,14 +188,14 @@ module OcflTools
          end
       end
 
-      # CHECK ROOT DIR for required files.
+      # 2. Check object root directory for required files.
       # We have to check the top of inventory.json to get the appropriate digest algo.
       # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
       file_checks = [ 'inventory.json', '0=ocfl_object_1.0']
 
-      # What digest should the inventory.json sidecar be using? Ask inventory.json.
-      # Also, what's the highest version we should find here?
-      # And what should our contentDirectory value be?
+      # 2a. What digest should the inventory.json sidecar be using? Ask inventory.json.
+      # 2b. What's the highest version we should find here?
+      # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
         json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
         contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
@@ -215,20 +217,19 @@ module OcflTools
         object_root_files.delete(file)
       end
 
-      # Warn if there are extraneous files in object root.
+      # 3. Error if there are extraneous files in object root.
       if object_root_files.size != 0
         @my_results.error('E101', 'verify_structure', "Object root contains noncompliant files: #{object_root_files}")
         error = true
       end
 
-      # CHECK DIRECTORIES
-      # Warn if the optional 'logs' directory is found in the object root.
+      # 4. Warn if the optional 'logs' directory is found in the object root.
       if object_root_dirs.include? 'logs'
         @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional logs directory found in object root.")
         object_root_dirs.delete('logs')
       end
 
-      # Warn if the optional 'extensions' directory is found in object root.
+      # 5. Warn if the optional 'extensions' directory is found in object root.
       if object_root_dirs.include? 'extensions'
         @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional extensions directory found in object root.")
         object_root_dirs.delete('extensions')
@@ -238,18 +239,16 @@ module OcflTools
 
       remaining_dirs = object_root_dirs - version_directories
 
-      # Error if there are extraneous/unexpected directories in the object root.
+      # 6. Error if there are extraneous/unexpected directories in the object root.
       if remaining_dirs.size > 0
         @my_results.error('E100', 'verify_structure', "Object root contains noncompliant directories: #{remaining_dirs}")
         error = true
       end
 
-      # CHECK VERSION DIRECTORIES
-      # Must be a continuous sequence, starting at v1.
+      # 7. Version directories must be a continuous sequence, starting at v1.
       version_dir_count = version_directories.size
       count = 0
 
-      # Error if the version directories found are not a continous sequence of versions, starting at 1.
       until count == version_dir_count
         count += 1
         expected_directory = @version_format % count
@@ -265,8 +264,7 @@ module OcflTools
         end
       end
 
-      # CHECK ROOT INVENTORY HEAD vs HIGHEST VERSION DIRECTORY
-      # Error if the head version in the inventory does not match the highest version directory discovered in the object root.
+      # 8. Error if the head version in the inventory does not match the highest version directory discovered in the object root.
       if expect_head != nil # No point checking this is we've already failed the root inventory.json check.
         if version_directories[-1] != expect_head
           @my_results.error('E111', 'verify_structure', "Inventory file expects a highest version of #{expect_head} but directory list contains #{version_directories} ")
@@ -277,6 +275,7 @@ module OcflTools
       end
 
       # CHECK VERSION DIRECTORY CONTENTS
+      # This is setup for the next round of checks.
       # For the version_directories we *do* have, are they cool?
       version_directories.each do | ver |
         version_dirs  = []
@@ -292,13 +291,13 @@ module OcflTools
            end
         end
 
-        # only two files here, but only warn if they're not present.
+        # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
           json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
           file_checks << "inventory.json"
           file_checks << "inventory.json.#{json_digest}"
-          # Error if the contentDirectory value in the version's inventory does not match the value given in the object root's inventory file.
+          # 9b. Error if the contentDirectory value in the version's inventory does not match the value given in the object root's inventory file.
           versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
           if versionContentDirectory != contentDirectory
             @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
@@ -309,7 +308,6 @@ module OcflTools
           file_checks << "inventory.json.sha512"  # We look for it, even though we know we won't find it, so we can log the omission.
         end
 
-        # Warn if optional inventory & digest not found in version directory.
         file_checks.each do | file |
           if version_files.include? file
             version_files.delete(file)
@@ -319,13 +317,13 @@ module OcflTools
           end
         end
 
-        # Error if files other than inventory & sidecar found in version directory.
+        # 10. Error if files other than inventory & sidecar found in version directory.
         if version_files.size > 0
           @my_results.error('E011', 'verify_structure', "non-compliant files #{version_files} in #{ver} directory")
           error = true
         end
 
-        # Error if the expected content directory is not found.
+        # 11. Error if the expected content directory is not found.
         if version_dirs.include? contentDirectory
           version_dirs.delete(contentDirectory)
           else
@@ -333,7 +331,7 @@ module OcflTools
           error = true
         end
 
-        # Error if any directories other than the expected 'content' directory are found in the version directory.
+        # 12. Error if any directories other than the expected 'content' directory are found in the version directory.
         if version_dirs.size > 0
           @my_results.error('E010', 'version_structure', "noncompliant directories #{version_dirs} found in #{ver} directory")
           error = true

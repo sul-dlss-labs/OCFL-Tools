@@ -96,14 +96,15 @@ puts validate.validate_ocfl_object_root(digest: 'sha1').results
 
 This gem includes basic deposit and update functionality. It requires content for deposit
 to be arranged in a specific syntax in a `deposit` directory. The `deposit` directory can
-be any name, but MUST contain a 'head' directory, which MUST contain a directory with a name
+be any name, but MUST contain a `head` directory, which MUST contain a directory with a name
 that matches your site's `OcflTools::config.content_directory` setting (defaults to `content`).
 
 ### First Version
 
 If this is to be the first version of a new OCFL object you MUST provide at least one file
 in the `content` directory to add, and you MUST include the `head/add_files.json` file (described below).
-The first version of an OCFL object MAY also contain fixity information; provide a `head/fixity_files.json` with details, but MUST NOT include any other action files (e.g `delete_files.json`, `copy_files.json`). Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`, describing the digital object identifier to use to uniquely identify this OCFL object at
+The first version of an OCFL object MAY contain fixity information; provide a `head/fixity_files.json` with details. The first version MAY also contain a `head/version.json` to provide additional metadata
+about this version, but MUST NOT include any other action files (e.g `delete_files.json`, `copy_files.json`). Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`, describing the digital object identifier to use to uniquely identify this OCFL object at
 this site. An example layout, where the id of the OCFL object being created is `123cd4567`, is below. In
 this example the site is using the default value `content` for `content_directory`.
 
@@ -112,6 +113,7 @@ deposit_dir/
   4=123cd4567
   head/
     add_files.json
+    version.json      [optional]
     fixity_files.json [optional]
     content/
       my_content/a_file_to_add.txt
@@ -132,7 +134,7 @@ deposit_dir/
 ```
 
 `{action files}` are AT LEAST ONE of `add_files.json`, `delete_files.json`, `update_files.json`,
-`move_files.json`,  `copy_files.json` and `fixity_files.json`.
+`move_files.json`,  `copy_files.json` and `fixity_files.json`. You may also optionally include `version.json`, but this file does not count towards the validity check.
 
 The `inventory.json` and sidecar digest file must be the most recent versions of the inventory and
 sidecar from the OCFL object that you are updating, copied from the object root that you intend
@@ -233,6 +235,21 @@ e.g.
  ]
 }
 
+```
+
+### Additional version info
+
+If you wish to add additional information to the version, create a file named `version.json` and place in `deposit/head`.
+
+```
+{
+  "created": "2019-11-12",
+  "message": "Ia! Ia! cthulhu fhtagn!",
+  "user": {
+    "name": "Yog-Sothoth",
+    "address": "all_seeing_spheres@miskatonic.edu"
+  }
+}
 ```
 
 ### Add additional fixity values to object

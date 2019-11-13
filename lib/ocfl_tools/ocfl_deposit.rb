@@ -209,6 +209,15 @@ module OcflTools
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional fixity_files.json")
       end
 
+      # 7b. 'head' directory MAY contain a 'version.json' file.
+      if deposit_head_files.include? 'version.json'
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional version.json")
+        deposit_head_files.delete('version.json')
+      else
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional version.json")
+      end
+
+
       # 8. 'head' directory MUST NOT contain any other files.
       if deposit_head_files.size > 0
         @my_results.error('E111', 'new_object_san_check', "#{@deposit_dir}/head contains extraneous files: #{deposit_head_files}")
@@ -334,6 +343,14 @@ module OcflTools
       else
         @my_results.error('E111', 'existing_object_san_check', "Unable to find any action files in #{@deposit_dir}/head")
         raise "Unable to find any action files in #{@deposit_dir}/head"
+      end
+
+      # 9b. 'head' directory MAY contain a 'version.json' file.
+      if deposit_head_files.include? 'version.json'
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional version.json")
+        deposit_head_files.delete('version.json')
+      else
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional version.json")
       end
 
       # 10. Object root MUST contain an inventory.json
@@ -470,6 +487,31 @@ module OcflTools
         end
         @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json successfully processed.")
       end
+
+      # Process version.json, if present.
+      if File.file? "#{@deposit_dir}/head/version.json"
+        version_file = self.read_json("#{@deposit_dir}/head/version.json")
+        # Version block MUST contain keys 'created', 'message', 'user'
+        [ 'created', 'message', 'user' ].each do | req_key |
+          if !version_file.has_key?(req_key)
+            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
+            raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
+          end
+        end
+        # user block must contain 'name', 'address'
+        [ 'name', 'address' ].each do | req_key |
+          if !version_file['user'].has_key?(req_key)
+            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
+            raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
+          end
+        end
+        # Now process!
+        self.set_version_user(@new_version, version_file['user'])
+        self.set_version_message(@new_version, version_file['message'])
+        self.set_version_created(@new_version, version_file['created'])
+
+      end
+
 
     end
 

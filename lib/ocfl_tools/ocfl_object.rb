@@ -62,6 +62,25 @@ module OcflTools
       @versions[OcflTools::Utils.version_int_to_string(version)]['message']
     end
 
+    # sets the created field for a given version.
+    # @param [Integer] version of OCFL object to set value for.
+    # @param [String] created value to set for given version.
+    # @note will raise an exception if you attempt to query a non-existent version.
+    def set_version_created(version, created)
+      raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
+      @versions[OcflTools::Utils.version_int_to_string(version)]['created'] = created
+    end
+
+    # returns the created field for a given version.
+    # @param [Integer] version of OCFL object to get value for.
+    # @return [String] created value set for the given version, if any.
+    # @note will raise an exception if you attempt to query a non-existent version.
+    def get_version_created(version)
+      raise "Version #{version} does not yet exist!" unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
+      @versions[OcflTools::Utils.version_int_to_string(version)]['created']
+    end
+
+
     # Sets the user Hash for a given version. Expects a complete User hash (with sub-keys of name & address).
     # @param [Integer] version of OCFL object to set the user block for.
     # @param [Hash] user block to set for this version. Must be a hash with two keys 'name' and 'address'.
