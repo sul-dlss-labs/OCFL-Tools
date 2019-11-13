@@ -106,6 +106,11 @@ on disk and compares them against values stored in the manifest block of the pro
  on disk that does not have a record in the manifest block, or if a file in the manifest block cannot
  be found on disk.
 
+For larger objects, or as part of a deposit workflow, it is possible to call `#verify_checksum` against
+the contents of one version directory only. See `OcflValidator#verify_directory` for details. This method
+is used by `OcflDeposit` to verify successful transfer of a new version directory without invoking a full 
+checksum validation of all existing version directories in the destination object.
+
 ### Verify Fixity (optional)
 
 Additionally, if a given `inventory.json` contains an optional fixity block, it is possible to perform
