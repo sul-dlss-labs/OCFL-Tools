@@ -130,7 +130,7 @@ deposit_dir/
   head/
     {action files}
     content/
-      {files and directories to or update, if applicable}
+      {files and directories to add or update, if applicable}
 ```
 
 `{action files}` are AT LEAST ONE of `add_files.json`, `delete_files.json`, `update_files.json`,
