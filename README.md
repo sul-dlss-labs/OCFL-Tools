@@ -114,7 +114,7 @@ Additionally, if a given `inventory.json` contains an optional fixity block, it 
 a `#verify_checksums` check against the files on disk, except using values and digest types stored in
 the fixity block instead of the OCFL digest algorithm. Since a fixity block is optional, and is not
 required to hold values for every file in the manifest, this check should not be considered a primary
-method for checksum validation. 
+method for checksum validation.
 
 ```
 
@@ -349,14 +349,6 @@ version 2 of an object, you can't edit the state of version 1 - but it won't pre
 you from the more subtle stupids. That's for implementing applications to work around
 with their own business logic.
 
-This version of OCFL-Tools implements file de-duplication. A later version will make
-that a feature flag so you can disable it if you wish.
-
-It's up to implementing applications to marshal bitstreams and write them to the appropriate directories.
-OCFL-Tools just creates the inventory.json files and verifies that the content within them is correctly
-formatted and, optionally, actually exists on disk. It's up to something else to put the bits on disk
-where OCFL-Tools expects them to be.
-
 `OcflTools::OcflValidator` will take a directory and tell you if it's an OCFL object or not. If it is a valid OCFL
 object, `OcflValidator` will check the files on disk against the records in the inventory.json and let
 you know if they are all there and have matching checksums.
@@ -369,3 +361,17 @@ and internally consistent. `OcflVerify` doesn't care or know about files or dire
 `OcflTools::OcflResults` is a class to capture logging events for a specific OcflValidator or
 OcflVerify instance. Any reported error (inspect `OcflResults#get_errors`) indicates the object
 under consideration is not OCFL compliant.
+
+`OcflTools::OcflDeposit` is a reference implementation of a deposit workflow from an upstream repository.
+When given a correctly-formatted `deposit` directory and a destination directory, `OcflDeposit` will
+attempt to create a new OCFL object an empty destination directory, or add a new version to a
+well-formed OCFL object in the destination directory.
+
+OCFL supports file deduplication but it is up to the implementing application to decide
+if this is desirable behavior. If one is using `OcflDeposit` then deduplication will occur when
+the same bitstream is added to an object several times in the same version with different
+filenames AND only one file is placed in `deposit/head/content` for versioning.
+
+When adding an existing bitstream as a different filename in a new version, deduplication will
+occur when a matching digest can be found in the manifest, but only if the new filename is versioned
+via `copy_files.json` and if the bitstream is not added again to `deposit/head/content`.
