@@ -1,5 +1,5 @@
 module OcflTools
-  # Class to perform checksum and structural validation of POSIX OCFL directories.
+  # Class to perform validation actions on POSIX directories that potentially contain OCFL objects. 
   class OcflValidator
 
     # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
@@ -25,7 +25,8 @@ module OcflTools
       @verify           = nil # some checks create a verify object; have a way to get at that.
     end
 
-    # @return [OcflTools::OcflResults] results of validation results.
+    # Get the current summation of results events for this instance, including a roll-up of any verify actions.
+    # @return [OcflTools::OcflResults] current validation results.
     def results
       @my_results.add_results(@verify.results) unless @verify == nil
       @my_results
@@ -36,6 +37,8 @@ module OcflTools
     # Will fail if digest is not found in manifest or a fixity block.
     # This validates all versions and all files in the object_root.
     # If you want to just check a specific version, call {verify_directory}.
+    # @param [String] digest optional digest to use, if one wishes to use values in the fixity block instead of the official OCFL digest values.
+    # @return {OcflTools::OcflResults} of event results
     def validate_ocfl_object_root(digest: nil)
       # calls verify_structure, verify_inventory and verify_checksums.
       self.verify_structure
@@ -49,6 +52,9 @@ module OcflTools
     end
 
     # Performs checksum validation of files listed in the inventory's fixity block.
+    # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
+    # @param [String] digest string value of the algorithm to use for this fixity check. This value must exist as a key in the object's fixity block.
+    # @return {OcflTools::OcflResults} of event results
     def verify_fixity(inventory_file:"#{@ocfl_object_root}/inventory.json", digest:'md5')
       # Gets the appropriate fixity block, calls compare_hash_checksums
       @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
@@ -101,6 +107,8 @@ module OcflTools
 
     # Given an inventory file, do the files mentioned in the manifest exist on disk?
     # This is a basic file existence cross-check.
+    # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
+    # @return {OcflTools::OcflResults} of event results
     def verify_manifest(inventory_file="#{@ocfl_object_root}/inventory.json")
       @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
       files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
@@ -133,7 +141,8 @@ module OcflTools
     # whatever version of the inventory.json (hopefully the latest!) is in the root directory.
     # Otherwise, if you give it a version 3 inventory, it'll check v1...v3 directories on disk
     # against the inventory's manifest, but won't check >v4.
-    # @return [OcflTools::OcflResults] results
+    # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
+    # @return {OcflTools::OcflResults} of event results
     def verify_checksums(inventory_file="#{@ocfl_object_root}/inventory.json")
       # validate inventory.json checksum against inventory.json.<sha256|sha512>
       # validate files in manifest against physical copies on disk.
@@ -155,6 +164,7 @@ module OcflTools
     # Do all the files and directories in the object_dir conform to spec?
     # Are there inventory.json files in each version directory? (warn if not in version dirs)
     # Deduce version dir naming convention by finding the v1 directory; apply that format to other dirs.
+    # @return {OcflTools::OcflResults} of event results
     def verify_structure
 
       error = nil
@@ -349,7 +359,9 @@ module OcflTools
     # We may also want to only verify a specific directory, not the entire object.
     # For example, if we've just added a new version, we might want to just check those files
     # and not the rest of the object (esp. if it has some very large version directories).
-    def verify_directory(version, digest=nil)
+    # @param [Integer] version directory to verify
+    # @return {OcflTools::OcflResults} of verify events
+    def verify_directory(version)
 
       # start by getting version format and directories.
       if @version_format == nil
@@ -395,34 +407,27 @@ module OcflTools
 
     # Different from verify_directory.
     # Verify_version is *all* versions of the object, up to and including this one.
-    # Verify_directory is *just* check the files and checksums of inside that particular version directory.
+    # Verify_directory is *just* check the files and checksums inside that particular version directory.
     # Verify_version(@head) is the canonical way to check an entire object?
-    def verify_version(version, digest=nil)
+    # @param [Integer] version of object to verify
+    # @return {OcflTools::OcflResults}
+    def verify_version(version)
       # calls verify_directory for 1...n versions.
       count = 1       # start at the bottom
       until count > version # count to the top
-        self.verify_directory(count, digest=nil)
+        self.verify_directory(count)
         count += 1
       end
+      @my_results
     end
 
-    # Is the inventory file valid?
-    # @return [OcflTools::OcflResults] of verification results.
+    # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
+    # @return {OcflTools::OcflResults} of event results
     def verify_inventory(inventory_file="#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
       @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
       @verify    = OcflTools::OcflVerify.new(@inventory)
       @verify.check_all # creates & returns @results object from OcflVerify
-    end
-
-    # Do all the files on disk exist in the most recent manifest?
-    # This is an existence check, not a checksum verification.
-    # It creates a list of files from all version directories on disk
-    # and tries to match them to entries in the most recent inventory.json.
-    def verify_files
-      # Get most recent inventory; get version directories and contentDir
-      # Get all files in all contentDir
-      # Check against manifest block.
     end
 
   end
