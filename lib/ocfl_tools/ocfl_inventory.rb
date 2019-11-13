@@ -54,7 +54,7 @@ module OcflTools
     end
 
     # Reads in a file, parses the JSON and ingests it into an {OcflTools::OcflInventory}
-    # @param [String] file a file that should contain an inventory.json.
+    # @param [Pathname] file fully-qualified filepath to a valid OCFL inventory.json.
     # @return [self]
     def from_file(file)
       import_hash = self.read_json(file)

@@ -70,6 +70,53 @@ puts ocfl.serialize
 # This will also generate the appropriate digest sidecar file.
 ocfl.to_file('/directory/to/put/inventory/in/')
 
+```
+
+## Validating OCFL objects
+
+The prime use case of this gem is to inspect directories for well-formed OCFL objects
+and perform verification actions on them: ensuring that they are syntactically correct and
+that all files referenced in the OCFL object exist on disk and match their stored digest values.
+
+There are four levels of verification available, each checking a different aspect of the OCFL object.
+
+### Verify Structure
+
+This check inspects a given directory on disk for "OCFL-ness". It attempts to deduce the version
+directory naming convention, checks for the presence of required OCFL files (primarily the inventory.json, sidecar disgest and NamAsTe identifier), and verifies that there is a complete
+sequence of version directories present.
+
+### Verify Inventory
+
+This check takes an inventory file discovered by `#verify_structure` and checks it for format
+and internal consistency. By default it acts on the `inventory.json` in the object root, but it
+can also be directed at any of the inventories in any version directory.
+
+### Verify Manifest
+
+This cross-checks all files mentioned in the given `inventory.json` and verifies that every file
+mentioned in every version state block can be associated with its matching file in the manifest block.
+It then verifies that all files mentioned in the manifest block exist on disk in the given
+object directory. It does not perform checksum verification of these files, and thus is appropriate
+for the quick initial identification and verification of large volumes of suspected OCFL objects.
+
+### Verify Checksums
+
+This is a potentially resource-intensive check that computes new digest values for each file discovered
+on disk and compares them against values stored in the manifest block of the provided `inventory.json`.
+ It reports problems if a given checksum does not match the stored value, or if a file is discovered
+ on disk that does not have a record in the manifest block, or if a file in the manifest block cannot
+ be found on disk.
+
+### Verify Fixity (optional)
+
+Additionally, if a given `inventory.json` contains an optional fixity block, it is possible to perform
+a `#verify_checksums` check against the files on disk, except using values and digest types stored in
+the fixity block instead of the OCFL digest algorithm. Since a fixity block is optional, and is not
+required to hold values for every file in the manifest, this check should not be considered a primary
+method for checksum validation. 
+
+```
 
 # Check a directory for a valid OCFL object
 validate = OcflTools::OcflValidator.new(object_root_dir)
@@ -84,7 +131,7 @@ puts validate.verify_fixity(digest: 'sha1').results   # checks files using sha1 
 
 # If you just want to do a complete check of a suspected OCFL object root, do:
 validate = OcflTools::OcflValidator.new(object_root_dir)
-puts validate.validate_ocfl_object_root # Will do structure, inventory and manifest checksum checks.
+puts validate.validate_ocfl_object_root.results # Will do structure, inventory and manifest checksum checks.
 
 # If you'd like to use values in the fixity block instead of the manifest checksums, do:
 puts validate.validate_ocfl_object_root(digest: 'sha1').results

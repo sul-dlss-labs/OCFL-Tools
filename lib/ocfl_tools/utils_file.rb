@@ -18,6 +18,7 @@ module OcflTools
       end
 
       # Given an object root and a version, return the files on disk in the appropriate content dir.
+      # @return [Array] of fully-qualified filepaths for this version of the {OcflTools::Ocflinventory}
       def self.get_version_dir_files(object_root_dir, version)
         version_format = OcflTools::Utils::Files.get_version_format(object_root_dir)
         # Int to version format

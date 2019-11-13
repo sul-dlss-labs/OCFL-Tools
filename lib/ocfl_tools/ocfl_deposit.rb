@@ -2,19 +2,26 @@ module OcflTools
   # Class to take new content from a deposit directory and marshal it
   # into a new version directory of a new or existing OCFL object dir.
   # Expects deposit_dir to be:
-  # <ocfl deposit directoy>/
+  #
+  #   <ocfl deposit directoy>/
   #     |-- inventory.json (from object_directory root, if adding to existing version)
+  #     |-- inventory.json.sha512 (matching sidecar from object_directory root)
   #     |-- head/
   #         |-- add_files.json     (all proposed file add actions)
   #         |-- update_files.json  (all proposed file update actions)
+  #         |-- copy_files.json    (all proposed file copy actions)
   #         |-- delete_files.json  (all proposed file delete actions)
   #         |-- move_files.json    (all proposed file move actions)
+  #         |-- version.json       (optional version metadata)
   #         |-- fixity_files.json  (optional fixity information)
   #         |-- <content_dir>/
   #             |-- <files to add or update>
   #
   class OcflDeposit < OcflTools::OcflInventory
 
+    # @param [Pathname] deposit_directory fully-qualified path to a well-formed deposit directory.
+    # @param [Pathname] object_directory fully-qualified path to either an empty directory to create new OCFL object in, or the existing OCFL object to which the new version directory should be added.
+    # @return {OcflTools::OcflDeposit}
     def initialize(deposit_directory:, object_directory:)
       @deposit_dir = deposit_directory
       @object_dir  = object_directory
@@ -40,8 +47,8 @@ module OcflTools
       san_check
     end
 
-    # @return {OcflTools::OcflResults} results object containing information about actions taken
-    # against this object.
+    # Returns a {OcflTools::OcflResults} object containing information about actions taken during the staging and creation of this new version.
+    # @return {OcflTools::OcflResults}
     def results
       @my_results
     end
@@ -49,6 +56,7 @@ module OcflTools
     # Creates a new version of an OCFL object in the destination object directory.
     # This method can only be called if the {OcflTools::OcflDeposit} object passed all
     # necessary sanity checks, which occur when the object is initialized.
+    # @return {OcflTools::OcflDeposit} self
     def deposit_new_version
       # verify that our object_directory head is still what we expect.
       # create the version and contentDirectory directories.
@@ -71,7 +79,7 @@ module OcflTools
       end
 
       process_new_version
-
+      return self
     end
 
 
@@ -503,7 +511,7 @@ module OcflTools
             raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
           end
         end
-        # user block must contain 'name', 'address'
+        # user block MUST contain 'name', 'address'
         [ 'name', 'address' ].each do | req_key |
           if !version_file['user'].has_key?(req_key)
             @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
@@ -514,31 +522,26 @@ module OcflTools
         self.set_version_user(@new_version, version_file['user'])
         self.set_version_message(@new_version, version_file['message'])
         self.set_version_created(@new_version, version_file['created'])
-
       end
-
 
     end
 
     def stage_existing_object
-      # read existing inventory into OcflInventory instance.
-      # Determine next version, stage files into it.
-      # - check checksums when staging.
 
       # If we get here, we know that the local inventory.json is the same as the dest. inventory.json.
       self.from_file("#{@deposit_dir}/inventory.json")
+
+      # Increment the version from the inventory.json by 1.
       @new_version = OcflTools::Utils.version_string_to_int(self.head) + 1
 
-      self.get_version(@new_version) # Add a new version.
+      self.get_version(@new_version) # Add this new version to our representation of this inventory in self.
 
-      process_action_files
-
-      # See if we're adding any files that already exist in the manifest here?
+      process_action_files # now process all our action files for this new version.
 
     end
 
     def process_new_version
-      # I've got a valid OCFL object tee'd up.
+      # We just passed OCflVerify to get here, so we're good to go.
 
       # Create version & content directory.
       target_content = "#{@object_dir}/#{@head}/#{@contentDirectory}"
@@ -553,7 +556,10 @@ module OcflTools
 
       source_content = "#{@deposit_dir}/head/#{@contentDirectory}"
 
-      # Copy/move content across.
+      # Copy [or move? make this behavior configurable] content across.
+      # Why move? Well, if you're on the same filesystem root, and you're moving large files,
+      # move is *much, much faster* and doesn't run the risk of bitstream corruption as it's
+      # just a filesystem metadata operation. 
       FileUtils.cp_r "#{source_content}/.", target_content
 
       # Add inventory.json to version directory.

@@ -1,6 +1,5 @@
 module OcflTools
-  # Dedicated class for collating results of validation and verification checks
-  # performed by objects. Designed to replace the spaggy @my_results in various places.
+  # Class for collating results of validation and verification checks.
   class OcflResults
     def initialize
       @my_results             = {}
@@ -13,26 +12,34 @@ module OcflTools
 
     end
 
+    # Convenience method for obtaining a hash  of results.
+    # @return [Hash] of results stored in this instance.
     def results
       @my_results
     end
 
+    # Convenience method for obtaining a hash  of results.
+    # @return [Hash] of results stored in this instance.
     def all
       @my_results
     end
 
+    # @return [Hash] a hash of all the 'error' entries stored in this instance.
     def get_errors
       @my_results['error']
     end
 
+    # @return [Hash] a hash of all the 'warn' entries stored in this instance.
     def get_warnings
       @my_results['warn']
     end
 
+    # @return [Hash] a hash of all the 'info' entries stored in this instance.
     def get_info
       @my_results['info']
     end
 
+    # @return [Hash] a hash of all the 'OK' entries stored in this instance.
     def get_ok
       @my_results['ok']
     end
@@ -40,6 +47,7 @@ module OcflTools
     # Processes all of @my_results and creates a nested hash of
     # context => level => code => [ descriptions ]
     # Useful if you want to get all the info/error/warn/ok results for a specific context.
+    # @return [Hash] a nested hash of results, organized with 'context' as a top level key.
     def get_contexts
       @my_results.each do | level, codes | # levels are warn, info, ok, error
         codes.each do | code, contexts |
@@ -75,11 +83,14 @@ module OcflTools
     end
 
     # Get all results for a specific context (e.g. 'verify_checksums')
+    # @param [String] my_context a string value of the context (e.g. 'verify_checksums') to query
+    # @return [Hash] a hash of results for the specified context, arranged by 'code' => [ descriptions ].
     def get_context(my_context)
       self.get_contexts[my_context]
     end
 
-    # @return [Integer] error_count of errors in results.
+    # Gets the total number of error events contained within this instance.
+    # @return [Integer] the number of errors.
     def error_count
       my_count = 0
       @my_results['error'].each do | code, contexts |
@@ -90,6 +101,8 @@ module OcflTools
       my_count
     end
 
+    # Gets the total number of warning events contained within this instance.
+    # @return [Integer] the number of warnings.
     def warn_count
       my_count = 0
       @my_results['warn'].each do | code, contexts |
@@ -100,6 +113,8 @@ module OcflTools
       my_count
     end
 
+    # Gets the total number of 'info' events contained within this instance.
+    # @return [Integer] the number of informational messages.
     def info_count
       my_count = 0
       @my_results['info'].each do | code, contexts |
@@ -110,6 +125,8 @@ module OcflTools
       my_count
     end
 
+    # Gets the total number of 'ok' events contained within this instance.
+    # @return [Integer] the number of OK messages.
     def ok_count
       my_count = 0
       @my_results['ok'].each do | code, contexts |
@@ -120,6 +137,10 @@ module OcflTools
       my_count
     end
 
+    # Creates an 'OK' message in the object with the specified code and context.
+    # @param [String] code the appropriate 'ok' code for this event.
+    # @param [String] context the process or class that is creating this event.
+    # @param [String] description the details of this specific event.
     # @return [String] description of posted OK statement.
     def ok(code, context, description)
       if @my_results['ok'].key?(code) == false
@@ -136,7 +157,11 @@ module OcflTools
       end
     end
 
-    # @return [String] description of posted information.
+    # Creates an 'info' message in the object with the specified code and context.
+    # @param [String] code the appropriate 'Info' code for this event.
+    # @param [String] context the process or class that is creating this event.
+    # @param [String] description the details of this specific event.
+    # @return [String] description of posted Info statement.
     def info(code, context, description)
       if @my_results['info'].key?(code) == false
         @my_results['info'][code] = Hash.new
@@ -152,7 +177,11 @@ module OcflTools
       end
     end
 
-    # @return [String] description of posted warning.
+    # Creates a 'Warn' message in the object with the specified code and context.
+    # @param [String] code the appropriate 'warn' code for this event.
+    # @param [String] context the process or class that is creating this event.
+    # @param [String] description the details of this specific event.
+    # @return [String] description of posted Warn statement.
     def warn(code, context, description)
       if @my_results['warn'].key?(code) == false
         @my_results['warn'][code] = Hash.new
@@ -168,7 +197,11 @@ module OcflTools
       end
     end
 
-    # @return [String] description of posted error.
+    # Creates an 'Error' message in the object with the specified code and context.
+    # @param [String] code the appropriate 'error' code for this event.
+    # @param [String] context the process or class that is creating this event.
+    # @param [String] description the details of this specific event.
+    # @return [String] description of posted Error statement.
     def error(code, context, description)
       if @my_results['error'].key?(code) == false
         @my_results['error'][code] = Hash.new
@@ -184,9 +217,10 @@ module OcflTools
       end
     end
 
-    # Given another Results object, copy that object's results into this one.
-    # @param [OcflTools::OcflResults] source Results instance to copy into this instance.
-    # @return [OcflTools::OcflResults] self
+    # Given another {OcflTools::OcflResults} instance, copy that object's data into this one. Used to 'roll up' Results
+    # from different levels of validation or process into a single results instance.
+    # @param {OcflTools::OcflResults} source Results instance to copy into this instance.
+    # @return {OcflTools::OcflResults} self
     def add_results(source)
       raise "#{source} is not a Results object!" unless source.is_a?(OcflTools::OcflResults)
       source.get_ok.each do | code, contexts |
