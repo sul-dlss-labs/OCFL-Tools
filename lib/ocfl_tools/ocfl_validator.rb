@@ -1,17 +1,17 @@
 module OcflTools
-  # Class to perform validation actions on POSIX directories that potentially contain OCFL objects. 
+  # Class to perform validation actions on POSIX directories that potentially contain OCFL objects.
   class OcflValidator
 
-    # @return [Pathname] ocfl_object_root the full local filesystem path to the OCFL object root directory.
+    # @return [Pathname] the full local filesystem path to the OCFL object root directory.
     attr_reader :ocfl_object_root
 
-    # @return [String] version_format the discovered version format of the object, found by inspecting version directory names.
+    # @return [String] the discovered version format of the object, found by inspecting version directory names.
     attr_reader :version_format
 
-    # @return [OcflTools::OcflInventory] inventory an OcflInventory object, if created.
+    # @return {OcflTools::OcflInventory} an OcflInventory object that represents the content of this directory, if the directory contains a valid OCFL object.
     attr_reader :inventory
 
-    # @return [OcflTools::OcflVerify] verify an OcflVerify object, if created.
+    # @return {OcflTools::OcflVerify} an OcflVerify object, if created.
     attr_reader :verify
 
     # @param [Pathname] ocfl_object_root is a the full local filesystem path to the object directory.
@@ -33,12 +33,9 @@ module OcflTools
     end
 
     # Perform an OCFL-spec validation of the given object directory.
-    # If given the optional digest value, verify file content using checksums in inventory file.
-    # Will fail if digest is not found in manifest or a fixity block.
-    # This validates all versions and all files in the object_root.
-    # If you want to just check a specific version, call {verify_directory}.
+    # If given the optional digest value, verify file content using checksums in inventory file will fail if digest is not found in manifest or a fixity block. This validates all versions and all files in the object_root. If you want to just check a specific version, call {verify_directory}.
     # @param [String] digest optional digest to use, if one wishes to use values in the fixity block instead of the official OCFL digest values.
-    # @return {OcflTools::OcflResults} of event results
+    # @return {OcflTools::OcflResults} event results
     def validate_ocfl_object_root(digest: nil)
       # calls verify_structure, verify_inventory and verify_checksums.
       self.verify_structure
@@ -141,6 +138,8 @@ module OcflTools
     # whatever version of the inventory.json (hopefully the latest!) is in the root directory.
     # Otherwise, if you give it a version 3 inventory, it'll check v1...v3 directories on disk
     # against the inventory's manifest, but won't check >v4.
+    # {#verify_structure} will, however, let you know if your most recent inventory goes to v3,
+    # but there's a v4 directory in your object root.
     # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
     # @return {OcflTools::OcflResults} of event results
     def verify_checksums(inventory_file="#{@ocfl_object_root}/inventory.json")
@@ -421,8 +420,10 @@ module OcflTools
       @my_results
     end
 
+    # Creates an {OcflInventory} for the given inventory.json,
+    # then creates an {OcflVerify} instance of it and verifies it.
     # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
-    # @return {OcflTools::OcflResults} of event results
+    # @return {OcflTools::OcflResults} event results
     def verify_inventory(inventory_file="#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
       @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
