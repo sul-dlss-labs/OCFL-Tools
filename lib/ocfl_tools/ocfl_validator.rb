@@ -8,10 +8,10 @@ module OcflTools
     # @return [String] the discovered version format of the object, found by inspecting version directory names.
     attr_reader :version_format
 
-    # @return {OcflTools::OcflInventory} an OcflInventory object that represents the content of this directory, if the directory contains a valid OCFL object.
+    # @return {OcflTools::OcflInventory} an OcflInventory instance that represents an inventory.json file, if the directory contains a valid OCFL object.
     attr_reader :inventory
 
-    # @return {OcflTools::OcflVerify} an OcflVerify object, if created.
+    # @return {OcflTools::OcflVerify} an OcflVerify instance that represents the results of requesting verification of an OcflInventory.
     attr_reader :verify
 
     # @param [Pathname] ocfl_object_root is a the full local filesystem path to the object directory.

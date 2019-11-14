@@ -87,16 +87,21 @@ sequence of version directories present.
 ### Verify Inventory
 
 This check takes an inventory file discovered by `#verify_structure` and checks it for format
-and internal consistency. By default it acts on the `inventory.json` in the object root, but it
-can also be directed at any of the inventories in any version directory.
+and internal consistency. It also verifies that every file mentioned in every version state block
+can be associated with its matching file in the manifest block. By default it acts on the
+`inventory.json` in the object root, but it can also be directed at any of the inventories
+in any version directory.
 
 ### Verify Manifest
 
-This cross-checks all files mentioned in the given `inventory.json` and verifies that every file
-mentioned in every version state block can be associated with its matching file in the manifest block.
-It then verifies that all files mentioned in the manifest block exist on disk in the given
-object directory. It does not perform checksum verification of these files, and thus is appropriate
-for the quick initial identification and verification of large volumes of suspected OCFL objects.
+This check verifies that all files mentioned in the manifest block exist on disk in the given
+object directory, and that all files on disk for all versions of the given inventory file can
+be associated with a matching record in the manifest. It does not perform checksum verification
+of these files, and thus is appropriate for the quick initial identification and verification of
+large volumes of suspected OCFL objects. Note that `#verify_manifest` confines itself to versions
+discovered in the `inventory.json`, so if an object directory contains more version directories,
+`#verify_manifest` will not inspect those directories. `#verify_structure` will, however, detect
+this issue as an error condition.
 
 ### Verify Checksums
 
@@ -108,7 +113,7 @@ on disk and compares them against values stored in the manifest block of the pro
 
 For larger objects, or as part of a deposit workflow, it is possible to call `#verify_checksum` against
 the contents of one version directory only. See `OcflValidator#verify_directory` for details. This method
-is used by `OcflDeposit` to verify successful transfer of a new version directory without invoking a full 
+is used by `OcflDeposit` to verify successful transfer of a new version directory without invoking a full
 checksum validation of all existing version directories in the destination object.
 
 ### Verify Fixity (optional)

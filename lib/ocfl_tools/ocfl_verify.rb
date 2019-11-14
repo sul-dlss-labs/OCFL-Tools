@@ -1,12 +1,12 @@
 module OcflTools
-  # Class to verify that an OcflObject is composed of valid data and structures.
-  class OcflVerify < OcflTools::OcflObject
+  # Class to verify that an instance of {OcflTools::OcflObject} or {OcflTools::OcflInventory} is composed of valid data and structures.
+  class OcflVerify #< OcflTools::OcflObject
 
-    # @return [OcflTools::OcflResults] my_results is a OcflResults object of check results.
+    # @return {OcflTools::OcflResults} containing check results.
     attr_reader :my_results
 
     # Create a new OCFLVerify object, using an OcflTools::Ocflobject as source.
-    # @param [Object] ocfl_object {OcflTools::OcflObject} an ocfl object or inventory to verify.
+    # @param {OcflTools::OcflObject} ocfl_object an ocfl object or inventory to verify.
     def initialize(ocfl_object)
       @my_victim = ocfl_object
       @my_results = OcflTools::OcflResults.new
@@ -16,14 +16,14 @@ module OcflTools
 
     end
 
-    # @return {OcflTools::OcflResults} results object containing information about actions taken
+    # @return {OcflTools::OcflResults} containing information about actions taken
     # against this object.
     def results
       @my_results
     end
 
-    # Performs all OCFLVerify checks on the given object and reports results.
-    # @return [Hash] of results.
+    # Performs all checks on the given object and reports results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_all
       # Duck-typing the heck out of this, assuming @my_victim will respond to ocflobject methods.
       self.check_id
@@ -38,7 +38,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for valid value in the id attribute.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_id
       errors = nil
 
@@ -58,7 +58,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for valid value in the head attribute.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_head
       case @my_victim.head
         when nil
@@ -82,7 +82,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for valid value in the type attribute.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_type
       # String should match spec URL? Shameless green.
       @my_results.ok('O200', 'check_type', 'OCFL 3.5.1 Inventory Type is OK.' )
@@ -90,7 +90,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for valid value in the digestAlgorithm attribute.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_digestAlgorithm
       # must be one of sha256 or sha512
       case
@@ -110,7 +110,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for a well-formed manifest block.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_manifest
       # Should pass digest cross_check.
       # can be null if it passes cross_check? (empty inventories are valid, but warn)
@@ -133,11 +133,11 @@ module OcflTools
          @my_results.ok('O200', 'check_manifest', 'OCFL 3.5.2 Inventory Manifest syntax is OK.')
        end
 
-      return @my_results # shameless green
+      return @my_results
     end
 
     # Checks OCFL Object for a well-formed versions block.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_versions
 
       version_count   = @my_victim.version_id_list.length
@@ -183,7 +183,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for a well-formed fixity block, if present. We do not compute fixity here; only check existence.
-    # @return [Hash] of results.
+    # @return {Ocfltools::OcflResults} of results.
     def check_fixity
       # If present, should have at least 1 sub-key and 1 value.
       errors = nil
@@ -202,12 +202,12 @@ module OcflTools
         @my_results.ok('O111', 'check_fixity', "Fixity block is present and contains valid algorithms.")
       end
 
-      return @my_results # shameless green
+      return @my_results
     end
 
     # Checks the contents of the manifest block against the files and digests in the versions block to verify all
     # files necessary to re-constitute the object at any version are correctly referenced in the OCFL Object.
-    # @return [Hash] of results
+    # @return {Ocfltools::OcflResults} of results.
     def crosscheck_digests
       # requires values in @versions and @manifest.
       # verifies that every digest in @versions can be found in @manifest.
