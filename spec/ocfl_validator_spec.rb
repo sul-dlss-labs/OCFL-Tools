@@ -111,20 +111,25 @@ describe OcflTools::OcflValidator do
   OcflTools.config.content_directory = 'data'
 
   describe "check results" do
-#  validate_a.verify_inventory.results
-#  puts "This is verify structure:"
-#  puts validate_a.verify_structure.results
-#  puts "This is verify inventory:"
-#  puts validate_a.verify_inventory.results
-  puts "This is a combined results:"
-  validate_a.validate_ocfl_object_root.results
-  puts "This is a validate_a.results.warn_count : #{validate_a.results.warn_count}"
-  puts "This is a validate_a.results.error_count: #{validate_a.results.error_count}"
-  puts "This is a validate_a.results.info_count : #{validate_a.results.info_count}"
-  puts "This is a validate_a.results.ok_count   : #{validate_a.results.ok_count}"
 
-  #puts validate_a.verify_manifest
-  #puts validate_a.validate_ocfl_object_root.results
+  validate_a.validate_ocfl_object_root.results
+
+    it "expects results.warn to be 2" do
+      expect(validate_a.results.warn_count).to eq 2
+    end
+
+    it "expects results.error to be 0" do
+          expect(validate_a.results.error_count).to eq 0
+    end
+
+    it "expects results.info to be 2" do
+      expect(validate_a.results.info_count).to eq 2
+    end
+
+    it "expects results.ok to be 12" do
+      expect(validate_a.results.ok_count).to eq 12
+    end
+
   end
 
   # Fixity!

@@ -312,8 +312,11 @@ If you wish to add additional information to the version, create a file named `v
 
 Create a file named `fixity_files.json` and place in `deposit/head`. The top level keys of this JSON
 should be the string value of the digest algorithm to add. Each key contains a hash of key/value pairs,
-where the key is the string value of the file digest as recorded in the manifest (i.e. either SHA256 or SHA512), and the value is the additional file digest to associate with this file as an additional fixity value. Note that you do not need to provide fixity values for all existing files in the object, and you
+where the key is the string value of the file digest as recorded in the manifest (i.e. either SHA256 or
+SHA512), and the value is the additional file digest to associate with this file as an additional fixity value.
+Note that you do not need to provide fixity values for all existing files in the object, and you
 can mix-and-match digest algorithms so long as the algorithm is listed as a supported value in your site.
+Set `OcflTools.config.fixity_algorithms` to specify acceptable algorithms.
 
 ```
 {
@@ -360,9 +363,9 @@ version 2 of an object, you can't edit the state of version 1 - but it won't pre
 you from the more subtle stupids. That's for implementing applications to work around
 with their own business logic.
 
-`OcflTools::OcflValidator` will take a directory and tell you if it's an OCFL object or not. If it is a valid OCFL
-object, `OcflValidator` will check the files on disk against the records in the inventory.json and let
-you know if they are all there and have matching checksums.
+`OcflTools::OcflValidator` will take a directory and tell you if it's an OCFL object or not.
+If it is a valid OCFL object, `OcflValidator` will check the files on disk against the records
+in the inventory.json and let you know if they are all there and have matching checksums.
 
 `OcflTools::OcflVerify` will take an `OcflObject` and will let you know if it's syntactically correct
 and internally consistent. `OcflVerify` doesn't care or know about files or directories on disk.
