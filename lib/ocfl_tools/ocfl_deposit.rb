@@ -451,19 +451,6 @@ module OcflTools
         end
       end
 
-      # Process delete_files, if present.
-      # TODO: Define format for delete_files.json. It only needs 1 value,
-      # so put it in one big 'delete' array:
-      # { "delete": [ filepaths to delete ]}
-      if File.exists? "#{@deposit_dir}/head/delete_files.json"
-        delete_files = self.read_json("#{@deposit_dir}/head/delete_files.json")
-        delete_files.each do | action, filepaths |
-          filepaths.each do | filepath |
-            self.delete_file(filepath, @new_version)
-          end
-        end
-      end
-
       # Process move_files, if present.
       # move_file requires { "source_file": "destination_file" }
       if File.exists? "#{@deposit_dir}/head/move_files.json"
@@ -480,6 +467,18 @@ module OcflTools
         copy_files.each do | source_file, destination_files |
           destination_files.each do | destination_file |
             self.copy_file(source_file, destination_file, @new_version)
+          end
+        end
+      end
+
+      # Process delete_files, if present.
+      # Do this last in case the same file is moved > 1.
+      # { "delete": [ filepaths to delete ]}
+      if File.exists? "#{@deposit_dir}/head/delete_files.json"
+        delete_files = self.read_json("#{@deposit_dir}/head/delete_files.json")
+        delete_files.each do | action, filepaths |
+          filepaths.each do | filepath |
+            self.delete_file(filepath, @new_version)
           end
         end
       end
@@ -559,7 +558,7 @@ module OcflTools
       # Copy [or move? make this behavior configurable] content across.
       # Why move? Well, if you're on the same filesystem root, and you're moving large files,
       # move is *much, much faster* and doesn't run the risk of bitstream corruption as it's
-      # just a filesystem metadata operation. 
+      # just a filesystem metadata operation.
       FileUtils.cp_r "#{source_content}/.", target_content
 
       # Add inventory.json to version directory.
