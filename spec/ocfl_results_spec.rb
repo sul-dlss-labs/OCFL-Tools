@@ -82,6 +82,11 @@ describe OcflTools::OcflResults do
       expect(results.warn_count).to eql(2)
     end
 
+    it "gets context_2" do
+      expect(results.get_context('context_2')).to match(
+        {"error"=>{"E111"=>["I took an arrow to the knee!", "I took another arrow to the knee!", "Plz stop knee hurts."]}, "warn"=>{"W222"=>["Someone is shooting arrows at me.", "Everyone plays stealth archers."]}}      )
+    end
+
   end
 
 end
