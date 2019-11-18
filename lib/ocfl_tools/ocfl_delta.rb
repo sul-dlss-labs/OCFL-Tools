@@ -20,6 +20,8 @@ module OcflTools
     end
 
     # Given a version, get the delta from the previous version.
+    # @param [Integer] version of object to get deltas for.
+    # @return [Hash] of actions applied to previous version to create current version.
     def previous(version)
       # San check, does version exist in object?
       if version == 1
@@ -51,6 +53,8 @@ module OcflTools
       unchanged_files = {}    # filepaths may not change, but digests can!
 
       @delta[version] = {}  # Always clear out the existing version delta.
+
+      actions = OcflTools::OcflActions.new
 
       temp_digests = previous_digests.keys - current_digests.keys
       if temp_digests.size > 0
@@ -106,12 +110,8 @@ module OcflTools
             if new_files.has_key?(file)
               # new digest, new file, it's an ADD!
               if new_files[file] == digest
-                if !@delta[version].key?('add')
-                  @delta[version]['add'] = {}
-                  @delta[version]['add'][digest] = []
-                end
-                @delta[version]['add'][digest] = ( @delta[version]['add'][digest] << file )
-                next
+                actions.add(digest, file)
+                next # need this so we don't also count it as an UPDATE
               end
             end
 
@@ -119,12 +119,7 @@ module OcflTools
             if current_files.has_key?(file)
               # New digest, existing file
               if current_files[file] == digest
-                if !@delta[version].key?('update')
-                  @delta[version]['update'] = {}
-                  @delta[version]['update'][digest] = []
-                end
-                @delta[version]['update'][digest] = ( @delta[version]['update'][digest] << file )
-                next
+                actions.update(digest, file)
               end
             end
           end
@@ -137,13 +132,11 @@ module OcflTools
           # get previous version filepaths, compare to current version filepaths.
           if filepaths.size > previous_digests[digest].size
             # Take current array from previous array
+            # What *new* filepaths do we have for this digest in this version?
             copied_files = filepaths - previous_digests[digest]
-            if !@delta[version].key?('copy')
-              @delta[version]['copy'] = {}
-              @delta[version]['copy'][previous_digests[digest][0]] = []
+            copied_files.each do | copy_file |
+              actions.copy(digest, copy_file)
             end
-            @delta[version]['copy'][previous_digests[digest][0]] = copied_files # ( @delta[version]['copy'][previous_digests[digest][0]] << file )
-            next
           end
 
           # 4. MOVE is unchanged digest, 1 deleted filepath, 1 added filepath.
@@ -151,15 +144,10 @@ module OcflTools
             # For it to be a move, this digest must be listed in missing_files AND new_files.
               if missing_files.has_value?(digest) && new_files.has_value?(digest)
                 # look this up in previous_files.
-                old_filename = previous_digests[digest]
-                new_filename = current_digests[digest]
-
-                if !@delta[version].key?('move')
-                  @delta[version]['move'] = {}
-                end
-                # move is just a string key/value pair.
-                @delta[version]['move'][old_filename[0]] =  new_filename[0]
-                next
+                old_filename = previous_digests[digest][0]
+                new_filename = current_digests[digest][0]
+                actions.move(digest, old_filename)
+                actions.move(digest, new_filename)
               end
           end
 
@@ -168,16 +156,10 @@ module OcflTools
             # Am I in missing_files ?
             previous_filepaths = previous_digests[digest]
             deleted_filepaths = previous_filepaths - filepaths
-
             if deleted_filepaths.size > 0
-              # Yup, it's a delete!
-              if !@delta[version].key?('delete')
-                @delta[version]['delete'] = []
-              end
               deleted_filepaths.each do | delete_me |
-                @delta[version]['delete'] = ( @delta[version]['delete'] << delete_me )
+                actions.delete(digest, delete_me)
               end
-              next
             end
           end
 
@@ -190,16 +172,13 @@ module OcflTools
           # For each missing digest, see if any of its filepaths are still referenced in current files.
           filepaths.each do | filepath |
             unless current_files.has_key?(filepath)
-              if !@delta[version].key?('delete')
-                @delta[version]['delete'] = []
-              end
-              @delta[version]['delete'] = ( @delta[version]['delete'] << filepath )
+              actions.delete(digest, filepath)
             end
           end
         end
       end
 
-      @delta[version]
+      @delta[version] = actions.all
 
     end
 
@@ -207,19 +186,18 @@ module OcflTools
     def get_first_version_delta
       # Everything in get_state is an 'add'
       version = 1
+      actions = OcflTools::OcflActions.new
 
       @delta[version] = {}
-      @delta[version]['add'] = {}
 
       current_digests = @ocfl_object.get_state(version)
       current_digests.each do | digest, filepaths |
-        @delta[version]['add'][digest] = []
         filepaths.each do | file |
-          @delta[version]['add'][digest] = ( @delta[version]['add'][digest] << file )
+          actions.add(digest, file)
         end
       end
 
-      @delta[version]
+      @delta[version] = actions.all
       # Everything in Fixity is also an 'add'
     end
 
