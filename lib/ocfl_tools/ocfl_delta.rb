@@ -1,5 +1,7 @@
 module OcflTools
   # Given an inventory, show changes from previous versions.
+  # OcflDelta takes in an OCFL Inventory object and creates a delta hash containing
+  # the actions performed to assemble the requested version.
   class OcflDelta
 
     attr_reader :delta
@@ -20,6 +22,14 @@ module OcflTools
       # and that it's formatted correctly (starting with a 'v').
       version_length = ocfl_object.head.length - 1
       @version_format = "v%0#{version_length}d"
+    end
+
+    # Generates a complete delta hash for all versions of this object.
+    def all
+      @ocfl_object.version_id_list.each do | version |
+        get_version_delta(version)
+      end
+      @delta
     end
 
     # Given a version, get the delta from the previous version.

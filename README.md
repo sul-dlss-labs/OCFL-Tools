@@ -363,6 +363,72 @@ Note that for the first version of an object, the destination `object_directory`
 subsequent versions of the object, the `object_directory` must contain the most recent version of
 the OCFL object to be updated.
 
+### Viewing Object History
+
+Use `OcflTools::OcflDelta` to query an OCFL object to produce the list of actions performed on each
+version of the object. This does not list when fixity information was added to the object, nor
+does it reveal `version` information. `version` information can be queried separately; historical
+fixity info requires access to prior versions of the inventory file.
+
+```
+ocfl       = OcflTools::OcflInventory.new.from_file("#{object_dir}/inventory.json")
+ocfl_delta = OcflTools::OcflDelta.new(ocfl)
+
+puts JSON.pretty_generate(ocfl_delta.all)
+
+# Or if you just want a specific version (say, changes made to create version 3), do:
+ocfl_delta.previous(3)
+```
+
+`JSON.pretty_generate(ocfl_delta.all)` yields output like this:
+
+```
+{
+  "v0001": {
+    "add": {
+      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+        "my_content/dracula.txt"
+      ],
+      "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
+        "my_content/poe.txt"
+      ]
+    }
+  },
+  "v0002": {
+    "copy": {
+      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+        "my_content/a_second_copy_of_dracula.txt",
+        "my_content/another_directory/a_third_copy_of_dracula.txt"
+      ]
+    },
+    "move": {
+      "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
+        "my_content/poe.txt",
+        "my_content/poe-nevermore.txt"
+      ]
+    }
+  },
+  "v0003": {
+    "update": {
+      "618ea77f3a74558493f2df1d82fee18073f6458573d58e6b65bade8bd65227fb": [
+        "my_content/poe-nevermore.txt"
+      ]
+    },
+    "delete": {
+      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+        "my_content/a_second_copy_of_dracula.txt"
+      ]
+    }
+  },
+  "v0004": {
+    "add": {
+      "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
+        "my_content/dunwich.txt"
+      ]
+    }
+  }
+}
+```
 
 ## Implementation notes
 
