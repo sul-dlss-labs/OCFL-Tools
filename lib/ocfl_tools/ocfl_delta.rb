@@ -16,7 +16,10 @@ module OcflTools
 
       @ocfl_object = ocfl_object
       @delta = {}
-
+      # We need to get version format, for final report-out. Assume we have a @head
+      # and that it's formatted correctly (starting with a 'v').
+      version_length = ocfl_object.head.length - 1
+      @version_format = "v%0#{version_length}d"
     end
 
     # Given a version, get the delta from the previous version.
@@ -52,7 +55,8 @@ module OcflTools
       unchanged_digests = {}  # digests may not have changed, but filepaths can!
       unchanged_files = {}    # filepaths may not change, but digests can!
 
-      @delta[version] = {}  # Always clear out the existing version delta.
+      version_string = @version_format % version.to_i
+      @delta[version_string] = {}  # Always clear out the existing version delta.
 
       actions = OcflTools::OcflActions.new
 
@@ -178,7 +182,7 @@ module OcflTools
         end
       end
 
-      @delta[version] = actions.all
+      @delta[version_string] = actions.all
 
     end
 
@@ -188,7 +192,8 @@ module OcflTools
       version = 1
       actions = OcflTools::OcflActions.new
 
-      @delta[version] = {}
+      version_string = @version_format % version.to_i
+      @delta[version_string] = {}
 
       current_digests = @ocfl_object.get_state(version)
       current_digests.each do | digest, filepaths |
@@ -197,7 +202,7 @@ module OcflTools
         end
       end
 
-      @delta[version] = actions.all
+      @delta[version_string] = actions.all
       # Everything in Fixity is also an 'add'
     end
 
