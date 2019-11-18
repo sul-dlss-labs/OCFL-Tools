@@ -245,12 +245,12 @@ copy of a bitstream that already exists in the object. If you do NOT want to mak
 copy, use `add_files.json` instead, and provide the bitstream in `deposit/head/{content_directory}`.
 
 ```
-{ "filepath of existing file": [ filepaths of new copies ] }
+{ "digest of an existing file": [ filepaths of new copies ] }
 
 e.g.
 
 {
-  "my_content/dunwich.txt": [
+  "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
     "my_content/a_second_copy_of_dunwich.txt",
     "my_content/a_third_copy_of_dunwich.txt"
   ]
@@ -260,32 +260,43 @@ e.g.
 
 ### Move files
 
-Create a file named `move_files.json` and place in `deposit/head`. Note that `move_files.json` does
-not take an array of files as a value. It's a 1:1 mapping of source and destination filepaths.
+`move` is functionally a rename operation, performed by creating a new filepath for the digest
+and then deleting the old one.
+
+Create a file named `move_files.json` and place in `deposit/head`. Note that `move_files.json`
+requires exactly 2 filepaths per digest; a source and a destination. It also will fail if
+the previous version has more than one filepath recorded for this digest; this is to prevent a
+Disambiguation issue when reconstructing file actions from the inventory file.
+
+If you wish to move a specific filepath instance where there are multiple source filepaths in
+the prior version, perform a `copy` action and then `delete` the desired source file.
+
 
 ```
-{ "filepath of old file location": "filepath of new file location" }
+{ "digest of source filepath": [ "source_file", "destination_file" ] }
 
 e.g.
 
 {
-  "my_content/a_third_copy_of_dunwich.txt":
+  "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
+    "my_content/a_third_copy_of_dunwich.txt",
     "my_content/moved_third_copy_of_dunwich_to_here.txt"
+  ]
 }
+
 
 ```
 
 ### Delete files
 
-Create a file named `delete_files.json` and place in `deposit/head`. Note that `delete_files.json`
-only contains one key, `delete`, with an array of values.
+Create a file named `delete_files.json` and place in `deposit/head`.
 
 ```
-{ "delete": [ filepaths of files to delete ] }
+{ "digest of file to delete": [ filepaths of files to delete ] }
 
 e.g.
 
-{ "delete": [
+{ "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
   "my_content/a_third_copy_of_dunwich.txt",
   "my_content/moved_third_copy_of_dunwich_to_here.txt"
  ]
