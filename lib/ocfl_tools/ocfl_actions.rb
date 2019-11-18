@@ -13,12 +13,16 @@ module OcflTools
     # Convenience method for obtaining a hash of recorded actions.
     # @return [Hash] of actions stored in this instance.
     def actions
+      # Don't return empty keys.
+      @my_actions.delete_if { |k,v| v == {} }
       @my_actions
     end
 
     # Convenience method for obtaining a hash recorded of actions.
     # @return [Hash] of actions stored in this instance.
     def all
+      # Don't return empty keys.
+      @my_actions.delete_if { |k,v| v == {} }
       @my_actions
     end
 
