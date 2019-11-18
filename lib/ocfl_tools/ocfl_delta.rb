@@ -96,38 +96,6 @@ module OcflTools
         end
       end
 
-      puts "Current files:"
-      current_files.each do | file, digest |
-        puts "#{digest} #{file}"
-      end
-
-      puts "Previous files:"
-      previous_files.each do | file, digest |
-        puts "#{digest} #{file}"
-      end
-
-      if !missing_files.empty?
-        puts "Missing files:"
-        missing_files.each do | file, digest |
-          puts "#{digest} #{file}"
-        end
-      end
-
-      if !new_files.empty?
-        puts "New files:"
-        new_files.each do | file, digest |
-          puts "#{digest} #{file}"
-        end
-      end
-
-      if !unchanged_files.empty?
-        puts "Unchanged files:"
-        unchanged_files.each do | file, digest |
-          puts "#{digest} #{file}"
-        end
-      end
-
-
       # 1. ADD is new digest, new filepath.
       # 2. UPDATE is new digest, existing filepath
       # consult new_digests and new_files
@@ -218,7 +186,6 @@ module OcflTools
 
       # 6. DELETE of last filepath is where there's a missing_digest && the filepath is gone too.
       if !missing_digests.empty?
-        puts "Doing missing digests now"
         missing_digests.each do | digest, filepaths |
           # For each missing digest, see if any of its filepaths are still referenced in current files.
           filepaths.each do | filepath |
@@ -232,18 +199,19 @@ module OcflTools
         end
       end
 
+      @delta[version]
+
     end
 
 
     def get_first_version_delta
       # Everything in get_state is an 'add'
       version = 1
-      puts "New files:"
+
       @delta[version] = {}
       @delta[version]['add'] = {}
 
       current_digests = @ocfl_object.get_state(version)
-      puts current_digests
       current_digests.each do | digest, filepaths |
         @delta[version]['add'][digest] = []
         filepaths.each do | file |
@@ -251,6 +219,7 @@ module OcflTools
         end
       end
 
+      @delta[version]
       # Everything in Fixity is also an 'add'
     end
 
