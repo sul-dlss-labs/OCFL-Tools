@@ -452,31 +452,58 @@ module OcflTools
       end
 
       # Process move_files, if present.
-      # move_file requires { "source_file": "destination_file" }
+      # move_file requires digest => [ filepaths ]
       if File.exists? "#{@deposit_dir}/head/move_files.json"
         move_files = self.read_json("#{@deposit_dir}/head/move_files.json")
-        move_files.each do | source_file, destination_file |
+
+        move_files.each do | digest, filepaths |
+          previous_state = self.get_state(@new_version -1 )
+          if !previous_state.has_key?(digest)
+            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in previous state whilst processing a move request.")
+            raise "Unable to find digest #{digest} in previous state whilst processing a move request."
+          end
+          previous_files = previous_state[digest]
+          # Disambiguation; we can only process a move if there is only 1 file here.
+          if previous_files.size != 1
+            @my_results.error('E111', 'process_action_files', "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version.")
+            raise "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version."
+          end
+          if !filepaths.include?(previous_files[0])
+            @my_results.error('E111', 'process_action_files', "Unable to find source file #{previous_files[0]} digest #{digest} in previous state whilst processing a move request.")
+            raise "Unable to find source file #{previous_files[0]} digest #{digest} in previous state whilst processing a move request."
+          end
+          source_file = previous_files[0]
+          destination_file = filepaths[1]
           self.move_file(source_file, destination_file, @new_version)
         end
       end
 
       # Process copy_files, if present.
-      # copy_files requires { "source_file": ["destination_files"]}
+      # copy_files requires digest => [ filepaths_of_copy_destinations ]
       if File.exists? "#{@deposit_dir}/head/copy_files.json"
         copy_files = self.read_json("#{@deposit_dir}/head/copy_files.json")
-        copy_files.each do | source_file, destination_files |
-          destination_files.each do | destination_file |
-            self.copy_file(source_file, destination_file, @new_version)
+        previous_state = self.get_state(@new_version -1 )
+
+        copy_files.each do | digest, filepaths |
+          if !previous_state.has_key?(digest)
+            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in previous state whilst processing a copy request.")
+            raise "Unable to find digest #{digest} in previous state whilst processing a copy request."
+          end
+
+          previous_files = previous_state[digest]
+
+          filepaths.each do | destination_file |
+            self.copy_file(previous_files[0], destination_file, @new_version)
           end
         end
       end
 
       # Process delete_files, if present.
       # Do this last in case the same file is moved > 1.
-      # { "delete": [ filepaths to delete ]}
+      #  { digest => [ filepaths_to_delete ] }
       if File.exists? "#{@deposit_dir}/head/delete_files.json"
         delete_files = self.read_json("#{@deposit_dir}/head/delete_files.json")
-        delete_files.each do | action, filepaths |
+        delete_files.each do | digest, filepaths |
           filepaths.each do | filepath |
             self.delete_file(filepath, @new_version)
           end
