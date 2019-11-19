@@ -215,20 +215,15 @@ module OcflTools
     # @note internal API.
     def update_manifest(file, digest, version)
       # We only ever add to the manifest.
-      # So if this digest exists, return the original source (physical path)
-      # or add new physical path if file not seen before.
+      physical_filepath = "#{OcflTools::Utils.version_int_to_string(version)}/#{@contentDirectory}/#{file}"
 
-      # This is where we'd have to do dedupe? Maybe with some indirection
-      # that checks for a DEDUPE constant being set? Or we assume Dedupe for now,
-      # and enable the optional no-dedupe later.
       if @manifest.key?(digest)
-        # The file is already in the manifest, don't need to add again.
-        # Just return the original path.
+        # This bitstream is already in the manifest.
+        # We need to append the new filepath to the existing array.
+        @manifest[digest] = ( @manifest[digest] << physical_filepath )
         return @manifest[digest]
       end
-      # otherwise, add to manifest.
-      physical_filepath = "#{OcflTools::Utils.version_int_to_string(version)}/#{@contentDirectory}/#{file}"
-      @manifest[digest] = [ physical_filepath ]
+      @manifest[digest] = [physical_filepath] # otherwise, add our first entry to the array.
       return @manifest[digest]
     end
 
@@ -296,14 +291,26 @@ module OcflTools
     # @return [Hash] state block of version after file copy has completed.
     # @note Raises an error if source_file does not exist in this version.
     def copy_file(source_file, destination_file, version)
-      # add new filename to existing digest.
+      # add new filename to existing digest in current state.
       # If destination file already exists, overwrite it.
       existing_files = self.get_files(version)
 
       if existing_files.key?(destination_file)
         self.delete_file(destination_file, version)
       end
-      self.add_file(destination_file, self.get_digest(source_file, version), version)
+      # should NOT call add_file, as add_file updates the manifest.
+      # Should instead JUST update current state with new filepath.
+      digest = self.get_digest(source_file, version)  # errors out if source_file not found in current state
+
+      my_state = self.get_state(version)
+      my_files = my_state[digest]
+      my_files << destination_file
+      unique_files = my_files.uniq # Just in case we're trying to add the same thing multiple times.
+      # Need to actually add this to @versions!
+      @versions[OcflTools::Utils.version_int_to_string(version)]['state'][digest] = unique_files
+      # Prove we actually added to state
+      return self.get_state(version)
+      # self.add_file(destination_file, self.get_digest(source_file, version), version)
     end
 
     # Moves (renames) a file from one location to another within the same version.

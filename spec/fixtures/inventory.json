@@ -12,7 +12,8 @@
       "v0002/data/my_content/a_second_file.txt"
     ],
     "checksum_cccccccccccc": [
-      "v0003/data/my_content/a_third_file.txt"
+      "v0003/data/my_content/a_third_file.txt",
+      "v0003/data/my_content/a_copy_of_third_file.txt"
     ],
     "checksum_dddddddddddd": [
       "v0005/data/my_content/a_second_file.txt"
