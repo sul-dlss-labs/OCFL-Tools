@@ -26,6 +26,10 @@ module OcflTools
       @my_actions
     end
 
+    # Creates an 'add' entry in the actions hash.
+    # @param [String] digest of the filepath being recorded.
+    # @param [Pathname] filepath of file to record.
+    # @return [Hash] of recorded action.
     def add(digest, filepath)
       if @my_actions['add'].key?(digest) == false
         @my_actions['add'][digest] = []
@@ -38,6 +42,10 @@ module OcflTools
       end
     end
 
+    # Creates an 'update' entry in the actions hash.
+    # @param [String] digest of the filepath being recorded.
+    # @param [Pathname] filepath of file to record.
+    # @return [Hash] of recorded action.
     def update(digest, filepath)
       if @my_actions['update'].key?(digest) == false
         @my_actions['update'][digest] = []
@@ -50,6 +58,10 @@ module OcflTools
       end
     end
 
+    # Creates a 'copy' entry in the actions hash.
+    # @param [String] digest of the filepath being recorded.
+    # @param [Pathname] filepath of file to record.
+    # @return [Hash] of recorded action.
     def copy(digest, filepath)
       if @my_actions['copy'].key?(digest) == false
         @my_actions['copy'][digest] = []
@@ -62,6 +74,10 @@ module OcflTools
       end
     end
 
+    # Creates a 'move' entry in the actions hash.
+    # @param [String] digest of the filepath being recorded.
+    # @param [Pathname] filepath of file to record.
+    # @return [Hash] of recorded action.
     def move(digest, filepath)
       if @my_actions['move'].key?(digest) == false
         @my_actions['move'][digest] = []
@@ -74,6 +90,10 @@ module OcflTools
       end
     end
 
+    # Creates a 'delete' entry in the actions hash.
+    # @param [String] digest of the filepath being recorded.
+    # @param [Pathname] filepath of file to record.
+    # @return [Hash] of recorded action.
     def delete(digest, filepath)
       if @my_actions['delete'].key?(digest) == false
         @my_actions['delete'][digest] = []
@@ -86,6 +106,10 @@ module OcflTools
       end
     end
 
+    # @param [String] digest of the filepath that is getting additional fixity values.
+    # @param [String] fixity_algorithm of the fixity digest being added (e.g. 'md5', 'sha1').
+    # @param [String] fixity_digest to associate with this digest.
+    # @return [Hash] of recorded fixity block.
     def fixity(digest, fixity_algorithm, fixity_digest)
       # Only create this key if used.
       if @my_actions.key?('fixity') == false
