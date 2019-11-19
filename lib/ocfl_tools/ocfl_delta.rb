@@ -18,10 +18,17 @@ module OcflTools
 
       @ocfl_object = ocfl_object
       @delta = {}
-      # We need to get version format, for final report-out. Assume we have a @head
-      # and that it's formatted correctly (starting with a 'v').
-      version_length = ocfl_object.head.length - 1
-      @version_format = "v%0#{version_length}d"
+      # We need to get version format, for final report-out. Assume that the ocfl_object versions are
+      # formatted correctly (starting with a 'v'). We can't trust the site config setting
+      # for this, as there's no guarantee the inventory we are reading in was created at this site.
+      first_version = @ocfl_object.versions.keys.sort[0] # should get us 'v0001' or 'v1'
+      sliced_version = first_version.split('v')[1]  # cut the leading 'v' from the string.
+      case
+      when sliced_version.length == 1    # A length of 1 for the first version implies 'v1'
+          @version_format = "v%d"
+        else
+          @version_format = "v%0#{sliced_version.length}d"
+      end
     end
 
     # Generates a complete delta hash for all versions of this object.
