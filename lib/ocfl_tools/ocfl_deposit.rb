@@ -214,43 +214,14 @@ module OcflTools
         raise "#{@deposit_dir}/head/add_files.json required, but not found."
       end
 
-      if deposit_head_files.include? 'update_manifest.json'
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional update_manifest.json")
-        deposit_head_files.delete('update_manifest.json')
-      else
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional update_manifest.json")
-      end
+      # 7. 'head' directory MAY contain one or more of these action files.
+      action_files = [ 'update_manifest.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
 
-
-
-      # 7. 'head' directory MAY contain a 'fixity_files.json' file.
-      if deposit_head_files.include? 'fixity_files.json'
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional fixity_files.json")
-        deposit_head_files.delete('fixity_files.json')
-      else
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional fixity_files.json")
-      end
-
-      if deposit_head_files.include? 'copy_files.json'
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional copy_files.json")
-        deposit_head_files.delete('copy_files.json')
-      else
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional copy_files.json")
-      end
-
-      if deposit_head_files.include? 'move_files.json'
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional move_files.json")
-        deposit_head_files.delete('move_files.json')
-      else
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional copy_files.json")
-      end
-
-      # 7b. 'head' directory MAY contain a 'version.json' file.
-      if deposit_head_files.include? 'version.json'
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional version.json")
-        deposit_head_files.delete('version.json')
-      else
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional version.json")
+      deposit_head_files.each do | file |
+        if action_files.include? file       # We found an action file!
+          @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional #{file}")
+          deposit_head_files.delete(file)
+        end
       end
 
 
