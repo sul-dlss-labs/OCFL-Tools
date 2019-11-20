@@ -214,6 +214,15 @@ module OcflTools
         raise "#{@deposit_dir}/head/add_files.json required, but not found."
       end
 
+      if deposit_head_files.include? 'update_manifest.json'
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional update_manifest.json")
+        deposit_head_files.delete('update_manifest.json')
+      else
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional update_manifest.json")
+      end
+
+
+
       # 7. 'head' directory MAY contain a 'fixity_files.json' file.
       if deposit_head_files.include? 'fixity_files.json'
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional fixity_files.json")
@@ -355,7 +364,7 @@ module OcflTools
 
       # 9. 'head' MUST contain at least one of the 'actions' json files (inc. fixity).
       # Any one of these is needed.
-      action_files = [ 'add_files.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
+      action_files = [ 'add_files.json', 'update_manifest.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
       action_found = nil
 
       deposit_head_files.each do | file |
@@ -419,25 +428,37 @@ module OcflTools
     end
 
     def process_action_files
+
+      # Process update_manifest, if present.
+      if File.exists? "#{@deposit_dir}/head/update_manifest.json"
+        updates = self.read_json("#{@deposit_dir}/head/update_manifest.json")
+        updates.each do | digest, filepaths |
+          filepaths.each do | file |
+            # Make sure it actually exists!
+            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
+              @my_results.error('E111', 'process_action_files', "File #{file} referenced in update_manifest.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
+              raise "File #{file} referenced in update_manifest.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
+            end
+            # Here's where we'd compute checksum.
+            if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
+              self.update_manifest( file, digest, @new_version)
+              @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to manifest inventory.")
+            else
+              @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
+              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
+            end
+          end
+        end
+      end
+
       # Process add_files, if present.
       # add_files requires { "digest_value": [ "filepaths" ]}
       if File.exists? "#{@deposit_dir}/head/add_files.json"
         add_files = self.read_json("#{@deposit_dir}/head/add_files.json")
         add_files.each do | digest, filepaths |
           filepaths.each do | file |
-            # Make sure it actually exists!
-            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
-              @my_results.error('E111', 'process_action_files', "File #{file} referenced in add_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
-              raise "File #{file} referenced in add_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
-            end
-            # Here's where we'd compute checksum.
-            if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
               self.add_file( file, digest, @new_version)
               @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
-            else
-              @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
-              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
-            end
           end
         end
       end

@@ -199,16 +199,6 @@ describe OcflTools::OcflInventory do
   end
 
 
-  describe "output inventory.json" do
-    ocfl.contentDirectory = 'data'
-    it "serializes the thing" do
-      # File.read("/path/to/file").should == “content”
-      content = ocfl.serialize.to_s
-      file    = File.read('./spec/fixtures/inventory.json')
-      expect(file).to include(content)
-    end
-  end
-
   describe "fail to read bad JSON" do
     it "fails to read a bad file" do
       bad_content = OcflTools::OcflInventory.new

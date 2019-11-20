@@ -166,6 +166,11 @@ module OcflTools
 
       raise "Can't edit prior versions! Only version #{self.version_id_list.sort[-1]} can be modified now." unless version == self.version_id_list.sort[-1]
 
+      # if the key is not in the manifest, assume that we meant to add it.
+      if !@manifest.key?(digest)
+        self.update_manifest(file, digest, version)
+      end
+
       if my_state.key?(digest)
         # file's already in this version. Add file to existing digest.
         my_files = my_state[digest]
@@ -174,8 +179,6 @@ module OcflTools
         # Need to actually add this to @versions!
         @versions[OcflTools::Utils.version_int_to_string(version)]['state'][digest] = unique_files
         # Prove we actually added to state
-        # Also need to add to @manifest!
-        self.update_manifest(file, digest, version)
         return self.get_state(version)
       end
 
@@ -188,7 +191,7 @@ module OcflTools
 
       # if it's not in State already, just add it.
       @versions[OcflTools::Utils.version_int_to_string(version)]['state'][digest] = [ file ]
-      self.update_manifest(file, digest, version)
+
       return self.get_state(version)
     end
 
