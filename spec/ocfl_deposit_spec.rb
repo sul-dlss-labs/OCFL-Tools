@@ -56,7 +56,6 @@ describe OcflTools::OcflDeposit do
     deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
     deposit.deposit_new_version
 
-    # puts deposit.results.results
 
     # shameless green
     it "returns a deposit object" do
@@ -140,6 +139,27 @@ describe OcflTools::OcflDeposit do
     end
 
   end
+
+  describe "create object D with many action files" do
+    # Adds some files & immediately moves / copies them in first version.
+    deposit_dir =  "#{basedir}/spec/fixtures/deposit/source_d"
+    object_dir  =  "#{basedir}/spec/fixtures/deposit/object_d"
+
+    if !Dir.empty?(object_dir)
+      # prep/reset destination
+      FileUtils.rm_r object_dir
+      FileUtils.mkdir_p object_dir
+    end
+
+    deposit = OcflTools::OcflDeposit.new(deposit_directory: deposit_dir, object_directory: object_dir)
+    deposit.deposit_new_version
+
+    it "expects zero errors" do
+      expect(deposit.results.error_count).to eq 0
+    end
+
+  end
+
 
 
 end

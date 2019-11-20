@@ -222,6 +222,20 @@ module OcflTools
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional fixity_files.json")
       end
 
+      if deposit_head_files.include? 'copy_files.json'
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional copy_files.json")
+        deposit_head_files.delete('copy_files.json')
+      else
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional copy_files.json")
+      end
+
+      if deposit_head_files.include? 'move_files.json'
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional move_files.json")
+        deposit_head_files.delete('move_files.json')
+      else
+        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head does not contain optional copy_files.json")
+      end
+
       # 7b. 'head' directory MAY contain a 'version.json' file.
       if deposit_head_files.include? 'version.json'
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional version.json")
@@ -457,20 +471,20 @@ module OcflTools
         move_files = self.read_json("#{@deposit_dir}/head/move_files.json")
 
         move_files.each do | digest, filepaths |
-          previous_state = self.get_state(@new_version -1 )
+          previous_state = self.get_state(@new_version)
           if !previous_state.has_key?(digest)
-            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in previous state whilst processing a move request.")
-            raise "Unable to find digest #{digest} in previous state whilst processing a move request."
+            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a move request.")
+            raise "Unable to find digest #{digest} in state whilst processing a move request."
           end
           previous_files = previous_state[digest]
           # Disambiguation; we can only process a move if there is only 1 file here.
           if previous_files.size != 1
             @my_results.error('E111', 'process_action_files', "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version.")
-            raise "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version."
+            raise "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in this version."
           end
           if !filepaths.include?(previous_files[0])
-            @my_results.error('E111', 'process_action_files', "Unable to find source file #{previous_files[0]} digest #{digest} in previous state whilst processing a move request.")
-            raise "Unable to find source file #{previous_files[0]} digest #{digest} in previous state whilst processing a move request."
+            @my_results.error('E111', 'process_action_files', "Unable to find source file #{previous_files[0]} digest #{digest} in state whilst processing a move request.")
+            raise "Unable to find source file #{previous_files[0]} digest #{digest} in state whilst processing a move request."
           end
           source_file = previous_files[0]
           destination_file = filepaths[1]
@@ -482,12 +496,12 @@ module OcflTools
       # copy_files requires digest => [ filepaths_of_copy_destinations ]
       if File.exists? "#{@deposit_dir}/head/copy_files.json"
         copy_files = self.read_json("#{@deposit_dir}/head/copy_files.json")
-        previous_state = self.get_state(@new_version -1 )
+        previous_state = self.get_state(@new_version)
 
         copy_files.each do | digest, filepaths |
           if !previous_state.has_key?(digest)
-            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in previous state whilst processing a copy request.")
-            raise "Unable to find digest #{digest} in previous state whilst processing a copy request."
+            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a copy request.")
+            raise "Unable to find digest #{digest} in state whilst processing a copy request."
           end
 
           previous_files = previous_state[digest]

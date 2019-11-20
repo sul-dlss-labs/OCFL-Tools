@@ -158,16 +158,27 @@ that matches your site's `OcflTools::config.content_directory` setting (defaults
 
 If this is to be the first version of a new OCFL object you MUST provide at least one file
 in the `content` directory to add, and you MUST include the `head/add_files.json` file (described below).
-The first version of an OCFL object MAY contain fixity information; provide a `head/fixity_files.json` with details. The first version MAY also contain a `head/version.json` to provide additional metadata
-about this version, but MUST NOT include any other action files (e.g `delete_files.json`, `copy_files.json`). Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`, describing the digital object identifier to use to uniquely identify this OCFL object at
+The first version of an OCFL object MAY contain fixity information; provide a `head/fixity_files.json` with details.
+The first version MAY also contain a `head/version.json` to provide additional metadata
+about this version, and MAY also contain a `head/move_files.json` or a `head/copy_files.json`, but MUST NOT contain
+a `head/delete_files.json`. Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`,
+ describing the digital object identifier to use to uniquely identify this OCFL object at
 this site. An example layout, where the id of the OCFL object being created is `123cd4567`, is below. In
 this example the site is using the default value `content` for `content_directory`.
+
+Note that, within an object version, actions are processed in the following order: ADD, UPDATE, MOVE, COPY, DELETE.
+This is to support the ingest of bitstreams where the logical filepath needs to differ from
+the physical (deposit directory `head/content`) layout: a file can be ingested under `head/content` and
+then a `move` or `copy` action can be performed in the same version to adjust the logical filepath to
+something that does not match the layout of the files in the deposit directory.
 
 ```
 deposit_dir/
   4=123cd4567
   head/
     add_files.json
+    move_files.json   [optional]
+    copy_files.json   [optional]
     version.json      [optional]
     fixity_files.json [optional]
     content/
@@ -190,7 +201,7 @@ deposit_dir/
 
 `{action files}` are AT LEAST ONE of `add_files.json`, `delete_files.json`, `update_files.json`,
 `move_files.json`, `copy_files.json` and `fixity_files.json`. You may also optionally include `version.json`,
-but this file does not count towards the validity check requirement.
+but this file does not count towards the minimum required action files requirement.
 
 The `inventory.json` and sidecar digest file must be the most recent versions of the inventory and
 sidecar from the OCFL object that you are updating, copied from the object root that you intend
