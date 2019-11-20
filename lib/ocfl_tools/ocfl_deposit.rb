@@ -471,12 +471,12 @@ module OcflTools
         move_files = self.read_json("#{@deposit_dir}/head/move_files.json")
 
         move_files.each do | digest, filepaths |
-          previous_state = self.get_state(@new_version)
-          if !previous_state.has_key?(digest)
+          my_state = self.get_state(@new_version)
+          if !my_state.has_key?(digest)
             @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a move request.")
             raise "Unable to find digest #{digest} in state whilst processing a move request."
           end
-          previous_files = previous_state[digest]
+          previous_files = my_state[digest]
           # Disambiguation; we can only process a move if there is only 1 file here.
           if previous_files.size != 1
             @my_results.error('E111', 'process_action_files', "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version.")
@@ -496,15 +496,15 @@ module OcflTools
       # copy_files requires digest => [ filepaths_of_copy_destinations ]
       if File.exists? "#{@deposit_dir}/head/copy_files.json"
         copy_files = self.read_json("#{@deposit_dir}/head/copy_files.json")
-        previous_state = self.get_state(@new_version)
+        my_state = self.get_state(@new_version)
 
         copy_files.each do | digest, filepaths |
-          if !previous_state.has_key?(digest)
+          if !my_state.has_key?(digest)
             @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a copy request.")
             raise "Unable to find digest #{digest} in state whilst processing a copy request."
           end
 
-          previous_files = previous_state[digest]
+          previous_files = my_state[digest]
 
           filepaths.each do | destination_file |
             self.copy_file(previous_files[0], destination_file, @new_version)
