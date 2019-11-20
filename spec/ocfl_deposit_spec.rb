@@ -158,6 +158,20 @@ describe OcflTools::OcflDeposit do
       expect(deposit.results.error_count).to eq 0
     end
 
+    ocfl = OcflTools::OcflInventory.new.from_file("#{object_dir}/inventory.json")
+
+    ocfl_delta = OcflTools::OcflDelta.new(ocfl)
+
+    puts "delta 1:"
+    puts ocfl_delta.previous(1)
+
+    puts "   "
+    #puts ocfl_delta.delta
+
+    puts JSON.pretty_generate(ocfl_delta.all)
+
+
+
   end
 
 

@@ -2,12 +2,13 @@ module OcflTools
   # Class for collating manifest actions, both for delta reporting and staging new versions.
   class OcflActions
     def initialize
-      @my_actions                = {}
-      @my_actions['add']         = {}
-      @my_actions['update']      = {}
-      @my_actions['copy']        = {}
-      @my_actions['move']        = {}
-      @my_actions['delete']      = {}
+      @my_actions                    = {}
+      @my_actions['update_manifest'] = {}
+      @my_actions['add']             = {}
+      @my_actions['update']          = {}
+      @my_actions['copy']            = {}
+      @my_actions['move']            = {}
+      @my_actions['delete']          = {}
     end
 
     # Convenience method for obtaining a hash of recorded actions.
@@ -24,6 +25,22 @@ module OcflTools
       # Don't return empty keys.
       @my_actions.delete_if { |k,v| v == {} }
       @my_actions
+    end
+
+    # Creates an 'update_manifest' entry in the actions hash.
+    # @param [String] digest of the filepath being recorded.
+    # @param [Pathname] filepath of file to record.
+    # @return [Hash] of recorded action.
+    def update_manifest(digest, filepath)
+      if @my_actions['update_manifest'].key?(digest) == false
+        @my_actions['update_manifest'][digest] = []
+      end
+      # Only put unique values into filepaths
+      if @my_actions['update_manifest'][digest].include?(filepath)
+          return @my_actions['update_manifest'][digest]
+        else
+          @my_actions['update_manifest'][digest] = ( @my_actions['update_manifest'][digest] << filepath )
+      end
     end
 
     # Creates an 'add' entry in the actions hash.

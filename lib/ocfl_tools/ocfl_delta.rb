@@ -63,6 +63,8 @@ module OcflTools
       previous_digests = @ocfl_object.get_state((version - 1))
       previous_files = OcflTools::Utils::Files.invert_and_expand(previous_digests)
 
+      current_manifest = @ocfl_object.manifest
+
       missing_digests = {}
       missing_files = {}
 
@@ -132,6 +134,11 @@ module OcflTools
               # new digest, new file, it's an ADD!
               if new_files[file] == digest
                 actions.add(digest, file)
+                # We also need to find out what its manifest value is.
+                content_paths = current_manifest[digest]
+                content_paths.each do | content_path |
+                  actions.update_manifest(digest, content_path)
+                end
                 next # need this so we don't also count it as an UPDATE
               end
             end
@@ -141,6 +148,11 @@ module OcflTools
               # New digest, existing file
               if current_files[file] == digest
                 actions.update(digest, file)
+                # We also need to find out what its manifest value is.
+                content_paths = current_manifest[digest]
+                content_paths.each do | content_path |
+                  actions.update_manifest(digest, content_path)
+                end
               end
             end
           end
