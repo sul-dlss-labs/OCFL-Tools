@@ -18,6 +18,7 @@ module OcflTools
 
       @ocfl_object = ocfl_object
       @delta = {}
+      @digest_first_seen = {}
       # We need to get version format, for final report-out. Assume that the ocfl_object versions are
       # formatted correctly (starting with a 'v'). We can't trust the site config setting
       # for this, as there's no guarantee the inventory we are reading in was created at this site.
@@ -33,6 +34,7 @@ module OcflTools
 
     # Generates a complete delta hash for all versions of this object.
     def all
+      @digest_first_seen = {}
       @ocfl_object.version_id_list.each do | version |
         get_version_delta(version)
       end
@@ -123,6 +125,15 @@ module OcflTools
         end
       end
 
+      # NOTE there's an edge case here b/c we don't know how the manifest block has
+      # changed over time by only inspecting the last 2 version states. If v1 updates
+      # the manifest with a new bitstream, v2 removes that
+      # bitstream from its current state, and v3 re-adds that bitstream, we'll have an
+      # erroneous update_manifest for v3 that appears to add it again.
+
+      # The only way to know what happened for sure is to roll *forwards* from v1,
+      # and track the changes to the manifest between each version.
+
       # 1. ADD is new digest, new filepath.
       # 2. UPDATE is new digest, existing filepath
       # consult new_digests and new_files
@@ -134,11 +145,16 @@ module OcflTools
               # new digest, new file, it's an ADD!
               if new_files[file] == digest
                 actions.add(digest, file)
-                # We also need to find out what its manifest value is.
-                content_paths = current_manifest[digest]
-                content_paths.each do | content_path |
-                  actions.update_manifest(digest, content_path)
-                end
+                # If we think we've never seen this digest before, record an (imperfect)
+                # update_manifest call for it.
+                  content_paths = current_manifest[digest]
+                  content_paths.each do | content_path |
+                    actions.update_manifest(digest, content_path) unless @digest_first_seen.has_key?(digest)
+                  end
+
+                  if !@digest_first_seen.has_key?(digest)
+                    @digest_first_seen[digest] = version
+                  end
                 next # need this so we don't also count it as an UPDATE
               end
             end
@@ -148,11 +164,16 @@ module OcflTools
               # New digest, existing file
               if current_files[file] == digest
                 actions.update(digest, file)
-                # We also need to find out what its manifest value is.
-                content_paths = current_manifest[digest]
-                content_paths.each do | content_path |
-                  actions.update_manifest(digest, content_path)
-                end
+                # If we think we've never seen this digest before, record an (imperfect)
+                # update_manifest call for it.
+                  if !@digest_first_seen.has_key?(digest)
+                    @digest_first_seen[digest] = version
+                  end
+
+                  content_paths = current_manifest[digest]
+                  content_paths.each do | content_path |
+                    actions.update_manifest(digest, content_path) unless @digest_first_seen.has_key?(digest)
+                  end
               end
             end
           end
@@ -221,15 +242,28 @@ module OcflTools
       version = 1
       actions = OcflTools::OcflActions.new
 
+      # A hash of digests and the version they first appeared in.
+      # Always zero this out when we call first_version_delta.
+
+
       version_string = @version_format % version.to_i
       @delta[version_string] = {}
 
+      @digest_first_seen = {}
+
       current_digests = @ocfl_object.get_state(version)
       current_digests.each do | digest, filepaths |
+
+        @digest_first_seen[digest] = version
+
         filepaths.each do | file |
           actions.add(digest, file)
         end
       end
+
+      # We can, and should, construct a special manifest block here
+      # so we can track changes to manifest over subsequent versions
+      # to identify when an 'add' also represents an 'update_manifest'.
 
       @delta[version_string] = actions.all
       # Everything in Fixity is also an 'add'

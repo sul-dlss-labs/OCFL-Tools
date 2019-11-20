@@ -27,6 +27,8 @@ describe OcflTools::OcflDelta do
   puts "   "
   #puts ocfl_delta.delta
 
-puts JSON.pretty_generate(ocfl_delta.delta)
+puts JSON.pretty_generate(ocfl_delta.all)
+
+
 
 end

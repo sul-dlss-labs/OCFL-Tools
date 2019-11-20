@@ -215,15 +215,13 @@ module OcflTools
       end
 
       # 7. 'head' directory MAY contain one or more of these action files.
-      action_files = [ 'update_manifest.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
-
-      deposit_head_files.each do | file |
-        if action_files.include? file       # We found an action file!
+      action_files = [ 'head.json', 'update_files.json', 'version.json', 'update_manifest.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
+      action_files.each do | file |
+        if deposit_head_files.include? file
           @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional #{file}")
           deposit_head_files.delete(file)
         end
       end
-
 
       # 8. 'head' directory MUST NOT contain any other files.
       if deposit_head_files.size > 0
@@ -335,7 +333,7 @@ module OcflTools
 
       # 9. 'head' MUST contain at least one of the 'actions' json files (inc. fixity).
       # Any one of these is needed.
-      action_files = [ 'add_files.json', 'update_manifest.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
+      action_files = [ 'add_files.json', 'head.json', 'update_manifest.json', 'update_files.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
       action_found = nil
 
       deposit_head_files.each do | file |
@@ -398,110 +396,193 @@ module OcflTools
       process_action_files
     end
 
+    def process_update_manifest(update_manifest_block)
+      # Process update_manifest, if present.
+      update_manifest_block.each do | digest, filepaths |
+        filepaths.each do | file |
+          # Make sure it actually exists!
+          if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
+            @my_results.error('E111', 'process_action_files', "File #{file} referenced in update_manifest.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
+            raise "File #{file} referenced in update_manifest.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
+          end
+          # Here's where we'd compute checksum.
+          if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
+            self.update_manifest(file, digest, @new_version)
+            @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to manifest inventory.")
+          else
+            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
+            raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
+          end
+        end
+      end
+    end
+
+    def process_add_files(add_files_block)
+      add_files_block.each do | digest, filepaths |
+        filepaths.each do | file |
+          if !self.manifest.key?(digest)
+            # This digest does NOT exist in the manifest; check disk for ingest (because add_file's going to add it to manifest later).
+            # It better be on disk, buck-o.
+            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
+              @my_results.error('E111', 'process_action_files', "File #{file} referenced in add_files block not found in #{@deposit_dir}/head/#{@contentDirectory}")
+              raise "File #{file} referenced in add_files block not found in #{@deposit_dir}/head/#{@contentDirectory}"
+            end
+
+            if !OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
+              # checksum failed, raise error.
+              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest in add_files block."
+            end
+          end
+          # If we get to here, we're OK to add_file.
+          self.add_file( file, digest, @new_version)
+          @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
+        end
+      end
+    end
+
+    def process_update_files(update_files_block)
+      update_files_block.each do | digest, filepaths |
+        filepaths.each do | file |
+          # Make sure it actually exists!
+          if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
+            @my_results.error('E111', 'process_action_files', "File #{file} referenced in update_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
+            raise "File #{file} referenced in update_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
+          end
+          # Here's where we'd compute checksum.
+          if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
+            self.update_file( file, digest, @new_version)
+            @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
+          else
+            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
+            raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
+          end
+        end
+      end
+    end
+
+    def process_move_files(move_files_block)
+      move_files_block.each do | digest, filepaths |
+        my_state = self.get_state(@new_version)
+        if !my_state.has_key?(digest)
+          @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a move request.")
+          raise "Unable to find digest #{digest} in state whilst processing a move request."
+        end
+        previous_files = my_state[digest]
+        # Disambiguation; we can only process a move if there is only 1 file here.
+        if previous_files.size != 1
+          @my_results.error('E111', 'process_action_files', "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version.")
+          raise "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in this version."
+        end
+        if !filepaths.include?(previous_files[0])
+          @my_results.error('E111', 'process_action_files', "Unable to find source file #{previous_files[0]} digest #{digest} in state whilst processing a move request.")
+          raise "Unable to find source file #{previous_files[0]} digest #{digest} in state whilst processing a move request."
+        end
+        source_file = previous_files[0]
+        destination_file = filepaths[1]
+        self.move_file(source_file, destination_file, @new_version)
+      end
+    end
+
+    def process_copy_files(copy_files_block)
+      my_state = self.get_state(@new_version)
+      copy_files_block.each do | digest, filepaths |
+        if !my_state.has_key?(digest)
+          @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a copy request.")
+          raise "Unable to find digest #{digest} in state whilst processing a copy request."
+        end
+
+        previous_files = my_state[digest]
+
+        filepaths.each do | destination_file |
+          self.copy_file(previous_files[0], destination_file, @new_version)
+        end
+      end
+    end
+
+    def process_delete_files(delete_files_block)
+      delete_files_block.each do | digest, filepaths |
+        filepaths.each do | filepath |
+          self.delete_file(filepath, @new_version)
+        end
+      end
+    end
+
+    def process_version(version_block)
+      # Version block MUST contain keys 'created', 'message', 'user'
+      [ 'created', 'message', 'user' ].each do | req_key |
+        if !version_block.has_key?(req_key)
+          @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
+          raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
+        end
+      end
+      # user block MUST contain 'name', 'address'
+      [ 'name', 'address' ].each do | req_key |
+        if !version_block['user'].has_key?(req_key)
+          @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
+          raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
+        end
+      end
+      # Now process!
+      self.set_version_user(@new_version, version_block['user'])
+      self.set_version_message(@new_version, version_block['message'])
+      self.set_version_created(@new_version, version_block['created'])
+    end
+
+    def process_fixity(fixity_block)
+      fixity_block.each do | algorithm, checksums |
+        # check if algorithm is in list of acceptable fixity algos for this site.
+        if !OcflTools.config.fixity_algorithms.include? algorithm
+          @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}")
+          raise "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}"
+        end
+        # Algo is permitted in the fixity block; add it.
+        checksums.each do | manifest_checksum, fixity_checksum |
+          self.update_fixity( manifest_checksum, algorithm, fixity_checksum )
+        end
+      end
+      @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json successfully processed.")
+    end
+
     def process_action_files
+      # Moving towards just processing 1 big head.json file.
+
+      if File.exists? "#{@deposit_dir}/head/head.json"
+        head = self.read_json("#{@deposit_dir}/head/head.json")
+        # Process keys here.
+      end
 
       # Process update_manifest, if present.
       if File.exists? "#{@deposit_dir}/head/update_manifest.json"
         updates = self.read_json("#{@deposit_dir}/head/update_manifest.json")
-        updates.each do | digest, filepaths |
-          filepaths.each do | file |
-            # Make sure it actually exists!
-            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
-              @my_results.error('E111', 'process_action_files', "File #{file} referenced in update_manifest.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
-              raise "File #{file} referenced in update_manifest.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
-            end
-            # Here's where we'd compute checksum.
-            if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
-              self.update_manifest( file, digest, @new_version)
-              @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to manifest inventory.")
-            else
-              @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
-              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
-            end
-          end
-        end
+        process_update_manifest(updates)
       end
 
       # Process add_files, if present.
       # add_files requires { "digest_value": [ "filepaths" ]}
       if File.exists? "#{@deposit_dir}/head/add_files.json"
         add_files = self.read_json("#{@deposit_dir}/head/add_files.json")
-        add_files.each do | digest, filepaths |
-          filepaths.each do | file |
-              self.add_file( file, digest, @new_version)
-              @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
-          end
-        end
+        process_add_files(add_files)
       end
 
       # process update_files, if present.
       # update_files requires { "digest_value": [ "filepaths" ]}
       if File.exists? "#{@deposit_dir}/head/update_files.json"
         update_files = self.read_json("#{@deposit_dir}/head/update_files.json")
-        update_files.each do | digest, filepaths |
-          filepaths.each do | file |
-            # Make sure it actually exists!
-            if !File.exist? "#{@deposit_dir}/head/#{@contentDirectory}/#{file}"
-              @my_results.error('E111', 'process_action_files', "File #{file} referenced in update_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}")
-              raise "File #{file} referenced in update_files.json not found in #{@deposit_dir}/head/#{@contentDirectory}"
-            end
-            # Here's where we'd compute checksum.
-            if OcflTools::Utils.generate_file_digest("#{@deposit_dir}/head/#{@contentDirectory}/#{file}", @digestAlgorithm) == digest
-              self.update_file( file, digest, @new_version)
-              @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} added to inventory.")
-            else
-              @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest.")
-              raise "#{@deposit_dir}/head/#{@contentDirectory}/#{file} computed checksum does not match provided digest."
-            end
-          end
-        end
+        process_update_files(update_files)
       end
 
       # Process move_files, if present.
       # move_file requires digest => [ filepaths ]
       if File.exists? "#{@deposit_dir}/head/move_files.json"
         move_files = self.read_json("#{@deposit_dir}/head/move_files.json")
-
-        move_files.each do | digest, filepaths |
-          my_state = self.get_state(@new_version)
-          if !my_state.has_key?(digest)
-            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a move request.")
-            raise "Unable to find digest #{digest} in state whilst processing a move request."
-          end
-          previous_files = my_state[digest]
-          # Disambiguation; we can only process a move if there is only 1 file here.
-          if previous_files.size != 1
-            @my_results.error('E111', 'process_action_files', "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in prior version.")
-            raise "Disambiguation protection: unable to process move for digest #{digest}: more than 1 file uses this digest in this version."
-          end
-          if !filepaths.include?(previous_files[0])
-            @my_results.error('E111', 'process_action_files', "Unable to find source file #{previous_files[0]} digest #{digest} in state whilst processing a move request.")
-            raise "Unable to find source file #{previous_files[0]} digest #{digest} in state whilst processing a move request."
-          end
-          source_file = previous_files[0]
-          destination_file = filepaths[1]
-          self.move_file(source_file, destination_file, @new_version)
-        end
+        process_move_files(move_files)
       end
 
       # Process copy_files, if present.
       # copy_files requires digest => [ filepaths_of_copy_destinations ]
       if File.exists? "#{@deposit_dir}/head/copy_files.json"
         copy_files = self.read_json("#{@deposit_dir}/head/copy_files.json")
-        my_state = self.get_state(@new_version)
-
-        copy_files.each do | digest, filepaths |
-          if !my_state.has_key?(digest)
-            @my_results.error('E111', 'process_action_files', "Unable to find digest #{digest} in state whilst processing a copy request.")
-            raise "Unable to find digest #{digest} in state whilst processing a copy request."
-          end
-
-          previous_files = my_state[digest]
-
-          filepaths.each do | destination_file |
-            self.copy_file(previous_files[0], destination_file, @new_version)
-          end
-        end
+        process_copy_files(copy_files)
       end
 
       # Process delete_files, if present.
@@ -509,53 +590,20 @@ module OcflTools
       #  { digest => [ filepaths_to_delete ] }
       if File.exists? "#{@deposit_dir}/head/delete_files.json"
         delete_files = self.read_json("#{@deposit_dir}/head/delete_files.json")
-        delete_files.each do | digest, filepaths |
-          filepaths.each do | filepath |
-            self.delete_file(filepath, @new_version)
-          end
-        end
+        process_delete_files(delete_files)
       end
 
       # If there's a fixity block, add it too.
       if File.file?  "#{@deposit_dir}/head/fixity_files.json"
         fixity_files = self.read_json("#{@deposit_dir}/head/fixity_files.json")
-        fixity_files.each do | algorithm, checksums |
-          # check if algorithm is in list of acceptable fixity algos for this site.
-          if !OcflTools.config.fixity_algorithms.include? algorithm
-            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}")
-            raise "#{@deposit_dir}/head/fixity_files.json contains unsupported algorithm #{algorithm}"
-          end
-          # Algo is permitted in the fixity block; add it.
-          checksums.each do | manifest_checksum, fixity_checksum |
-            self.update_fixity( manifest_checksum, algorithm, fixity_checksum )
-          end
-        end
-        @my_results.info('I111', 'process_action_files', "#{@deposit_dir}/head/fixity_files.json successfully processed.")
+        process_fixity(fixity_files)
       end
 
       # Process version.json, if present.
       if File.file? "#{@deposit_dir}/head/version.json"
         version_file = self.read_json("#{@deposit_dir}/head/version.json")
-        # Version block MUST contain keys 'created', 'message', 'user'
-        [ 'created', 'message', 'user' ].each do | req_key |
-          if !version_file.has_key?(req_key)
-            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
-            raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
-          end
-        end
-        # user block MUST contain 'name', 'address'
-        [ 'name', 'address' ].each do | req_key |
-          if !version_file['user'].has_key?(req_key)
-            @my_results.error('E111', 'process_action_files', "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}")
-            raise "#{@deposit_dir}/head/version.json does not contain expected key #{req_key}"
-          end
-        end
-        # Now process!
-        self.set_version_user(@new_version, version_file['user'])
-        self.set_version_message(@new_version, version_file['message'])
-        self.set_version_created(@new_version, version_file['created'])
+        process_version(version_file)
       end
-
     end
 
     def stage_existing_object
