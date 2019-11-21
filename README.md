@@ -1,4 +1,7 @@
 # OCFL-Tools
+
+[![Build Status](https://travis-ci.org/sul-dlss-labs/OCFL-Tools.svg?branch=master)](https://travis-ci.org/sul-dlss-labs/OCFL-Tools)
+
 Ruby gem to manipulate Oxford Common File Layout preservation objects (https://ocfl.io).
 Classes provide APIs to create objects and versions, perform typical file operations, verify
 compliance of the resulting object and serialize it to an inventory.json file.
