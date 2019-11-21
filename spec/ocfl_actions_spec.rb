@@ -1,15 +1,17 @@
+# frozen_string_literal: true
+
 require 'ocfl-tools'
 require 'digest'
 
 describe OcflTools::OcflActions do
   # Run after ocf_deposit_spec, so we can use that deposit object example.
-  basedir     = Dir.pwd
+  basedir = Dir.pwd
   # set site-specific settings.
   OcflTools.config.content_directory  = 'content'
   OcflTools.config.digest_algorithm   = 'sha256'
-  OcflTools.config.version_format     =  "v%04d"
+  OcflTools.config.version_format = 'v%04d'
 
-  object_dir  =  "#{basedir}/spec/fixtures/deposit/object_c"
+  object_dir = "#{basedir}/spec/fixtures/deposit/object_c"
 
   ocfl = OcflTools::OcflInventory.new.from_file("#{object_dir}/inventory.json")
 
@@ -24,8 +26,6 @@ describe OcflTools::OcflActions do
   ocfl_actions.fixity('1234567890', 'md5', 'an_md5_sum')
   ocfl_actions.fixity('1234567890', 'sha1', 'a_sha1_sum')
 
-
-# puts JSON.pretty_generate(ocfl_delta.delta)
+  # puts JSON.pretty_generate(ocfl_delta.delta)
   puts ocfl_actions.all
-
 end

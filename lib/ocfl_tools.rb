@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OcflTools
   require 'ocfl_tools/ocfl_object'
   require 'ocfl_tools/ocfl_inventory'

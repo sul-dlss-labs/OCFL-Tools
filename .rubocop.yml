@@ -1,0 +1,35 @@
+inherit_from: .rubocop_todo.yml
+
+Lint/UselessAssignment:
+  Exclude:
+    - 'lib/ocfl_tools/ocfl_deposit.rb'
+    - 'lib/ocfl_tools/utils.rb'
+    - 'spec/ocfl_actions_spec.rb'
+    - 'spec/ocfl_inventory_spec.rb'
+    - 'spec/ocfl_validator_spec.rb'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/ocfl_actions_spec.rb'
+    - 'spec/ocfl_checksums_spec.rb'
+    - 'spec/ocfl_inventory_spec.rb'
+    - 'spec/ocfl_object_spec.rb'
+    - 'spec/ocfl_results_spec.rb'
+
+Metrics/LineLength:
+  Exclude:
+    - 'ocfl-tools.gemspec'
+    - 'spec/ocfl_checksums_spec.rb'
+    - 'spec/ocfl_delta_spec.rb'
+    - 'spec/ocfl_deposit_spec.rb'
+    - 'spec/ocfl_inventory_spec.rb'
+    - 'spec/ocfl_object_spec.rb'
+    - 'spec/ocfl_results_spec.rb'
+    - 'spec/ocfl_utils_file_spec.rb'
+    - 'spec/ocfl_validator_spec.rb'
+    - 'spec/ocfl_verify_spec.rb'
+
+Naming/MethodName:
+  Exclude:
+    - 'lib/ocfl_tools/ocfl_verify.rb'
+    - 'lib/ocfl_tools/utils_inventory.rb'

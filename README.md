@@ -7,6 +7,15 @@ an updated inventory file.
 
 This is not-quite-beta software. No guarantee of fitness for purpose is made.
 
+## Development setup (assuming bundler is installed)
+
+```
+git clone https://github.com/sul-dlss-labs/OCFL-Tools.git
+cd OCFL-Tools
+bundle # to install dependencies
+rake # to run rspec/rubocop
+```
+
 ## Basic Usage
 
 ```
