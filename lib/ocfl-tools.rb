@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # OcflTools is a module that provides a distintive namespace for classes that create,
 # maintain and read Oxford Common File Layout preservation objects.
 #

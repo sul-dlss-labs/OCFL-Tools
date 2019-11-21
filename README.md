@@ -1,4 +1,7 @@
 # OCFL-Tools
+
+[![Build Status](https://travis-ci.org/sul-dlss-labs/OCFL-Tools.svg?branch=master)](https://travis-ci.org/sul-dlss-labs/OCFL-Tools)
+
 Ruby gem to manipulate Oxford Common File Layout preservation objects (https://ocfl.io).
 Classes provide APIs to create objects and versions, perform typical file operations, verify
 compliance of the resulting object and serialize it to an inventory.json file.
@@ -6,6 +9,15 @@ Can also read in an existing inventory.json to verify, manipulate, and produce
 an updated inventory file.
 
 This is not-quite-beta software. No guarantee of fitness for purpose is made.
+
+## Development setup (assuming bundler is installed)
+
+```
+git clone https://github.com/sul-dlss-labs/OCFL-Tools.git
+cd OCFL-Tools
+bundle # to install dependencies
+rake # to run rspec/rubocop
+```
 
 ## Basic Usage
 
