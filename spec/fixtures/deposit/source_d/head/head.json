@@ -1,10 +1,10 @@
 {
     "update_manifest": {
       "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
-        "v0001/content/ingest_temp/dracula.txt"
+        "ingest_temp/dracula.txt"
       ],
       "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
-        "v0001/content/ingest_temp/poe.txt"
+        "ingest_temp/poe.txt"
       ]
     },
     "add": {

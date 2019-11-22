@@ -131,17 +131,7 @@ module OcflTools
         end
       end
 
-      # NOTE there's an edge case here b/c we don't know how the manifest block has
-      # changed over time by only inspecting the last 2 version states. If v1 updates
-      # the manifest with a new bitstream, v2 removes that
-      # bitstream from its current state, and v3 re-adds that bitstream, we'll have an
-      # erroneous update_manifest for v3 that appears to add it again.
-
-      # The only way to know what happened for sure is to roll *forwards* from v1,
-      # and track the changes to the manifest between each version.
-
       # 1. ADD is new digest, new filepath.
-      # 2. UPDATE is new digest, existing filepath
       # consult new_digests and new_files
       unless new_digests.empty?
         new_digests.each do |digest, filepaths|
@@ -151,40 +141,19 @@ module OcflTools
               # new digest, new file, it's an ADD!
               if new_files[file] == digest
                 actions.add(digest, file)
-                # If we think we've never seen this digest before, record an (imperfect)
-                # update_manifest call for it.
-                content_paths = current_manifest[digest]
-                content_paths.each do |content_path|
-                  unless @digest_first_seen.key?(digest)
-                    actions.update_manifest(digest, content_path)
-                    end
-                end
-
-                unless @digest_first_seen.key?(digest)
-                  @digest_first_seen[digest] = version
-                end
+                update_manifest_action(digest, version, actions)
                 next # need this so we don't also count it as an UPDATE
               end
             end
 
+            # 2. UPDATE is new digest, existing filepath
             # if new_files doesn't have it, check current_files
-            next unless current_files.key?(file)
-
-            # New digest, existing file
-            next unless current_files[file] == digest
-
-            actions.update(digest, file)
-            # If we think we've never seen this digest before, record an (imperfect)
-            # update_manifest call for it.
-            unless @digest_first_seen.key?(digest)
-              @digest_first_seen[digest] = version
+            if current_files.key?(file)
+              # New digest, existing file
+              if current_files[file] == digest
+                actions.update(digest, file)
+                update_manifest_action(digest, version, actions)
               end
-
-            content_paths = current_manifest[digest]
-            content_paths.each do |content_path|
-              unless @digest_first_seen.key?(digest)
-                actions.update_manifest(digest, content_path)
-                end
             end
           end
         end
@@ -216,15 +185,16 @@ module OcflTools
           end
 
           # 5. One possible DELETE is unchanged digest, fewer filepaths.
-          next unless filepaths.size < previous_digests[digest].size
+          if filepaths.size < previous_digests[digest].size
 
           # Am I in missing_files ?
-          previous_filepaths = previous_digests[digest]
-          deleted_filepaths = previous_filepaths - filepaths
-          next if deleted_filepaths.empty?
-
-          deleted_filepaths.each do |delete_me|
-            actions.delete(digest, delete_me)
+            previous_filepaths = previous_digests[digest]
+            deleted_filepaths = previous_filepaths - filepaths
+            if deleted_filepaths.empty?
+              deleted_filepaths.each do |delete_me|
+                actions.delete(digest, delete_me)
+              end
+            end
           end
         end
       end
@@ -242,32 +212,38 @@ module OcflTools
       @delta[version_string] = actions.all
     end
 
+    def update_manifest_action(digest, version, action)
+      version_string = @version_format % version.to_i
+      content_paths  = @ocfl_object.manifest[digest]
+
+      # Find any content_path that starts with the current version's directory & contentDirectory;
+      # these are bitstreams that were added to this version directory.
+      content_paths.each do | content_path |
+        if content_path =~ /^#{version_string}\/#{@ocfl_object.contentDirectory}/
+          # Now trim from front of content_path.
+          content_path.slice!("#{version_string}/#{@ocfl_object.contentDirectory}/")
+          action.update_manifest(digest, content_path)
+        end
+      end
+    end
+
+
     def get_first_version_delta
       # Everything in get_state is an 'add'
       version = 1
       actions = OcflTools::OcflActions.new
 
-      # A hash of digests and the version they first appeared in.
-      # Always zero this out when we call first_version_delta.
-
       version_string = @version_format % version.to_i
       @delta[version_string] = {}
 
-      @digest_first_seen = {}
-
       current_digests = @ocfl_object.get_state(version)
       current_digests.each do |digest, filepaths|
-        @digest_first_seen[digest] = version
 
         filepaths.each do |file|
           actions.add(digest, file)
+          update_manifest_action(digest, version, actions)
         end
       end
-
-      # We can, and should, construct a special manifest block here
-      # so we can track changes to manifest over subsequent versions
-      # to identify when an 'add' also represents an 'update_manifest'.
-
       @delta[version_string] = actions.all
       # Everything in Fixity is also an 'add'
     end
