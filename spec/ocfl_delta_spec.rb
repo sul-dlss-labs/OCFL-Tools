@@ -17,16 +17,15 @@ describe OcflTools::OcflDelta do
 
   ocfl_delta = OcflTools::OcflDelta.new(ocfl)
 
-  puts 'delta 1:'
-  puts ocfl_delta.previous(1)
-  puts 'delta 2:'
-  puts ocfl_delta.previous(2)
-  puts 'delta 3:'
-  puts ocfl_delta.previous(3)
-  puts 'delta 4:'
-  puts ocfl_delta.previous(4)
+#  puts 'delta 1:'
+# puts ocfl_delta.previous(1)
+#  puts 'delta 2:'
+#  puts ocfl_delta.previous(2)
+#  puts 'delta 3:'
+#  puts ocfl_delta.previous(3)
+#  puts 'delta 4:'
+#  puts ocfl_delta.previous(4)
 
-  puts '   '
   # puts ocfl_delta.delta
 
   puts JSON.pretty_generate(ocfl_delta.all)

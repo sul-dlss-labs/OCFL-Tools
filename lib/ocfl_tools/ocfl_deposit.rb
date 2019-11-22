@@ -177,7 +177,7 @@ module OcflTools
         raise "#{deposit_dir} contains extraneous directories: #{deposit_root_directories}"
       end
 
-      # 5. 'head' directory must contain a 'content' directory that matches sitewide setting.
+      # Intermission: prepare deposit/head for inspection
       deposit_head_files = []
       deposit_head_directories = []
       Dir.chdir("#{@deposit_dir}/head")
@@ -186,6 +186,7 @@ module OcflTools
         deposit_head_directories << file if File.directory? file
       end
 
+      # 5. 'head' directory must contain a 'content' directory that matches sitewide setting.
       if deposit_head_directories.include? OcflTools.config.content_directory
         @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains expected #{OcflTools.config.content_directory} directory.")
         deposit_head_directories.delete(OcflTools.config.content_directory)
@@ -200,17 +201,24 @@ module OcflTools
         raise "#{deposit_dir}/head contains extraneous directories: #{deposit_head_directories}"
       end
 
-      # 6. 'head' directory MUST contain an 'add_files.json' file.
-      if deposit_head_files.include? 'add_files.json'
-        @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains expected add_files.json")
-        deposit_head_files.delete('add_files.json')
-      else
-        @my_results.error('E111', 'new_object_san_check', "#{@deposit_dir}/head/add_files.json required, but not found.")
-        raise "#{@deposit_dir}/head/add_files.json required, but not found."
+      # 6. 'head' directory MUST contain either 'head.json' or 'add_files.json'
+      found_me = nil
+      require_one = [ 'head.json', 'add_files.json' ]
+      require_one.each do | file |
+        if deposit_head_files.include? file
+          @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains required file #{file}")
+          deposit_head_files.delete(file)
+          found_me = true
+        end
+      end
+
+      if !found_me
+        @my_results.error('E111', 'new_object_san_check', "#{@deposit_dir}/head requires either head.json or add_files.json, but not found.")
+        raise "#{@deposit_dir}/head requires either head.json or add_files.json, but not found."
       end
 
       # 7. 'head' directory MAY contain one or more of these action files.
-      action_files = ['head.json', 'update_files.json', 'version.json', 'update_manifest.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
+      action_files = ['head.json', 'add_files.json', 'update_files.json', 'version.json', 'update_manifest.json', 'delete_files.json', 'move_files.json', 'fixity_files.json']
       action_files.each do |file|
         if deposit_head_files.include? file
           @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains optional #{file}")
@@ -539,6 +547,15 @@ module OcflTools
       if File.exist? "#{@deposit_dir}/head/head.json"
         head = read_json("#{@deposit_dir}/head/head.json")
         # Process keys here.
+        process_update_manifest(head['update_manifest']) unless !head.has_key?('update_manifest')
+        process_add_files(head['add']) unless !head.has_key?('add')
+        process_update_files(head['update']) unless !head.has_key?('update')
+        process_copy_files(head['copy']) unless !head.has_key?('copy')
+        process_move_files(head['move']) unless !head.has_key?('move')
+        process_move_files(head['delete']) unless !head.has_key?('delete')
+        process_fixity(head['fixity']) unless !head.has_key?('fixity')
+        process_version(head['version']) unless !head.has_key?('version')
+        return # don't process any more.
       end
 
       # Process update_manifest, if present.

@@ -150,10 +150,6 @@ describe OcflTools::OcflDeposit do
 
     ocfl_delta = OcflTools::OcflDelta.new(ocfl)
 
-    puts 'delta 1:'
-    puts ocfl_delta.previous(1)
-
-    puts '   '
     # puts ocfl_delta.delta
 
     puts JSON.pretty_generate(ocfl_delta.all)
