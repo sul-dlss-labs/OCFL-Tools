@@ -13,15 +13,24 @@ describe OcflTools::Utils::Files do
         'v%04d'
       )
     end
-    # puts OcflTools::Utils::Files.get_version_directories(object_root_dir)
 
-    # puts OcflTools::Utils::Inventory.get_value("#{object_root_dir}/inventory.json", "digestAlgorithm")
+    it 'expects 3 version directories' do
+      expect(OcflTools::Utils::Files.get_version_directories(object_root_dir)).to match(
+        %w[v0001 v0002 v0003]
+      )
+    end
 
-    # puts OcflTools::Utils::Inventory.get_value("#{object_root_dir}/inventory.json", "contentDirectory")
+    it 'expects contentDirectory to be data' do
+      expect(OcflTools::Utils::Inventory.get_contentDirectory("#{object_root_dir}/inventory.json")).to match(
+        'data'
+      )
+    end
 
-    # puts OcflTools::Utils::Inventory.get_contentDirectory("#{object_root_dir}/inventory.json")
-    # puts OcflTools::Utils::Inventory.get_digestAlgorithm("#{object_root_dir}/inventory.json")
-
+    it 'expects digestAlgorithm to be sha256' do
+      expect(OcflTools::Utils::Inventory.get_digestAlgorithm("#{object_root_dir}/inventory.json")).to match(
+        'sha256'
+      )
+    end
     # puts OcflTools::Utils::Inventory.get_fixity("#{object_root_dir}/inventory.json")
 
     files = ['content/a_file.txt', 'home/dir/b_file.txt', "#{object_root_dir}/c_file.pdf"]
@@ -37,10 +46,19 @@ describe OcflTools::Utils::Files do
         ["#{object_root_dir}/a/fine/single_file.txt"]
       )
     end
-    # puts OcflTools::Utils::Files.get_latest_inventory(object_root_dir)
 
-    # puts OcflTools::Utils::Files.get_version_dir_files(object_root_dir, 3)
+    it 'returns the latest inventory' do
+      expect(OcflTools::Utils::Files.get_latest_inventory(object_root_dir)).to match(
+        "#{object_root_dir}/v0003/inventory.json"
+      )
+    end
 
+    puts OcflTools::Utils::Files.get_version_dir_files(object_root_dir, 3)
+    it 'returns the files in version 3 on disk' do
+      expect(OcflTools::Utils::Files.get_version_dir_files(object_root_dir, 3)).to match(
+        ["#{object_root_dir}/v0003/data/my_content/dickens.txt"]
+      )
+    end
     # puts OcflTools::Utils::Files.get_versions_dir_files(object_root_dir, 1, 3)
   end
 end
