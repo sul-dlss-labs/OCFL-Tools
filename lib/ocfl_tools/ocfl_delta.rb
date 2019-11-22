@@ -71,8 +71,6 @@ module OcflTools
       previous_digests = @ocfl_object.get_state((version - 1))
       previous_files = OcflTools::Utils::Files.invert_and_expand(previous_digests)
 
-      current_manifest = @ocfl_object.manifest
-
       missing_digests = {}
       missing_files = {}
 
@@ -187,7 +185,7 @@ module OcflTools
           # 5. One possible DELETE is unchanged digest, fewer filepaths.
           if filepaths.size < previous_digests[digest].size
 
-          # Am I in missing_files ?
+            # Am I in missing_files ?
             previous_filepaths = previous_digests[digest]
             deleted_filepaths = previous_filepaths - filepaths
             if deleted_filepaths.empty?
@@ -218,7 +216,7 @@ module OcflTools
 
       # Find any content_path that starts with the current version's directory & contentDirectory;
       # these are bitstreams that were added to this version directory.
-      content_paths.each do | content_path |
+      content_paths.each do |content_path|
         if content_path =~ /^#{version_string}\/#{@ocfl_object.contentDirectory}/
           # Now trim from front of content_path.
           content_path.slice!("#{version_string}/#{@ocfl_object.contentDirectory}/")
@@ -226,7 +224,6 @@ module OcflTools
         end
       end
     end
-
 
     def get_first_version_delta
       # Everything in get_state is an 'add'

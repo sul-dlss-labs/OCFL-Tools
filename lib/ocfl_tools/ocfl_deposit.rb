@@ -203,8 +203,8 @@ module OcflTools
 
       # 6. 'head' directory MUST contain either 'head.json' or 'add_files.json'
       found_me = nil
-      require_one = [ 'head.json', 'add_files.json' ]
-      require_one.each do | file |
+      require_one = ['head.json', 'add_files.json']
+      require_one.each do |file|
         if deposit_head_files.include? file
           @my_results.info('I111', 'new_object_san_check', "#{@deposit_dir}/head contains required file #{file}")
           deposit_head_files.delete(file)
@@ -212,7 +212,7 @@ module OcflTools
         end
       end
 
-      if !found_me
+      unless found_me
         @my_results.error('E111', 'new_object_san_check', "#{@deposit_dir}/head requires either head.json or add_files.json, but not found.")
         raise "#{@deposit_dir}/head requires either head.json or add_files.json, but not found."
       end
@@ -547,14 +547,14 @@ module OcflTools
       if File.exist? "#{@deposit_dir}/head/head.json"
         head = read_json("#{@deposit_dir}/head/head.json")
         # Process keys here.
-        process_update_manifest(head['update_manifest']) unless !head.has_key?('update_manifest')
-        process_add_files(head['add']) unless !head.has_key?('add')
-        process_update_files(head['update']) unless !head.has_key?('update')
-        process_copy_files(head['copy']) unless !head.has_key?('copy')
-        process_move_files(head['move']) unless !head.has_key?('move')
-        process_move_files(head['delete']) unless !head.has_key?('delete')
-        process_fixity(head['fixity']) unless !head.has_key?('fixity')
-        process_version(head['version']) unless !head.has_key?('version')
+        process_update_manifest(head['update_manifest']) if head.key?('update_manifest')
+        process_add_files(head['add']) if head.key?('add')
+        process_update_files(head['update']) if head.key?('update')
+        process_copy_files(head['copy']) if head.key?('copy')
+        process_move_files(head['move']) if head.key?('move')
+        process_move_files(head['delete']) if head.key?('delete')
+        process_fixity(head['fixity']) if head.key?('fixity')
+        process_version(head['version']) if head.key?('version')
         return # don't process any more.
       end
 

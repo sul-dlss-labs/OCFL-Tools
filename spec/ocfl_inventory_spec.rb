@@ -202,16 +202,6 @@ describe OcflTools::OcflInventory do
   end
 
   describe 'reads good JSON' do
-    xit 'reads in correctly-formated JSON' do
-      good_file    = './spec/fixtures/inventory.json'
-      good_ocfl    = OcflTools::OcflInventory.new
-
-      good_ocfl.from_file(good_file)
-      verify_ocfl = OcflTools::OcflVerify.new(good_ocfl)
-
-      expect(verify_ocfl.check_all.results).to match(
-        'error' => {}, 'warn' => { 'W220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 SHOULD be Sha512.'] } }, 'info' => { 'I200' => { 'check_head' => ['OCFL 3.5.1 Inventory Head version 6 matches highest version in versions.'] }, 'I220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 is a supported digest algorithm.'] } }, 'ok' => { 'O200' => { 'check_id' => ['OCFL 3.5.1 Inventory ID is OK.'], 'check_type' => ['OCFL 3.5.1 Inventory Type is OK.'], 'check_head' => ['OCFL 3.5.1 Inventory Head is OK.'], 'check_manifest' => ['OCFL 3.5.2 Inventory Manifest syntax is OK.'], 'check_versions' => ['OCFL 3.5.3.1 version syntax is OK.'], 'crosscheck_digests' => ['OCFL 3.5.3.1 Digests are OK.'], 'check_digestAlgorithm' => ['OCFL 3.5.1 Inventory Algorithm is OK.'] }, 'I200' => { 'check_versions' => ['OCFL 3.5.3 Found 6 versions, highest version is 6'] } }
-      )
-    end
+    # Insert useful test here.
   end
 end

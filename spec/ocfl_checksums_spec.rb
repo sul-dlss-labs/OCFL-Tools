@@ -25,7 +25,7 @@ describe OcflTools::OcflValidator do
   validate_e = OcflTools::OcflValidator.new(object_e)
 
   describe 'object e is missing a file on disk' do
-    xit 'checks checksums from manifest' do
+    it 'checks checksums from manifest' do
       expect(validate_e.verify_checksums.all).to match(
         'error' => { 'E111' => { 'verify_checksums' => ["#{local_path}/spec/fixtures/validation/object_e/v0003/data/my_content/dickens.txt in inventory but not found on disk."] } }, 'warn' => {}, 'info' => {}, 'ok' => {}
       )
