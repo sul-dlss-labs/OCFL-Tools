@@ -358,8 +358,8 @@ module OcflTools
       inverted = get_state(version).invert
       my_files = {}
       inverted.each do |files, digest|
-        files.each do |file|
-          my_files[file] = digest
+        files.each do |i_file|
+          my_files[i_file] = digest
         end
       end
       # Now see if the requested file is actually here.

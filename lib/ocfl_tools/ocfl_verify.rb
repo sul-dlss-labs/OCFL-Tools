@@ -128,7 +128,7 @@ module OcflTools
 
       if errors.nil?
         @my_results.ok('O200', 'check_manifest', 'OCFL 3.5.2 Inventory Manifest syntax is OK.')
-       end
+      end
 
       @my_results
     end

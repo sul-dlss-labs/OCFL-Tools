@@ -98,14 +98,14 @@ module OcflTools
         if first_version.length == 1 # A length of 1 for the first version implies 'v1'
           unless first_version.to_i == 1
             raise "#{object_root_dir}/#{first_version} is not the first version directory!"
-            end
+          end
 
           version_format = 'v%d'
         else
           # Make sure this is Integer 1.
           unless first_version.to_i == 1
             raise "#{object_root_dir}/#{first_version} is not the first version directory!"
-            end
+          end
 
           version_format = "v%0#{first_version.length}d"
         end

@@ -235,7 +235,6 @@ module OcflTools
 
       current_digests = @ocfl_object.get_state(version)
       current_digests.each do |digest, filepaths|
-
         filepaths.each do |file|
           actions.add(digest, file)
           update_manifest_action(digest, version, actions)
