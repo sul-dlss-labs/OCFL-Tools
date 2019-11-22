@@ -658,6 +658,13 @@ module OcflTools
       @my_results.add_results(validation.results)
       raise 'Errors detected in validation!' unless @my_results.error_count == 0
 
+      # If this is version 1, there may not be a Namaste file in object root - add it.
+      unless File.exist?("#{@object_dir}/0=ocfl_object_1.0")
+        namaste = File.open("#{@object_dir}/0=ocfl_object_1.0", 'w')
+        namaste.puts '0=ocfl_object_1.0'
+        namaste.close
+      end
+
       # Add new inventory.json to object root directory. This should always be the final step.
       to_file(@object_dir)
 
