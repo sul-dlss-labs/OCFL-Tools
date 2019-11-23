@@ -9,6 +9,8 @@ module OcflTools
   #     |-- inventory.json (from object_directory root, if adding to existing version)
   #     |-- inventory.json.sha512 (matching sidecar from object_directory root)
   #     |-- head/
+  #         |-- head.json
+  #         |   OR a combination of the following files:
   #         |-- add_files.json     (all proposed file add actions)
   #         |-- update_files.json  (all proposed file update actions)
   #         |-- copy_files.json    (all proposed file copy actions)
@@ -657,6 +659,13 @@ module OcflTools
 
       @my_results.add_results(validation.results)
       raise 'Errors detected in validation!' unless @my_results.error_count == 0
+
+      # If this is version 1, there will not be a Namaste file in object root - add it.
+      unless File.exist?("#{@object_dir}/0=ocfl_object_1.0")
+        namaste = File.open("#{@object_dir}/0=ocfl_object_1.0", 'w')
+        namaste.puts '0=ocfl_object_1.0'
+        namaste.close
+      end
 
       # Add new inventory.json to object root directory. This should always be the final step.
       to_file(@object_dir)
