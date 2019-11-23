@@ -8,7 +8,7 @@ compliance of the resulting object and serialize it to an inventory.json file.
 Can also read in an existing inventory.json to verify, manipulate, and produce
 an updated inventory file.
 
-This is not-quite-beta software. No guarantee of fitness for purpose is made.
+This is beta software. No guarantee of fitness for purpose is made.
 
 ## Development setup (assuming bundler is installed)
 
@@ -60,7 +60,11 @@ ocfl.add_file('my_content/a_copy_of_third_file.txt', 'checksum_cccccccccccc', 3)
 # Delete a file from version 3.
 ocfl.delete_file('my_content/this_is_a_file.txt', 3)
 
-# Create a 4th version where the bitstream of an existing file is modified:
+# Create a 4th version where the bitstream of an existing file is modified.
+# 1. add the file's bitstream to the object:
+ocfl.update_manifest('my_content/a_second_file.txt', 'checksum_dddddddddddd', 4)
+
+# 2. Update an existing logical filepath to point to the new bitstream.
 ocfl.update_file('my_content/a_second_file.txt', 'checksum_dddddddddddd', 4)
 
 # Still in version 4, move a file to a new location (functionally an add-then-delete).
@@ -72,6 +76,8 @@ ocfl.update_fixity('checksum_cccccccccccc', 'sha1', 'a_sha1_checksum_for_this_fi
 
 # Remember we're using the digest of the file to positively identify it, which
 # is why we use the digest, not the file path, to associate an additional checksum with that file.
+# The actual fixity block in the inventory will include an array of all files
+# for which the checksum applies.
 
 # Output the complete inventory.json.
 puts ocfl.serialize
