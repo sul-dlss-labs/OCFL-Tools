@@ -169,30 +169,46 @@ that matches your site's `OcflTools::config.content_directory` setting (defaults
 ### First Version
 
 If this is to be the first version of a new OCFL object you MUST provide at least one file
-in the `content` directory to add, and you MUST include the `head/add_files.json` file (described below).
-The first version of an OCFL object MAY contain fixity information; provide a `head/fixity_files.json` with details.
-The first version MAY also contain a `head/version.json` to provide additional metadata
-about this version, and MAY also contain a `head/move_files.json` or a `head/copy_files.json`, but MUST NOT contain
-a `head/delete_files.json`. Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`,
- describing the digital object identifier to use to uniquely identify this OCFL object at
+in the `head/content/` directory to add, and you MUST include either a `head/head.json` OR a
+`head/add_files.json` file (but not both - see below for format descriptions).
+
+If the logical paths of the files being ingested DO NOT match the physical path of the files
+as laid out in the `head/content/` directory, then you MUST include an `update_manifest` stanza
+in `head/head.json` (if used) or a `head/update_manifest.json` file. If the logical paths
+match the physical paths (that is, if the directory structure in `head/content` matches how you
+  wish the object directory layout to appear after versioning) then you need not include an
+  `update_manifest` stanza in `head.json` or use an `update_manifest.json` action file ;
+  `OcflTools::OcflDeposit` will use the `add` stanza or contents of `add_files.json` to both
+  create the logical path and update the manifest block with the appropriate physical path.
+
+The first version of an OCFL object MAY contain fixity and version metadata; provide this information
+either as part of the `head/head.json` file or, if you are not using `head.json`, provide this in
+`head/fixity_files.json` and `head/version.json`.
+
+The first version of an OCFL object MAY have MOVE and COPY actions performed against digests in it,
+either as stanzas in the `head.json` file or as stand-alone `copy_files.json` and `move_files.json`
+if a `head.json` is not used, but the `head.json` MUST NOT contain DELETE actions and you MUST NOT
+use a `head/delete_files.json`.
+
+Finally, the `deposit` directory must contain a NAMasTE file, in the format of `4={id value}`,
+describing the digital object identifier to use to uniquely identify this OCFL object at
 this site. An example layout, where the id of the OCFL object being created is `123cd4567`, is below. In
 this example the site is using the default value `content` for `content_directory`.
 
-Note that, within an object version, actions are processed in the following order: ADD, UPDATE, MOVE, COPY, DELETE.
-This is to support the ingest of bitstreams where the logical filepath needs to differ from
-the physical (deposit directory `head/content`) layout: a file can be ingested under `head/content` and
-then a `move` or `copy` action can be performed in the same version to adjust the logical filepath to
-something that does not match the layout of the files in the deposit directory.
+Note that, within an object version, actions are processed in the following order: UPDATE_MANIFEST, ADD,
+UPDATE, MOVE, COPY, DELETE. This is to support the ingest of bitstreams where the logical filepath
+needs to differ from the physical (deposit directory `head/content`) layout.
 
 ```
 deposit_dir/
   4=123cd4567
   head/
-    add_files.json
-    move_files.json   [optional]
-    copy_files.json   [optional]
-    version.json      [optional]
-    fixity_files.json [optional]
+    head.json OR add_files.json
+    update_manifest.json [optional, if add_files.json is used]
+    move_files.json      [optional, if add_files.json is used]
+    copy_files.json      [optional, if add_files.json is used]
+    version.json         [optional, if add_files.json is used]
+    fixity_files.json    [optional, if add_files.json is used]
     content/
       my_content/a_file_to_add.txt
 ```
@@ -206,14 +222,15 @@ deposit_dir/
   inventory.json
   inventory.json.{sha256|sha512}
   head/
-    {action files}
+    head.json OR [one or more action files]
     content/
       {files and directories to add or update, if applicable}
 ```
 
-`{action files}` are AT LEAST ONE of `add_files.json`, `delete_files.json`, `update_files.json`,
-`move_files.json`, `copy_files.json` and `fixity_files.json`. You may also optionally include `version.json`,
-but this file does not count towards the minimum required action files requirement.
+`{action files}` are AT LEAST ONE of `update_manifest`, `add_files.json`, `delete_files.json`,
+`update_files.json`, `move_files.json`, `copy_files.json` and `fixity_files.json`.
+You may also optionally include `version.json`, but this file does not count towards
+the minimum required action files requirement.
 
 The `inventory.json` and sidecar digest file must be the most recent versions of the inventory and
 sidecar from the OCFL object that you are updating, copied from the object root that you intend
@@ -225,11 +242,33 @@ is a correctly-formatted `add_files.json` or `update_files.json`.
 
 Note that it is possible to version an object merely by providing a `fixity_files.json`.
 
+### Update Manifest
+
+Create a file named `update_manifest.json` and place in `deposit/head`. Place the bitstream to be
+added to the object in the content directory, and reference that bitstream in `update_manifest.json`
+with the following syntax:
+
+```
+
+{
+  "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
+    "my_content/dunwich.txt"
+  ]
+}
+
+```
+
+Note that this example, and all others in this doc, use the sha256 algorithm for digest values, for
+easier legibility. Also note that the file path is relative to the object's content directory. The file
+path for the above example relative to the deposit root directory would be `head/content/my_content/dunwich.txt`.
+
 ### Add files
 
 Create a file named `add_files.json` and place in `deposit/head`. Place the file to be added
 to the object in `deposit/head/{content_directory}` in the desired directory structure. If multiple
-filepaths are provided for any one digest value, and if only one matching bitstream is provided in `head/content`, then the file is deduplicated and only 1 bitstream of that file will exist in the final object version.
+filepaths are provided for any one digest value, and if only one matching bitstream is provided
+in `head/content`, then the file is deduplicated and only 1 bitstream of that file will exist
+in the final object version.
 
 ```
 { "digest of file to add": [ filepaths of file to add ] }
@@ -364,6 +403,56 @@ Set `OcflTools.config.fixity_algorithms` to specify acceptable algorithms.
 }
 ```
 
+### Using head.json instead of individual action files
+
+Instead of providing multiple action files in `head/` to describe desired operations,
+you may provide a single file, `head.json`, containing multiple actions. Each individual
+action has the same format as their action file, but is nested beneath a key that describes
+the action, e.g.:
+
+```
+{
+    "update_manifest": {
+      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+        "ingest_temp/dracula.txt"
+      ],
+      "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
+        "ingest_temp/poe.txt"
+      ]
+    },
+    "add": {
+      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+        "my_content/a_great_copy_of_dracula.txt",
+        "my_content/another_directory/a_third_copy_of_dracula.txt"
+      ],
+      "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
+        "edgar/alan/poe.txt"
+      ]
+    }
+}
+```
+
+In the above example we are adding two bitstreams to the object (via `update_manifest`),
+in a directory called `ingest_temp`, but after this version is created the object
+will appear to contain 3 files in total, thus:
+
+```
+
+  my_content/a_great_copy_of_dracula.txt
+  my_content/another_directory/a_third_copy_of_dracula.txt
+  edgar/alan/poe.txt
+```
+
+This is an example of both data duplication (the same bitstream refers to two different files)
+and that the logical representation of the object need not match its physical layout. In this
+case, the version directory on disk would contain these files:
+
+```
+
+  v0001/content/ingest_temp/dracula.txt
+  v0001/content/ingest_temp/poe.txt
+```
+
 ### Accessioning a version
 
 Once the content to be accessioned is marshaled correctly in the `deposit` directory,
@@ -408,6 +497,14 @@ ocfl_delta.previous(3)
 ```
 {
   "v0001": {
+    "update_manifest": {
+      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
+        "my_content/dracula.txt"
+      ],
+      "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
+        "my_content/poe.txt"
+      ]
+    },
     "add": {
       "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
         "my_content/dracula.txt"
@@ -432,18 +529,23 @@ ocfl_delta.previous(3)
     }
   },
   "v0003": {
-    "update": {
+    "update_manifest": {
       "618ea77f3a74558493f2df1d82fee18073f6458573d58e6b65bade8bd65227fb": [
         "my_content/poe-nevermore.txt"
       ]
     },
-    "delete": {
-      "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
-        "my_content/a_second_copy_of_dracula.txt"
+    "update": {
+      "618ea77f3a74558493f2df1d82fee18073f6458573d58e6b65bade8bd65227fb": [
+        "my_content/poe-nevermore.txt"
       ]
     }
   },
   "v0004": {
+    "update_manifest": {
+      "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
+        "my_content/dunwich.txt"
+      ]
+    },
     "add": {
       "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
         "my_content/dunwich.txt"
