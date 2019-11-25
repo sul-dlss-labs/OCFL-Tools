@@ -23,7 +23,6 @@ module OcflTools
 
       @ocfl_object = ocfl_object
       @delta = {}
-      @digest_first_seen = {}
       # We need to get version format, for final report-out. Assume that the ocfl_object versions are
       # formatted correctly (starting with a 'v'). We can't trust the site config setting
       # for this, as there's no guarantee the inventory we are reading in was created at this site.
@@ -38,7 +37,6 @@ module OcflTools
 
     # Generates a complete delta hash for all versions of this object.
     def all
-      @digest_first_seen = {}
       @ocfl_object.version_id_list.each do |version|
         get_version_delta(version)
       end
@@ -57,7 +55,6 @@ module OcflTools
         unless @ocfl_object.version_id_list.include?(version)
           raise "Version #{version} not found in #{@ocfl_object}!"
         end
-
         get_version_delta(version)
       end
     end
@@ -65,6 +62,11 @@ module OcflTools
     private
 
     def get_version_delta(version)
+
+      unless version > 1
+        return get_first_version_delta
+      end
+
       current_digests = @ocfl_object.get_state(version)
       current_files = OcflTools::Utils::Files.invert_and_expand(current_digests)
 
@@ -81,8 +83,8 @@ module OcflTools
       unchanged_files = {}    # filepaths may not change, but digests can!
 
       version_string = @version_format % version.to_i
-      @delta[version_string] = {} # Always clear out the existing version delta.
-
+      @delta[version_string] = {}
+      @delta[version_string].clear # Always clear out the existing version delta.
       actions = OcflTools::OcflActions.new
 
       temp_digests = previous_digests.keys - current_digests.keys
@@ -212,8 +214,8 @@ module OcflTools
 
     def update_manifest_action(digest, version, action)
       version_string = @version_format % version.to_i
-      content_paths  = @ocfl_object.manifest[digest]
-
+      # We need to make a deep copy here so content_paths edits don't screw up the ocfl_object's manifest.
+      content_paths  = OcflTools::Utils.deep_copy(@ocfl_object.manifest[digest])
       # Find any content_path that starts with the current version's directory & contentDirectory;
       # these are bitstreams that were added to this version directory.
       content_paths.each do |content_path|
@@ -231,7 +233,8 @@ module OcflTools
       actions = OcflTools::OcflActions.new
 
       version_string = @version_format % version.to_i
-      @delta[version_string] = {}
+      @delta[version_string] = {} # Always clear out the existing version delta.
+      @delta[version_string].clear
 
       current_digests = @ocfl_object.get_state(version)
       current_digests.each do |digest, filepaths|
