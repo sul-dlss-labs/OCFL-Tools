@@ -149,9 +149,11 @@ describe OcflTools::OcflDeposit do
     ocfl = OcflTools::OcflInventory.new.from_file("#{object_dir}/inventory.json")
 
     ocfl_delta = OcflTools::OcflDelta.new(ocfl)
+   it 'expects a well-formed delta block' do
+     expect(ocfl_delta.all).to match(
+       {"v0001"=>{"update_manifest"=>{"cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27"=>["ingest_temp/dracula.txt"], "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab"=>["ingest_temp/poe.txt"]}, "add"=>{"cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27"=>["my_content/a_great_copy_of_dracula.txt", "my_content/another_directory/a_third_copy_of_dracula.txt"], "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab"=>["edgar/alan/poe.txt"]}}}
+     )
+   end
 
-    # puts ocfl_delta.delta
-
-    puts JSON.pretty_generate(ocfl_delta.all)
   end
 end

@@ -17,15 +17,17 @@ describe OcflTools::OcflActions do
 
   ocfl_actions = OcflTools::OcflActions.new
 
-  puts ocfl_actions
-
   ocfl_actions.add('1234567890', 'my_content/a_test_file.txt')
-  ocfl_actions.add('1234567890', 'my_content/a_test_file.txt')
-  ocfl_actions.add('1234567890', 'my_content/a_copy_of_test_file.txt')
+  ocfl_actions.update_manifest('1234567890', 'my_content/a_test_file.txt')
+  ocfl_actions.add('1234567890', 'my_content/a_copy_of_test_file.txt') # verify de-dupe / copy.
   ocfl_actions.fixity('1234567890', 'md5', 'an_md5_sum')
-  ocfl_actions.fixity('1234567890', 'md5', 'an_md5_sum')
+  ocfl_actions.fixity('1234567890', 'md5', 'an_md5_sum') # verify de-dupe.
   ocfl_actions.fixity('1234567890', 'sha1', 'a_sha1_sum')
 
-  # puts JSON.pretty_generate(ocfl_delta.delta)
-  puts ocfl_actions.all
+  it 'expects a well-formed actions block' do
+    expect(ocfl_actions.all).to match(
+      {"update_manifest"=>{"1234567890"=>["my_content/a_test_file.txt"]}, "add"=>{"1234567890"=>["my_content/a_test_file.txt", "my_content/a_copy_of_test_file.txt"]}, "fixity"=>{"md5"=>{"1234567890"=>"an_md5_sum"}, "sha1"=>{"1234567890"=>"a_sha1_sum"}}}
+    )
+  end
+
 end
