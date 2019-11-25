@@ -376,6 +376,9 @@ module OcflTools
     # @return [Hash] version block, if it exists, or creates new with prior version state in it.
     # @note If a (n-1) version exists in the object, and the requested version does not yet exist, this method will copy that version's state block into the new version.
     def get_version(version)
+      unless version > 0
+        raise "OCFL object version cannot be zero!"
+      end
       if @versions.key?(OcflTools::Utils.version_int_to_string(version))
         @versions[OcflTools::Utils.version_int_to_string(version)]
       else
