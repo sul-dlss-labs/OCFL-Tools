@@ -35,13 +35,41 @@ module OcflTools
     def self.generate_file_digest(file, digest)
       case digest
       when 'md5'
-        checksum = Digest::MD5.hexdigest(File.read(file))
+      # checksum = Digest::MD5.hexdigest(File.read(file))
+        computed_hash = Digest::MD5.new
+        open(file) do |s|
+          while chunk=s.read(8096)
+            computed_hash.update chunk
+          end
+        end
+        return "#{computed_hash}" # return as a String, not a Digest object.
       when 'sha1'
-        checksum = Digest::SHA1.hexdigest(File.read(file))
+      #  checksum = Digest::SHA1.hexdigest(File.read(file))
+        computed_hash = Digest::SHA1.new
+        open(file) do |s|
+          while chunk=s.read(8096)
+            computed_hash.update chunk
+          end
+        end
+        return "#{computed_hash}" # return as a String, not a Digest object.
       when 'sha256'
-        checksum = Digest::SHA256.hexdigest(File.read(file))
+      # checksum = Digest::SHA256.hexdigest(File.read(file))
+        computed_hash = Digest::SHA256.new
+        open(file) do |s|
+          while chunk=s.read(8096)
+            computed_hash.update chunk
+          end
+        end
+        return "#{computed_hash}" # return as a String, not a Digest object.
       when 'sha512'
-        checksum = Digest::SHA512.hexdigest(File.read(file))
+      #  checksum = Digest::SHA512.hexdigest(File.read(file))
+        computed_hash = Digest::SHA512.new
+        open(file) do |s|
+          while chunk=s.read(8096)
+            computed_hash.update chunk
+          end
+        end
+        return "#{computed_hash}" # return as a String, not a Digest object.
       else
         raise 'Unknown digest type!'
       end

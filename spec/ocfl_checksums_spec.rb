@@ -5,8 +5,9 @@ require 'digest'
 
 describe OcflTools::OcflValidator do
   # resolve our path to test fixtures to a full system path
-  object_a = File.expand_path('./spec/fixtures/validation/object_a')
-  validate_a = OcflTools::OcflValidator.new(object_a)
+  # object_a = File.expand_path('./spec/fixtures/validation/object_a')
+  local_path_a = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_a')
+  validate_a = OcflTools::OcflValidator.new("#{local_path_a}")
   OcflTools.config.content_directory = 'data'
 
   # TODO: fix expand_path so we're not tying the results to my local machine's directory structure.
@@ -23,9 +24,9 @@ describe OcflTools::OcflValidator do
     end
   end
 
-  object_e = File.expand_path('./spec/fixtures/validation/object_e')
-  validate_e = OcflTools::OcflValidator.new(object_e)
   local_path_e = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_e')
+#  object_e = File.expand_path('./spec/fixtures/validation/object_e')
+  validate_e = OcflTools::OcflValidator.new("#{local_path_e}")
 
   describe 'object e is missing a file on disk' do
     it 'checks checksums from manifest' do
@@ -35,9 +36,10 @@ describe OcflTools::OcflValidator do
     end
   end
 
-  object_f = File.expand_path('./spec/fixtures/validation/object_f')
-  validate_f = OcflTools::OcflValidator.new(object_f)
+#  object_f = File.expand_path('./spec/fixtures/validation/object_f')
   local_path_f = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_f')
+  validate_f = OcflTools::OcflValidator.new("#{local_path_f}")
+
   describe 'object f has a file on disk version 3 that does not exist in manifest version 3' do
     it 'checks checksums from manifest' do
       expect(validate_f.verify_checksums.all).to match(
@@ -46,9 +48,9 @@ describe OcflTools::OcflValidator do
     end
   end
 
-  object_g = File.expand_path('./spec/fixtures/validation/object_g')
-  validate_g = OcflTools::OcflValidator.new(object_g)
+#   object_g = File.expand_path('./spec/fixtures/validation/object_g')
   local_path_g = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_g')
+  validate_g = OcflTools::OcflValidator.new("#{local_path_g}")
 
   describe 'object g has a bad digest in the manifest file' do
     it 'checks checksums from manifest' do
