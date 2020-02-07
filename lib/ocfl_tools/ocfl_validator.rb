@@ -9,6 +9,9 @@ module OcflTools
     # @return [String] the discovered version format of the object, found by inspecting version directory names.
     attr_reader :version_format
 
+    # @return [String] the version of OCFL that this validator object is targeting.
+    attr_accessor :ocfl_version
+
     # @return {OcflTools::OcflInventory} an OcflInventory instance that represents an inventory.json file, if the directory contains a valid OCFL object.
     attr_reader :inventory
 
@@ -23,6 +26,7 @@ module OcflTools
 
       @digest           = nil
       @version_format   = nil
+      @ocfl_version     = nil
       @ocfl_object_root = ocfl_object_root
       @my_results       = OcflTools::OcflResults.new
       @inventory        = nil # some checks create an inventory object; have a way to get at that.
@@ -198,7 +202,7 @@ module OcflTools
       # 2. Check object root directory for required files.
       # We have to check the top of inventory.json to get the appropriate digest algo.
       # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
-      file_checks = ['inventory.json', '0=ocfl_object_1.0']
+      file_checks = ['inventory.json']
 
       # 2a. What digest should the inventory.json sidecar be using? Ask inventory.json.
       # 2b. What's the highest version we should find here?
@@ -215,13 +219,72 @@ module OcflTools
       end
 
       # Error if a required file is not found in the object root.
+      # This is now just the check for inventory.json and sidecar file.
       file_checks.each do |file|
         if object_root_files.include? file == false
           @my_results.error('E102', 'verify_structure', "Object root does not include required file #{file}")
           error = true
         end
-        # we found it, delete it and go to next.
         object_root_files.delete(file)
+      end
+
+      # NamAsTe file checks:
+      # C1: There should be only 1 file in the root dir beginning with '0=ocfl_object_'
+      # C2: That file should match the expected value of OCFL_version (e.g. '0=ocfl_object_1.0')
+      # C3: The content of that file should match the filename, less the leading '0='
+      root_namaste_files = []
+      Dir.glob('0=ocfl_object_*').select do |file|
+        root_namaste_files << file if File.file? file
+      end
+
+      # C1: We need EXACTLY ONE of these files.
+      if root_namaste_files.size == 0
+        @my_results.error('E103', 'verify_structure', 'Object root does not include required NamAsTe file.')
+        error = true
+      end
+
+      if root_namaste_files.size > 1
+        @my_results.error('E104', 'verify_structure', "Object root contains multiple NamAsTe files: #{root_namaste_files}")
+        error = true
+      end
+
+      # C2 and C3 here.
+      # If we're dealing with 1 or more ocfl_object_files, process them for correctness.
+      unless root_namaste_files.size == 0 || root_namaste_files.size == nil
+
+        # What OCFL version are we looking for? Pull the default value if not otherwise set.
+        @ocfl_version ||= OcflTools.config.ocfl_version
+
+        root_namaste_files.each do | file |
+
+          # C2: Is this file the expected version?
+          if file != "0=ocfl_object_#{@ocfl_version}"
+            @my_results.error('E107', 'verify_structure', "Required NamAsTe file in object root is for unexpected OCFL version: #{file}")
+            error = true
+          end
+
+          # C3: does the file content match the file name?
+          # Cut the first 2 characters from the filename; what remains is the expected content.
+          expected_content = file.slice(2..file.size)
+
+          # We use &:gets here instead of &:readline so we don't throw an exception if the file doesn't have content.
+          first_line = File.open("#{@ocfl_object_root}/#{file}", &:gets)
+
+          # Handle 'the Namaste file is empty' case.
+          if first_line == nil
+            @my_results.error('E105', 'verify_structure', 'Required NamAsTe file in object root directory has no content!')
+            error = true
+            object_root_files.delete(file)
+            next
+          end
+
+          # it'll have a \n on the end. Remove it, then verify for correct content.
+          if first_line.chomp! != expected_content
+            @my_results.error('E106', 'verify_structure', 'Required NamAsTe file in object root directory does not contain expected string.')
+            error = true
+          end
+          object_root_files.delete(file)
+        end
       end
 
       # 3. Error if there are extraneous files in object root.
