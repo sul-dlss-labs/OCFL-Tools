@@ -42,9 +42,17 @@ E016 "OCFL 3.5.3.1 version #{version} is missing #{key} block."
 E050 "OCFL 3.5.3.1 Digests missing! #{unique_checksums.length} digests in versions vs. #{@my_victim.manifest.length} digests in manifest."
 E051 "OCFL 3.5.3.1 Checksum #{checksum} not found in manifest!"
 
+E101 "Object root contains noncompliant files: #{files}"
+E102 "Object root does not include required file #{file}"
+E103 'Object root does not include required NamAsTe file.'
+E104 "Object root contains multiple NamAsTe files: #{files}"
+E105 'Required NamAsTe file in object root directory has no content!'
+E106 'Required NamAsTe file in object root directory does not contain expected string.'
+E107 "Required NamAsTe file in object root is for unexpected OCFL version: #{ocfl_version}"
+
 E200 'OCFL 3.5.1 Object ID not found'
 E201 'OCFL 3.5.1 Object ID cannot be 0 length'
-E202 'OCFL 3.5.1 Object ID cannot be nil')
+E202 'OCFL 3.5.1 Object ID cannot be nil'
 
 E211 'Inventory head cannot be 0'
 E212 'OCFL 3.5.1 Inventory Head cannot be nil'

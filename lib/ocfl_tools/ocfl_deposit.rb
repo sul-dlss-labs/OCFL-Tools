@@ -22,6 +22,10 @@ module OcflTools
   #             |-- <files to add or update>
   #
   class OcflDeposit < OcflTools::OcflInventory
+
+    # @return [String] the version of OCFL that this deposit object is targeting.
+    attr_accessor :ocfl_version
+
     # @param [Pathname] deposit_directory fully-qualified path to a well-formed deposit directory.
     # @param [Pathname] object_directory fully-qualified path to either an empty directory to create new OCFL object in, or the existing OCFL object to which the new version directory should be added.
     # @return {OcflTools::OcflDeposit}
@@ -44,6 +48,8 @@ module OcflTools
       @manifest         = {}
       @versions         = {} # A hash of Version hashes.
       @fixity           = {} # Optional. Same format as Manifest.
+
+      @ocfl_version     = nil
 
       @my_results = OcflTools::OcflResults.new
 
@@ -660,10 +666,13 @@ module OcflTools
       @my_results.add_results(validation.results)
       raise 'Errors detected in validation!' unless @my_results.error_count == 0
 
+      # What OCFL version are we targeting? Pull the default value if not otherwise set.
+      @ocfl_version ||= OcflTools.config.ocfl_version
+
       # If this is version 1, there will not be a Namaste file in object root - add it.
-      unless File.exist?("#{@object_dir}/0=ocfl_object_1.0")
-        namaste = File.open("#{@object_dir}/0=ocfl_object_1.0", 'w')
-        namaste.puts '0=ocfl_object_1.0'
+      unless File.exist?("#{@object_dir}/0=ocfl_object_#{@ocfl_version}")
+        namaste = File.open("#{@object_dir}/0=ocfl_object_#{@ocfl_version}", 'w')
+        namaste.puts "ocfl_object_#{@ocfl_version}"
         namaste.close
       end
 

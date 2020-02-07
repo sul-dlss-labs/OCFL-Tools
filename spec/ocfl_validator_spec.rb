@@ -167,4 +167,50 @@ describe OcflTools::OcflValidator do
       )
     end
   end
+
+  object_i2 = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_i')
+  validate_i2 = OcflTools::OcflValidator.new(object_i2)
+  validate_i2.ocfl_version = '1.5'
+
+  # NamAsTe checks; verify we alert if there's a version mismatch.
+  # object i2 is an OCFLv1 object. 
+  describe 'Namaste file is incorrect version' do
+
+    validate_i2.validate_ocfl_object_root.results
+    it 'expects 1 specific error in verify_structure' do
+      expect(validate_i2.results.error_count).to eq 1
+      expect(validate_i2.results.get_errors).to match(
+        {"E107"=>{"verify_structure"=>["Required NamAsTe file in object root is for unexpected OCFL version: 0=ocfl_object_1.0"]}}
+      )
+    end
+  end
+
+
+
+  # Namaste file issues, part 1: Nothing in Namaste file.
+  object_j = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_j')
+  validate_j = OcflTools::OcflValidator.new(object_j)
+  describe 'Namaste file exists but is empty' do
+    validate_j.validate_ocfl_object_root.results
+    it 'expects 1 specific error in verify_structure' do
+      expect(validate_j.results.error_count).to eq 1
+      expect(validate_j.results.get_errors).to match(
+        "E105" => {"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}
+      )
+    end
+  end
+
+  # Namaste file issues, part 2: Garbge in Namaste file.
+  object_k = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_k')
+  validate_k = OcflTools::OcflValidator.new(object_k)
+  describe 'Namaste file exists but contains garbage' do
+    validate_k.validate_ocfl_object_root.results
+    it 'expects 1 specific error in verify_structure' do
+      expect(validate_k.results.error_count).to eq 1
+      expect(validate_k.results.get_errors).to match(
+        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}}
+      )
+    end
+  end
+
 end
