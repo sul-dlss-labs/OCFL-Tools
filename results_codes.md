@@ -77,5 +77,9 @@ Issues that do not make the resulting object non-compliant, but are not ideal.
 ```
 W111 Placeholder code
 
+W101 "OCFL 3.3 version directory should not contain any directories other than the designated content sub-directory. Additional directories found: #{version_dirs}"
+
 W220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be SHA512."
+
+
 ```
