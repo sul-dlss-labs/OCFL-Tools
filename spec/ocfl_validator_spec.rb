@@ -173,7 +173,7 @@ describe OcflTools::OcflValidator do
   validate_i2.ocfl_version = '1.5'
 
   # NamAsTe checks; verify we alert if there's a version mismatch.
-  # object i2 is an OCFLv1 object. 
+  # object i2 is an OCFLv1 object.
   describe 'Namaste file is incorrect version' do
 
     validate_i2.validate_ocfl_object_root.results
@@ -212,5 +212,24 @@ describe OcflTools::OcflValidator do
       )
     end
   end
+
+  # The Moab Question.
+  # Object M is a copy of object A, but with a 'manifests' directory in content.
+  # For now this is totally hacky, but eventually I'll reprocess Object A as a Moab
+  # with correct contentDirectory and manifests directory contents.
+  object_m = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', 'object_m')
+  validate_m = OcflTools::OcflValidator.new(object_m)
+
+  describe 'Ex-Moab object has a manifests directory' do
+    validate_m.validate_ocfl_object_root.results
+    it 'warns on manifests directory in version directory' do
+      expect(validate_m.results.get_warnings).to include(
+        "W101"=>{"version_structure"=>["OCFL 3.3 version directory should not contain any directories other than the designated content sub-directory. Additional directories found: [\"manifests\"]"]}
+      )
+    end
+  end
+
+
+
 
 end

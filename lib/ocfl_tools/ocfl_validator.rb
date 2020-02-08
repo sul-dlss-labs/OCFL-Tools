@@ -213,8 +213,9 @@ module OcflTools
         expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
         file_checks << "inventory.json.#{json_digest}"
       else
-        contentDirectory = 'content'
-        json_digest      = 'sha512'
+        # If we can't get these values from a handy inventory.json, use the site defaults.
+        contentDirectory = OcflTools.config.content_directory
+        json_digest      = OcflTools.config.digest_algorithm
         file_checks << "inventory.json.#{json_digest}"
       end
 
@@ -397,9 +398,10 @@ module OcflTools
           error = true
         end
 
-        # 12. Error if any directories other than the expected 'content' directory are found in the version directory.
+        # 12. Warn if any directories other than the expected 'content' directory are found in the version directory.
+        # This is the "Moab Excepion" to allow for legacy Moab object migration - a 'manifests' directory would be here.
         unless version_dirs.empty?
-          @my_results.error('E010', 'version_structure', "noncompliant directories #{version_dirs} found in #{ver} directory")
+          @my_results.warn('W101', 'version_structure', "OCFL 3.3 version directory should not contain any directories other than the designated content sub-directory. Additional directories found: #{version_dirs}")
           error = true
         end
       end
