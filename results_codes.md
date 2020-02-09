@@ -42,6 +42,7 @@ E016 "OCFL 3.5.3.1 version #{version} is missing #{key} block."
 E050 "OCFL 3.5.3.1 Digests missing! #{unique_checksums.length} digests in versions vs. #{@my_victim.manifest.length} digests in manifest."
 E051 "OCFL 3.5.3.1 Checksum #{checksum} not found in manifest!"
 
+E100 "Object root directory #{dir} is empty."
 E101 "Object root contains noncompliant files: #{files}"
 E102 "Object root does not include required file #{file}"
 E103 'Object root does not include required NamAsTe file.'
@@ -58,6 +59,8 @@ E211 'Inventory head cannot be 0'
 E212 'OCFL 3.5.1 Inventory Head cannot be nil'
 E213 'OCFL 3.5.1 Inventory Head cannot be an Integer'
 E214 "OCFL 3.5.1 Inventory Head version #{version} does not match expected version #{target_version}"
+E215 "Expected inventory file #{file} not found."
+E216 "Expected key #{key} not found in inventory file #{file}"
 
 E220  Algorithm not found
 E221  Algorithm cannot be 0 length

@@ -154,7 +154,15 @@ module OcflTools
       # validate files in manifest against physical copies on disk.
       # cross_check digestss.
       # Report out via @my_results.
+      # Inventory file does not exist; create a results object, record this epic fail, and return.
+      unless File.exist?(inventory_file)
+        @my_results ||= OcflTools::OcflResults.new
+        @my_results.error('E215', 'verify_checksums', "Expected inventory file #{inventory_file} not found.")
+        return @my_results
+      end
+
       @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
       # Otherwise, use the value of inventory.digestAlgorithm
@@ -199,6 +207,12 @@ module OcflTools
         object_root_files << file if File.file? file
       end
 
+      # 1b. What happens if some this directory is just completely empty?
+      if object_root_dirs.size == 0 && object_root_files.size == 0
+        @my_results.error('E100', 'verify_sructure', "Object root directory #{@ocfl_object_root} is empty.")
+        return @my_results
+      end
+
       # 2. Check object root directory for required files.
       # We have to check the top of inventory.json to get the appropriate digest algo.
       # This is so we don't cause get_digestAlgorithm to throw up if inventory.json doesn't exist.
@@ -208,10 +222,28 @@ module OcflTools
       # 2b. What's the highest version we should find here?
       # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-        json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
-        contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
-        expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
-        file_checks << "inventory.json.#{json_digest}"
+
+        begin
+          json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
+        rescue RuntimeError
+          # For when we have a malformed inventory.json
+          json_digest      = OcflTools.config.digest_algorithm
+          @my_results ||= OcflTools::OcflResults.new
+          @my_results.error('E216', 'verify_structure', "Expected key digestAlgorithm not found in inventory file #{@ocfl_object_root}/inventory.json.")
+        end
+
+        begin
+          contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
+        rescue RuntimeError
+          contentDirectory = OcflTools.config.content_directory
+          @my_results ||= OcflTools::OcflResults.new
+          @my_results.error('E216', 'verify_structure', "Expected key contentDirectory not found in inventory file #{@ocfl_object_root}/inventory.json.")
+        end
+
+          # This returns nil if the value isn't there; it doesn't throw an exception.
+          expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
+          file_checks << "inventory.json.#{json_digest}"
+
       else
         # If we can't get these values from a handy inventory.json, use the site defaults.
         contentDirectory = OcflTools.config.content_directory
@@ -361,7 +393,15 @@ module OcflTools
         # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-          json_digest = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
+
+          begin
+            json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
+          rescue RuntimeError
+            # For when we have a malformed inventory.json
+            json_digest      = OcflTools.config.digest_algorithm
+            @my_results ||= OcflTools::OcflResults.new
+            @my_results.error('E216', 'verify_structure', "Expected key digestAlgorithm not found in inventory file #{@ocfl_object_root}/#{ver}/inventory.json.")
+          end
           file_checks << 'inventory.json'
           file_checks << "inventory.json.#{json_digest}"
           # 9b. Error if the contentDirectory value in the version's inventory does not match the value given in the object root's inventory file.
@@ -485,6 +525,14 @@ module OcflTools
     # @return {OcflTools::OcflResults} event results
     def verify_inventory(inventory_file = "#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
+
+      # Inventory file does not exist; create a results object, record this epic fail, and return.
+      unless File.exist?(inventory_file)
+        @my_results ||= OcflTools::OcflResults.new
+        @my_results.error('E215', 'verify_inventory', "Expected inventory file #{inventory_file} not found.")
+        return @my_results
+      end
+
       @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
       @verify    = OcflTools::OcflVerify.new(@inventory)
       @verify.check_all # creates & returns @results object from OcflVerify
