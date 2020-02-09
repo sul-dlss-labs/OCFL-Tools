@@ -67,6 +67,9 @@ E221  Algorithm cannot be 0 length
 E222  Algorithm cannot be nil
 E223  "OCFL 3.5.1 Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use."
 
+E230 'OCFL 3.5.1 Required OCFL key type not found.'
+E231 'OCFL 3.5.1 Required OCFL key type does not match expected value.'
+
 E250 'OCFL 3.5.2 there MUST be a manifest block.'
 E251 'OCFL 3.5.2 manifest block cannot be empty.'
 

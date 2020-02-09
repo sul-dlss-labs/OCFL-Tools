@@ -78,8 +78,14 @@ module OcflTools
     # Checks OCFL Object for valid value in the type attribute.
     # @return {Ocfltools::OcflResults} of results.
     def check_type
-      # String should match spec URL? Shameless green.
-      @my_results.ok('O200', 'check_type', 'OCFL 3.5.1 Inventory Type is OK.')
+      case @my_victim.type
+      when nil
+        @my_results.error('E230', 'check_type', 'OCFL 3.5.1 Required OCFL key type not found.')
+      when 'https://ocfl.io/1.0/spec/#inventory'
+        @my_results.ok('O200', 'check_type', 'OCFL 3.5.1 Inventory Type is OK.')
+      else
+        @my_results.error('E231', 'check_type', 'OCFL 3.5.1 Required OCFL key type does not match expected value.')
+      end
       @my_results
     end
 

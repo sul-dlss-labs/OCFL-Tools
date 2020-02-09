@@ -31,7 +31,7 @@ module OcflTools
       # Parameters that must be serialized into JSON
       @id               = nil
       @head             = nil
-      @type             = OcflTools.config.content_type
+      @type             = nil # OcflTools.config.content_type
       @digestAlgorithm  = OcflTools.config.digest_algorithm # sha512 is recommended, Stanford uses sha256.
       @contentDirectory = OcflTools.config.content_directory # default is 'content', Stanford uses 'data'
       @manifest         = {}
