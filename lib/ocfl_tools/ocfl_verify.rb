@@ -40,18 +40,13 @@ module OcflTools
     # Checks OCFL Object for valid value in the id attribute.
     # @return {Ocfltools::OcflResults} of results.
     def check_id
-      errors = nil
-
-      if @my_victim.id.empty?
-        @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
-        errors = true
-      elsif @my_victim.id.nil?
-        @my_results.error('E202', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
-        errors = true
-      end
-
-      if errors.nil?
-        @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
+      case @my_victim.id
+        when nil
+          @my_results.error('E202', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
+        when 0
+          @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
+        else
+          @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
       end
       @my_results
     end
@@ -83,21 +78,31 @@ module OcflTools
     # Checks OCFL Object for valid value in the type attribute.
     # @return {Ocfltools::OcflResults} of results.
     def check_type
-      # String should match spec URL? Shameless green.
-      @my_results.ok('O200', 'check_type', 'OCFL 3.5.1 Inventory Type is OK.')
+      case @my_victim.type
+      when nil
+        @my_results.error('E230', 'check_type', 'OCFL 3.5.1 Required OCFL key type not found.')
+      when 'https://ocfl.io/1.0/spec/#inventory'
+        @my_results.ok('O200', 'check_type', 'OCFL 3.5.1 Inventory Type is OK.')
+      else
+        @my_results.error('E231', 'check_type', 'OCFL 3.5.1 Required OCFL key type does not match expected value.')
+      end
       @my_results
     end
 
     # Checks OCFL Object for valid value in the digestAlgorithm attribute.
     # @return {Ocfltools::OcflResults} of results.
     def check_digestAlgorithm
+      # If there's no digestAlgorithm set in the inventory, that's a showstopper.
+      if @my_victim.digestAlgorithm == nil
+        @my_results.error('E222', 'check_digestAlgorithm', "Algorithm cannot be nil")
+        return @my_results
+      end
+
       # must be one of sha256 or sha512
       if @my_victim.digestAlgorithm.downcase == 'sha256'
         @my_results.ok('O200', 'check_digestAlgorithm', 'OCFL 3.5.1 Inventory Algorithm is OK.')
         @my_results.info('I220', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
-
         @my_results.warn('W220', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be Sha512.")
-
       elsif @my_victim.digestAlgorithm.downcase == 'sha512'
         @my_results.ok('O200', 'check_digestAlgorithm', 'OCFL 3.5.1 Inventory Algorithm is OK.')
         @my_results.info('I220', 'check_digestAlgorithm', "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")

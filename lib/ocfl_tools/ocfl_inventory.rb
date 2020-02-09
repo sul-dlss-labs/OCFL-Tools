@@ -11,6 +11,9 @@ module OcflTools
 
       set_head_version # We're about to make an OCFL. At least pretend it'll pass validation.
 
+      # If you've not set type by now, set it to the site default.
+      @type ||= OcflTools.config.content_type
+
       output_hash['id']               = @id
       output_hash['head']             = @head
       output_hash['type']             = @type

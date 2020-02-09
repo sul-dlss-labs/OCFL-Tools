@@ -7,7 +7,8 @@ module OcflTools
       # @param [Pathname] directory full file path to directory to search.
       # @return [Array] of files found in all sub-directories of given path.
       def self.get_dir_files(directory)
-        raise 'Directory does not exist!' unless Dir.exist?(directory) == true
+        # Don't crash out if the requested dir doesn't exist, just state the obvious: there are no files in it.
+        return [] unless Dir.exist?(directory) == true
 
         Dir.chdir(directory)
         directory_files = []
