@@ -39,7 +39,7 @@ describe OcflTools::OcflValidator do
 
     it 'tries to validate only version 2 files against the inventory' do
       expect(validate.verify_directory(2).results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'] } }, 'info' => {}, 'ok' => { 'O111' => { 'version_format' => ['OCFL conforming first version directory found.'], 'verify_structure' => ['OCFL 3.1 Object root passed file structure test.'], 'verify_checksums' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'], 'verify_directory v0002' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'] } }
+        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'] } }, 'info' => {}, "ok" => {"O111"=>{"verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"verify_checksums"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."], "verify_directory v0002"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
       )
     end
   end
@@ -97,7 +97,7 @@ describe OcflTools::OcflValidator do
 
     it 'tries to validate only version 2 files against the inventory' do
       expect(validate_h.verify_directory(2).results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.', 'OCFL 3.1 optional inventory.json missing from v0001 directory', 'OCFL 3.1 optional inventory.json.sha512 missing from v0001 directory', 'OCFL 3.1 optional inventory.json missing from v0002 directory', 'OCFL 3.1 optional inventory.json.sha512 missing from v0002 directory', 'OCFL 3.1 optional inventory.json missing from v0003 directory', 'OCFL 3.1 optional inventory.json.sha512 missing from v0003 directory'] } }, 'info' => {}, 'ok' => { 'O111' => { 'version_format' => ['OCFL conforming first version directory found.'], 'verify_structure' => ['OCFL 3.1 Object root passed file structure test.'], 'verify_directory v0002' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'] } }
+        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.', 'OCFL 3.1 optional inventory.json missing from v0001 directory', 'OCFL 3.1 optional inventory.json.sha512 missing from v0001 directory', 'OCFL 3.1 optional inventory.json missing from v0002 directory', 'OCFL 3.1 optional inventory.json.sha512 missing from v0002 directory', 'OCFL 3.1 optional inventory.json missing from v0003 directory', 'OCFL 3.1 optional inventory.json.sha512 missing from v0003 directory'] } }, 'info' => {}, "ok" => {"O111"=>{"verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"verify_directory v0002"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
       )
     end
   end
@@ -139,7 +139,7 @@ describe OcflTools::OcflValidator do
   describe 'check fixity' do
     it 'checks fixity using default md5' do
       expect(validate_i.verify_fixity.results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_fixity md5' => ['1 files in manifest are missing from fixity block.'] } }, 'info' => {}, 'ok' => { 'O111' => { 'verify_fixity md5' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'] } }
+        'error' => {}, 'warn' => { 'W111' => { 'verify_fixity md5' => ['1 files in manifest are missing from fixity block.'] } }, 'info' => {}, "ok" => {"O200"=>{"verify_fixity md5"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
       )
     end
 
@@ -147,7 +147,7 @@ describe OcflTools::OcflValidator do
 
     it 'checks fixity using sha1' do
       expect(validate_i_sha1.verify_fixity(digest: 'sha1').results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_fixity sha1' => ['2 files in manifest are missing from fixity block.'] } }, 'info' => {}, 'ok' => { 'O111' => { 'verify_fixity sha1' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'] } }
+        'error' => {}, 'warn' => { 'W111' => { 'verify_fixity sha1' => ['2 files in manifest are missing from fixity block.'] } }, 'info' => {}, "ok" => {"O200"=>{"verify_fixity sha1"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
       )
     end
 
@@ -163,7 +163,7 @@ describe OcflTools::OcflValidator do
 
     it 'validates the entire object using the fixity block instead of manifest checksums' do
       expect(validate_i_all.validate_ocfl_object_root(digest: 'md5').results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'], 'verify_fixity md5' => ['1 files in manifest are missing from fixity block.'] }, 'W220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 SHOULD be Sha512.'] } }, 'info' => { 'I200' => { 'check_head' => ['OCFL 3.5.1 Inventory Head version 3 matches highest version in versions.'] }, 'I111' => { 'check_fixity' => ['Fixity block is present.'] }, 'I220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 is a supported digest algorithm.'] } }, 'ok' => { 'O111' => { 'version_format' => ['OCFL conforming first version directory found.'], 'verify_structure' => ['OCFL 3.1 Object root passed file structure test.'], 'verify_fixity md5' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'], 'check_fixity' => ['Fixity block is present and contains valid algorithms.'] }, 'O200' => { 'check_id' => ['OCFL 3.5.1 Inventory ID is OK.'], 'check_type' => ['OCFL 3.5.1 Inventory Type is OK.'], 'check_head' => ['OCFL 3.5.1 Inventory Head is OK.'], 'check_manifest' => ['OCFL 3.5.2 Inventory Manifest syntax is OK.'], 'check_versions' => ['OCFL 3.5.3.1 version syntax is OK.'], 'crosscheck_digests' => ['OCFL 3.5.3.1 Digests are OK.'], 'check_digestAlgorithm' => ['OCFL 3.5.1 Inventory Algorithm is OK.'] }, 'I200' => { 'check_versions' => ['OCFL 3.5.3 Found 3 versions, highest version is 3'] } }
+        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'], 'verify_fixity md5' => ['1 files in manifest are missing from fixity block.'] }, 'W220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 SHOULD be Sha512.'] } }, 'info' => { 'I200' => { 'check_head' => ['OCFL 3.5.1 Inventory Head version 3 matches highest version in versions.'] }, 'I111' => { 'check_fixity' => ['Fixity block is present.'] }, 'I220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 is a supported digest algorithm.'] } }, "ok" => {"I200"=>{"check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3"]}, "O111"=>{"check_fixity"=>["Fixity block is present and contains valid algorithms."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_id"=>["OCFL 3.5.1 Inventory ID is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_versions"=>["OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "verify_fixity md5"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
       )
     end
   end

@@ -127,7 +127,7 @@ module OcflTools
         errors = true
       end
 
-      # Should check that it's a hash of digests and filepaths somehow...?
+      # TODO: Should check that it's a hash of digests and filepaths somehow...?
       # Get digest Algo type, use that to get key length.
       # check all keys in manifest to make sure they're all that length.
 

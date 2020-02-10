@@ -430,12 +430,15 @@ module OcflTools
           error = true
         end
 
-        # 11. Error if the expected content directory is not found.
+        # 11. WARN if a contentDirectory exists, but is empty.
         if version_dirs.include? contentDirectory
           version_dirs.delete(contentDirectory)
+          if Dir.empty?(contentDirectory)
+            @my_results.warn('W102', 'verify_structure', "OCFL 3.3.1 version #{ver} contentDirectory should not be empty.")
+          end
         else
-          @my_results.error('E012', 'verify_structure', "required content directory #{contentDirectory} not found in #{ver} directory")
-          error = true
+          # Informational message that contentDir does not exist. Not necssarily a problem!
+          @my_results.info('I101', 'verify_structure', "OCFL 3.3.1 version #{ver} does not contain a contentDirectory.")
         end
 
         # 12. Warn if any directories other than the expected 'content' directory are found in the version directory.
