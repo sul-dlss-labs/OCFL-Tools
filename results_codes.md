@@ -11,6 +11,10 @@ O111 Placeholder code
 O200 'OCFL 3.5.1 Inventory ID is OK.'
 O200 'OCFL 3.5.1 Inventory Type is OK.'
 O200 = <Inventory Value> is OK.
+O200 'All discovered files in contentDirectory are referenced in inventory.'
+O200 'All discovered files in contentDirectory match stored digest values.'
+
+
 ```
 
 ## Informational
@@ -19,10 +23,12 @@ We're not passing judgement, we're just letting you know something neat.
 
 ```
 I111 Placeholder code
-
+I101 "OCFL 3.3.1 version #{version} does not contain a contentDirectory."
 I200 = <generic informational msg>
 I220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
 ```
+
+
 
 ## Errors
 
@@ -33,7 +39,7 @@ E111 Placeholder code
 
 E010	OCFL 3.1 Version directory #{directory} contains directories other than designated content directory
 E011	OCFL 3.1 Version directory #{directory} contains files other than an inventory and inventory digest
-E012	OCFL 3.1 Version directory #{directory} does not contain the content directory specified in the inventory
+E012	OCFL 3.1 Version directory #{directory} does not contain the contentDirectory specified in the inventory
 E013	OCFL 3.1 Expected version directory #{directory} missing from directory list #{directories}
 E014 "OCFL 3.5.3 Found #{version_count} versions, but highest version is #{highest_version}"
 E015 "OCFL 3.5.3 Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}."
@@ -65,7 +71,7 @@ E216 "Expected key #{key} not found in inventory file #{file}"
 E220  Algorithm not found
 E221  Algorithm cannot be 0 length
 E222  Algorithm cannot be nil
-E223  "OCFL 3.5.1 Algorithm #{@my_victim.digestAlgorithm} is not valid for OCFL use."
+E223  "OCFL 3.5.1 Algorithm #{digestAlgorithm} is not valid for OCFL use."
 
 E230 'OCFL 3.5.1 Required OCFL key type not found.'
 E231 'OCFL 3.5.1 Required OCFL key type does not match expected value.'
@@ -84,6 +90,7 @@ Issues that do not make the resulting object non-compliant, but are not ideal.
 W111 Placeholder code
 
 W101 "OCFL 3.3 version directory should not contain any directories other than the designated content sub-directory. Additional directories found: #{version_dirs}"
+W102 "OCFL 3.3.1 version #{version} contentDirectory should not be empty."
 
 W220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be SHA512."
 

@@ -240,7 +240,7 @@ module OcflTools
       source.get_warnings.each do |code, contexts|
         contexts.each do |context, descriptions|
           descriptions.each do |description|
-            self.warn(code, context, description)
+            warn(code, context, description)
           end
         end
       end

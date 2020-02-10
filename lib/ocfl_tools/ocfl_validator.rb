@@ -430,12 +430,15 @@ module OcflTools
           error = true
         end
 
-        # 11. Error if the expected content directory is not found.
+        # 11. WARN if a contentDirectory exists, but is empty.
         if version_dirs.include? contentDirectory
           version_dirs.delete(contentDirectory)
+          if Dir.empty?(contentDirectory)
+            @my_results.warn('W102', 'verify_structure', "OCFL 3.3.1 version #{ver} contentDirectory should not be empty.")
+          end
         else
-          @my_results.error('E012', 'verify_structure', "required content directory #{contentDirectory} not found in #{ver} directory")
-          error = true
+          # Informational message that contentDir does not exist. Not necssarily a problem!
+          @my_results.info('I101', 'verify_structure', "OCFL 3.3.1 version #{ver} does not contain a contentDirectory.")
         end
 
         # 12. Warn if any directories other than the expected 'content' directory are found in the version directory.
@@ -536,6 +539,50 @@ module OcflTools
       @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
       @verify    = OcflTools::OcflVerify.new(@inventory)
       @verify.check_all # creates & returns @results object from OcflVerify
+    end
+
+    # Cross-checks all files in the manifest against the files discovered in contentDirectories.
+    # This is a less resource-intensive check that verify_checksums.
+    # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
+    # @return {OcflTools::OcflResults} event results
+    def verify_files(inventory_file = "#{@ocfl_object_root}/inventory.json")
+      # Inventory file does not exist; create a results object, record this epic fail, and return.
+      unless File.exist?(inventory_file)
+        @my_results ||= OcflTools::OcflResults.new
+        @my_results.error('E215', 'verify_files', "Expected inventory file #{inventory_file} not found.")
+        return @my_results
+      end
+
+      inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+      # Inspect the disk based on the inventory file. What files are on disk in these versions contentDirectories?
+      files_on_disk = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, inventory.version_id_list.min, inventory.version_id_list.max)
+      # Now get a list of all files in the Manifest block and expand them to full filepaths (we get checksums too, but don't need them - just get the keys).
+      files_in_manifest = OcflTools::Utils::Files.invert_and_expand_and_prepend(inventory.manifest, @ocfl_object_root).keys
+
+      if files_on_disk == files_in_manifest
+        # Everything is accounted for; no missing or extraneous files found. Return success!
+        @my_results.ok('O200', 'verify_files', "All files in inventory were found in expected contentDirectory.")
+        @my_results.ok('O200', 'verify_files', "All discovered files in contentDirectory are referenced in inventory file.")
+        return @my_results
+      end
+
+      # If we get to here, there's a problem or two. What is it?
+      missing_files = files_in_manifest - files_on_disk
+      extraneous_files = files_on_disk - files_in_manifest
+
+      if missing_files.size > 0
+        missing_files.each do | file |
+          @my_results.error('E111', 'verify_files', "Expected file #{file} not found in contentDirectory.")
+        end
+      end
+
+      if extraneous_files.size > 0
+        extraneous_files.each do | file |
+          @my_results.error('E111', 'verify_files', "Extraneous file #{file} discovered in contentDirectory.")
+        end
+      end
+
+      @my_results
     end
   end
 end

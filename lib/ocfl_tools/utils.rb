@@ -86,8 +86,8 @@ module OcflTools
 
       # 1st check! If everything is perfect, these two Hashs SHOULD BE IDENTICAL!
       if inventory_checksums == disk_checksums
-        results.ok('O111', context, 'All discovered files on disk are referenced in inventory.')
-        results.ok('O111', context, 'All discovered files on disk match stored digest values.')
+        results.ok('O200', context, 'All discovered files in contentDirectory are referenced in inventory.')
+        results.ok('O200', context, 'All discovered files in contentDirectory match stored digest values.')
         return results
       end
 

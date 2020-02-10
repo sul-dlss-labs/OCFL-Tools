@@ -19,7 +19,7 @@ describe OcflTools::OcflValidator do
   describe 'perfect object a' do
     it 'checks checksums from manifest' do
       expect(validate_a.verify_checksums.all).to match(
-        'error' => {}, 'warn' => {}, 'info' => {}, 'ok' => { 'O111' => { 'verify_checksums' => ['All discovered files on disk are referenced in inventory.', 'All discovered files on disk match stored digest values.'] } }
+        'error' => {}, 'warn' => {}, 'info' => {}, 'ok' => { 'O200' => { 'verify_checksums' => ['All discovered files in contentDirectory are referenced in inventory.', 'All discovered files in contentDirectory match stored digest values.'] } }
       )
     end
   end
