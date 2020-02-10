@@ -48,6 +48,7 @@ module OcflTools
       # calls verify_structure, verify_inventory and verify_checksums.
       verify_structure
       verify_inventory # returns a diff. results object; merge it?
+      verify_manifest
       if !digest.nil?
         verify_fixity(digest: digest)
       else
