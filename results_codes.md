@@ -13,7 +13,7 @@ O200 'OCFL 3.5.1 Inventory Type is OK.'
 O200 = <Inventory Value> is OK.
 O200 'All discovered files in contentDirectory are referenced in inventory.'
 O200 'All discovered files in contentDirectory match stored digest values.'
-
+O200 'All digests successfully verified.'
 
 ```
 
