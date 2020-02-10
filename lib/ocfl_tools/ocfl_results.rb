@@ -25,6 +25,20 @@ module OcflTools
       @my_results
     end
 
+    # Convenience method to print out the results hash to stdout.
+    def print
+      @my_results.each do | level, status_codes |
+        puts "#{level.upcase}" unless status_codes.size == 0
+        status_codes.each do | code, contexts |
+          contexts.each do | context, descriptions |
+            descriptions.each do | desc |
+              puts "  #{code}:#{context}:#{desc}"
+            end
+          end
+        end
+      end
+    end
+
     # @return [Hash] a hash of all the 'error' entries stored in this instance.
     def get_errors
       @my_results['error']
