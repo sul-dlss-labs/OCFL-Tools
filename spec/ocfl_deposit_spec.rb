@@ -123,11 +123,14 @@ describe OcflTools::OcflDeposit do
     # Now validate the full object!
     validate = OcflTools::OcflValidator.new(object_dir)
 
-    it 'validates the entire object using the fixity block instead of manifest checksums' do
-      expect(validate.validate_ocfl_object_root.results).to match(
-        'error' => {}, 'warn' => { 'W220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 SHOULD be Sha512.'] } }, 'info' => { 'I200' => { 'check_head' => ['OCFL 3.5.1 Inventory Head version 4 matches highest version in versions.'] }, 'I111' => { 'check_fixity' => ['Fixity block is present.'] }, 'I220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 is a supported digest algorithm.'] } }, "ok" => {"I200"=>{"check_versions"=>["OCFL 3.5.3 Found 4 versions, highest version is 4"]}, "O111"=>{"check_fixity"=>["Fixity block is present and contains valid algorithms."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_id"=>["OCFL 3.5.1 Inventory ID is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_versions"=>["OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "verify_checksums"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
+    it 'validates the object using the fixity block instead of manifest checksums' do
+      validate.verify_fixity(digest: 'md5')
+      validate.verify_fixity(digest: 'sha1')
+      expect(validate.results.all).to match(
+        {"error"=>{}, "warn"=>{"W111"=>{"verify_fixity md5"=>["2 files in manifest are missing from fixity block."], "verify_fixity sha1"=>["3 files in manifest are missing from fixity block."]}}, "info"=>{}, "ok"=>{"O200"=>{"verify_fixity md5"=>["All digests successfully verified."], "verify_fixity sha1"=>["All digests successfully verified."]}}}
       )
     end
+
   end
 
   describe 'create object D with many action files' do
