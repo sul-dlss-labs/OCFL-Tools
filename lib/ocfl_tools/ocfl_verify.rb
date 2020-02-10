@@ -150,7 +150,7 @@ module OcflTools
         @my_results.error('E014', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, but highest version is #{highest_version}")
         version_check = true
       elsif version_count == highest_version
-        @my_results.ok('I200', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, highest version is #{highest_version}")
+        @my_results.ok('O200', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, highest version is #{highest_version}")
       end
       # should be contiguous version numbers starting at 1.
       count = 0
