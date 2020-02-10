@@ -33,21 +33,15 @@ describe OcflTools::OcflValidator do
       )
     end
 
-    it 'verifies all expected contentDirectory files exist' do
-      expect(validate.verify_files.get_ok).to include(
-        "O200"=>{"verify_files"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."]},
-      )
-    end
-
     it 'checks checksums from manifest' do
       expect(validate.verify_checksums.get_ok).to include(
-        "O200"=>{"verify_files"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."], "verify_checksums"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}
+        "O200"=>{"verify_checksums"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}
       )
     end
 
     it 'tries to validate only version 2 files against the inventory' do
       expect(validate.verify_directory(2).results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'] } }, 'info' => {}, "ok" => {"O111"=>{"verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"verify_checksums"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."], "verify_directory v0002"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."], "verify_files"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."]}}
+        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'] } }, 'info' => {}, "ok" => {"O111"=>{"verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"verify_checksums"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."], "verify_directory v0002"=>["All discovered files in contentDirectory are referenced in inventory.", "All discovered files in contentDirectory match stored digest values."]}}
       )
     end
   end
