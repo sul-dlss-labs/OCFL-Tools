@@ -123,10 +123,14 @@ describe OcflTools::OcflDeposit do
     # Now validate the full object!
     validate = OcflTools::OcflValidator.new(object_dir)
 
-    it 'validates the entire object using the fixity block instead of manifest checksums' do
-      validate.validate_ocfl_object_root
-      expect(validate.results.ok_count).to eq 14
+    it 'validates the object using the fixity block instead of manifest checksums' do
+      validate.verify_fixity(digest: 'md5')
+      validate.verify_fixity(digest: 'sha1')
+      expect(validate.results.all).to match(
+        {"error"=>{}, "warn"=>{"W111"=>{"verify_fixity md5"=>["2 files in manifest are missing from fixity block."], "verify_fixity sha1"=>["3 files in manifest are missing from fixity block."]}}, "info"=>{}, "ok"=>{"O200"=>{"verify_fixity md5"=>["All digests successfully verified."], "verify_fixity sha1"=>["All digests successfully verified."]}}}
+      )
     end
+
   end
 
   describe 'create object D with many action files' do
