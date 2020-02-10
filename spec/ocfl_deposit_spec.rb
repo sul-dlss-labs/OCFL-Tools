@@ -124,25 +124,8 @@ describe OcflTools::OcflDeposit do
     validate = OcflTools::OcflValidator.new(object_dir)
 
     it 'validates the entire object using the fixity block instead of manifest checksums' do
-      #puts validate.validate_ocfl_object_root.get_ok
-      # "check_fixity"=>["Fixity block is present and contains valid algorithms."]}
-      # "verify_checksums"=>["All digests successfully verified."]
-      expect(validate.validate_ocfl_object_root.get_ok).to include(
-        "O111" => {
-          "check_fixity"=>["Fixity block is present and contains valid algorithms."],
-          "verify_structure"=>["OCFL 3.1 Object root passed file structure test."],
-          "version_format"=>["OCFL conforming first version directory found."]},
-        "O200" => {
-          "verify_manifest"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."],
-          "verify_checksums"=>["All digests successfully verified."],
-          "check_id"=>["OCFL 3.5.1 Inventory ID is OK."],
-          "check_type"=>["OCFL 3.5.1 Inventory Type is OK."],
-          "check_head"=>["OCFL 3.5.1 Inventory Head is OK."],
-          "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."],
-          "check_versions"=>["OCFL 3.5.3.1 version syntax is OK."],
-          "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."],
-          "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]},
-      )
+      validate.validate_ocfl_object_root
+      expect(validate.results.ok_count).to eq 14
     end
   end
 
