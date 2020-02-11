@@ -262,7 +262,7 @@ module OcflTools
       # Error if a required file is not found in the object root.
       # This is now just the check for inventory.json and sidecar file.
       file_checks.each do |file|
-        if object_root_files.include? file == false
+        unless object_root_files.include? file
           @my_results.error('E102', 'verify_structure', "Object root does not include required file #{file}")
           error = true
         end

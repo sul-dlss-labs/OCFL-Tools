@@ -7,7 +7,6 @@ module OcflTools
     # without having to load it all into memory by ingesting it with {OcflTools::OcflInventory}.
     module Inventory
       # Given an inventory file and a key to search for, return the value at that key.
-      # This is designed to be FAST for header keys, not for manifests and fixity retrievals.
       # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
       # @param [String] key the JSON key in the inventory file that you want to return a value for.
       # @return [String or nil] the value of the requested key, or nil if not found.
@@ -16,13 +15,23 @@ module OcflTools
           raise "#{key} is not a valid OCFL inventory header key"
         end
 
-        result = IO.foreach(inventory_file).lazy.grep(/"#{key}"/).take(1).to_a # { |a| puts "I got #{a}"}
-        # [ " "digestAlgorithm": "sha256"," ] is my return value. It's not great.
-        return nil if result.empty? # if no match, result has no content.
+        inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
 
-        string = result[0] # our result is an array with an singl element.
-        result_array = string.split('"') # and we need the 4th part of the element.
-        result_array[3]
+        case key
+          when 'contentDirectory'
+            inventory.contentDirectory
+          when 'digestAlgorithm'
+            inventory.digestAlgorithm
+          when 'head'
+            inventory.head
+          when 'type'
+            inventory.type
+          when 'id'
+            inventory.id
+          else
+            raise "Unknown key #{key}"
+        end
+
       end
 
       # Given an inventory file, return the value of contentDirectory IF FOUND, or 'content' if contentDirectory is not set.
