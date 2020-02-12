@@ -115,7 +115,6 @@ module OcflTools
     # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
     # @return {OcflTools::OcflResults} of event results
     def verify_manifest(inventory_file = "#{@ocfl_object_root}/inventory.json")
-
       unless File.exist?(inventory_file)
         @my_results ||= OcflTools::OcflResults.new
         @my_results.error('E215', 'verify_files', "Expected inventory file #{inventory_file} not found.")
@@ -123,8 +122,10 @@ module OcflTools
       end
 
       @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
-      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
-      files_in_manifest  = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root).keys
+      # These are arrays, not hashes, so they must be sorted for the comparison below to work.
+      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max).sort
+      files_in_manifest  = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root).keys.sort
+
       # we only need the files (keys), not the digests here.
       if files_on_disk == files_in_manifest
         @my_results.ok('O200', 'verify_manifest', "All files in inventory were found in expected contentDirectory.")
@@ -139,11 +140,17 @@ module OcflTools
         missing_from_manifest.each do |missing|
           @my_results.error('E111', 'verify_manifest', "Extraneous file #{missing} discovered in contentDirectory.")
         end
+        if missing_from_disk.empty?
+          @my_results.ok('O200', 'verify_manifest', "All files in inventory were found in expected contentDirectory.")
+        end
       end
 
       unless missing_from_disk.empty?
         missing_from_disk.each do |missing|
           @my_results.error('E111', 'verify_manifest', "Expected file #{missing} not found in contentDirectory.")
+        end
+        if missing_from_manifest.empty?
+          @my_results.ok('O200', 'verify_manifest', "All discovered files in contentDirectory are referenced in inventory file.")
         end
       end
       @my_results

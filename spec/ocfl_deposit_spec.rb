@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ocfl-tools'
-require 'digest'
 
 describe OcflTools::OcflDeposit do
   basedir = Dir.pwd
