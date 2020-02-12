@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ocfl-tools'
-require 'digest'
 
 describe OcflTools::OcflActions do
   # Run after ocf_deposit_spec, so we can use that deposit object example.
