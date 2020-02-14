@@ -91,7 +91,7 @@ W111 Placeholder code
 
 W101 "OCFL 3.3 version directory should not contain any directories other than the designated content sub-directory. Additional directories found: #{version_dirs}"
 W102 "OCFL 3.3.1 version #{version} contentDirectory should not be empty."
-
+W201 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.'
 W220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be SHA512."
 
 

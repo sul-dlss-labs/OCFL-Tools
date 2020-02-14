@@ -38,6 +38,7 @@ module OcflTools
     end
 
     # Checks OCFL Object for valid value in the id attribute.
+    # Id value MUST be present and SHOULD be a URI.
     # @return {Ocfltools::OcflResults} of results.
     def check_id
       case @my_victim.id
@@ -45,8 +46,10 @@ module OcflTools
           @my_results.error('E202', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
         when 0
           @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
-        else
+        when /\S+:\S+/ # Hacky? check for URI pattern matching.
           @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
+        else
+          @my_results.warn('W201', 'check_id', 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.')
       end
       @my_results
     end

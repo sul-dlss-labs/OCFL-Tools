@@ -22,13 +22,13 @@ describe OcflTools::OcflValidator do
     it 'verifies the structure' do
       validate.verify_structure
       expect(validate.results.all).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'] } }, 'info' => {}, 'ok' => { 'O111' => { 'version_format' => ['OCFL conforming first version directory found.'], 'verify_structure' => ['OCFL 3.1 Object root passed file structure test.'] } }
+  {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."]}}, "info"=>{}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."]}}}
       )
     end
 
     it 'checks the root inventory' do
       expect(validate.verify_inventory.results).to match(
-        'error' => {}, 'warn' => { 'W220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 SHOULD be Sha512.'] } }, 'info' => { 'I200' => { 'check_head' => ['OCFL 3.5.1 Inventory Head version 3 matches highest version in versions.'] }, 'I220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 is a supported digest algorithm.'] } }, "ok" => {"O200"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_id"=>["OCFL 3.5.1 Inventory ID is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."]}}
+        {"error"=>{}, "warn"=>{"W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O200"=>{"check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}}
       )
     end
 
@@ -112,7 +112,7 @@ describe OcflTools::OcflValidator do
     validate_a.validate_ocfl_object_root.results
 
     it 'expects results.warn to be 2' do
-      expect(validate_a.results.warn_count).to eq 2
+      expect(validate_a.results.warn_count).to eq 3
     end
 
     it 'expects results.error to be 0' do
@@ -124,7 +124,7 @@ describe OcflTools::OcflValidator do
     end
 
     it 'expects results.ok to be 13' do
-      expect(validate_a.results.ok_count).to eq 13
+      expect(validate_a.results.ok_count).to eq 12
     end
   end
 
@@ -160,10 +160,9 @@ describe OcflTools::OcflValidator do
     end
 
     validate_i_all = OcflTools::OcflValidator.new(object_i)
-
     it 'validates the entire object using the fixity block instead of manifest checksums' do
       expect(validate_i_all.validate_ocfl_object_root(digest: 'md5').results).to match(
-        'error' => {}, 'warn' => { 'W111' => { 'verify_structure' => ['OCFL 3.1 optional logs directory found in object root.'], 'verify_fixity md5' => ['1 files in manifest are missing from fixity block.'] }, 'W220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 SHOULD be Sha512.'] } }, 'info' => { 'I200' => { 'check_head' => ['OCFL 3.5.1 Inventory Head version 3 matches highest version in versions.'] }, 'I111' => { 'check_fixity' => ['Fixity block is present.'] }, 'I220' => { 'check_digestAlgorithm' => ['OCFL 3.5.1 sha256 is a supported digest algorithm.'] } }, "ok" => {"O111"=>{"check_fixity"=>["Fixity block is present and contains valid algorithms."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "version_format"=>["OCFL conforming first version directory found."]}, "O200"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_id"=>["OCFL 3.5.1 Inventory ID is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "verify_fixity md5"=>["All digests successfully verified."], "verify_manifest"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."]}},
+        {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."], "verify_fixity md5"=>["1 files in manifest are missing from fixity block."]}, "W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I111"=>{"check_fixity"=>["Fixity block is present."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "check_fixity"=>["Fixity block is present and contains valid algorithms."]}, "O200"=>{"verify_manifest"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."], "verify_fixity md5"=>["All digests successfully verified."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}},
       )
     end
   end
