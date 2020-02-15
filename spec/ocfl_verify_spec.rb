@@ -17,14 +17,32 @@ describe OcflTools::OcflVerify do
     end
 
     results = verify.check_all
-    # puts results.results
 
     it 'expects to get a results object' do
       expect(verify.check_all).to be_instance_of(OcflTools::OcflResults)
+
       expect(results.results).to match(
-        {"error"=>{}, "warn"=>{"W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O200"=>{"check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}}
+        {"error"=>{"E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty."]}}, "warn"=>{"W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W111"=>{"check_version"=>["Value in version v0001 user address block SHOULD NOT be empty.", "Value in version v0002 user address block SHOULD NOT be empty.", "Value in version v0003 user address block SHOULD NOT be empty."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O200"=>{"check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3"], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}}
       )
       # puts JSON.pretty_generate(results.results)
     end
+  end
+
+  describe 'finds problems with 01_bad_missing_created' do
+  #  puts "Loading up 01_bad_missing_created here"
+    ocfl2 = OcflTools::OcflInventory.new
+    object_root_dir2 = File.join(File.dirname(__dir__), 'spec', 'fixtures', 'validation', '01_bad_missing_created')
+    ocfl2.from_file("#{object_root_dir2}/inventory.json")
+
+    verify2 = OcflTools::OcflVerify.new(ocfl2)
+
+    it 'returns a verify object' do
+      expect(verify2).to be_instance_of(OcflTools::OcflVerify)
+    end
+
+    results2 = verify2.check_all
+  #  puts "I'm Outputting a bad boy here:"
+  #  puts results2.results
+
   end
 end
