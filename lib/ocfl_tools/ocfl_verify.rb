@@ -367,9 +367,9 @@ module OcflTools
 
     # used by user.address validation. RFC6068.
     def check_for_mailto(value)
-      # For now, very simple regex.
       if value =~ /^mailto:*/
-        return true
+        value.slice!('mailto:')
+        return value.match?(URI::MailTo::EMAIL_REGEXP) # returns true if it's an email.
       else
         return false
       end
