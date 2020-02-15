@@ -343,20 +343,17 @@ module OcflTools
               next
             end
             # user.address should be either mailto: or URI.
-            case user_value
-              when /^mailto:*/
-                if check_for_mailto(user_value) == false
-                  @my_results.error('E111', 'check_version', "Value in #{version} #{user_value} is not in valid mailto: format.")
-                  @version_check = true
-                end
-              else
-                if check_for_uri(user_value) == false
-                  @my_results.error('E111', 'check_version', "Value in #{version} #{user_value} is not a valid URI.")
-                  @version_check = true
-                end
+            if check_for_mailto(user_value) == true
+              next # It's a mailto:, we don't need to process further.
             end
 
-            # user.address is valid!
+            if check_for_uri(user_value) == true
+              next # It's a URI, don't need to process further.
+            end
+            # If we get to here, it wasn't a mailto or a URI.
+            @my_results.error('E111', 'check_version', "Value in #{version} #{user_value} is not a valid URI or mailto: format.")
+            @version_check = true
+
           else           # unexpected value in user block.
             @my_results.error('E111', 'check_version', "Unexpected value in version #{version} user block #{user_key}.")
             @version_check = true
@@ -368,13 +365,17 @@ module OcflTools
 
     # used by user.address validation. RFC6068.
     def check_for_mailto(value)
-      # For now, shameless green.
-      return true
+      # For now, very simple regex.
+      if value =~ /^mailto:*/
+        return true
+      else
+        return false
+      end
     end
 
     # used by check_id and user.address validation. RFC3986.
     def check_for_uri(value)
-      if value =~ /\S+:\S+/
+      if value =~ /\w+:(\/?\/?)[^\s]+/
         # very crappy check for URI.
         return true # emits OK result.
       else
