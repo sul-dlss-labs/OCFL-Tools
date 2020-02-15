@@ -371,7 +371,7 @@ module OcflTools
         value.slice!('mailto:')
         return value.match?(URI::MailTo::EMAIL_REGEXP) # returns true if it's an email.
       else
-        return false
+        return value.match?(URI::MailTo::EMAIL_REGEXP) # Is it still an email?
       end
     end
 
