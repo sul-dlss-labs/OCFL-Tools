@@ -44,20 +44,22 @@ module OcflTools
       case @my_victim.id
         when nil
           @my_results.error('E202', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
+          return @my_results
         when 0
           @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
+          return @my_results
         when !String
           @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID must be a string.')
-        when /\S+:\S+/ # Hacky? check for URI pattern matching.
-          if check_for_uri(@my_victim.id) == false
-              @my_results.warn('W201', 'check_id', 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.')
-            else
-              @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
-          end
-        else
-          @my_results.warn('W201', 'check_id', 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.')
+          return @my_results
       end
-      @my_results
+
+      if @my_victim.id =~ /\A#{URI::regexp}\z/
+        @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
+        return @my_results
+      else
+        @my_results.warn('W201', 'check_id', 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.')
+        return @my_results
+      end
     end
 
     # Checks OCFL Object for valid value in the head attribute.
@@ -375,8 +377,7 @@ module OcflTools
 
     # used by check_id and user.address validation. RFC3986.
     def check_for_uri(value)
-      if value =~ /\w+:(\/?\/?)[^\s]+/
-        # very crappy check for URI.
+      if value =~ /\A#{URI::regexp}\z/
         return true # emits OK result.
       else
         # if it doesn't pass the check, it's a problem.
