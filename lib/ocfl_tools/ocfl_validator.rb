@@ -432,6 +432,25 @@ module OcflTools
 
         file_checks.each do |file|
           if version_files.include? file
+            # The inventory file in the highest version directory MUST match the inventory file in the object root.
+            case file
+              when 'inventory.json'
+                case ver
+                  # expect_head is nil if there's no inventory.json in the object root, so this test won't run against nothing.
+                  when expect_head
+                    # expand_filepaths(@ocfl_object_root)
+                    my_files = ["#{@ocfl_object_root}/inventory.json", "#{@ocfl_object_root}/#{ver}/inventory.json"]
+                    # create_digests
+                    my_digests = OcflTools::Utils::Files.create_digests(my_files, 'sha512')
+                    # We know there must be only 2 values here, and they should be equal.
+                    if my_digests.values[0] != my_digests.values[1]
+                      @my_results.error('E111', 'verify_structure', "Inventory.json in root and highest version #{ver} MUST match.")
+                    end
+                    # Only 1 case block, no 'else'
+                  end
+                # Only 1 case block, no 'else'
+              end
+            # Expected file exists; delete it from our check list and move on.
             version_files.delete(file)
           else
             @my_results.warn('W111', 'verify_structure', "OCFL 3.1 optional #{file} missing from #{ver} directory")

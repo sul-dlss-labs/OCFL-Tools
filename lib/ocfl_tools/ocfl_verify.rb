@@ -38,17 +38,28 @@ module OcflTools
     end
 
     # Checks OCFL Object for valid value in the id attribute.
+    # Id value MUST be present and SHOULD be a URI.
     # @return {Ocfltools::OcflResults} of results.
     def check_id
       case @my_victim.id
         when nil
           @my_results.error('E202', 'check_id', 'OCFL 3.5.1 Object ID cannot be nil')
+          return @my_results
         when 0
           @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID cannot be 0 length')
-        else
-          @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
+          return @my_results
+        when !String
+          @my_results.error('E201', 'check_id', 'OCFL 3.5.1 Object ID must be a string.')
+          return @my_results
       end
-      @my_results
+
+      if @my_victim.id =~ /\A#{URI::regexp}\z/
+        @my_results.ok('O200', 'check_id', 'OCFL 3.5.1 Inventory ID is OK.')
+        return @my_results
+      else
+        @my_results.warn('W201', 'check_id', 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.')
+        return @my_results
+      end
     end
 
     # Checks OCFL Object for valid value in the head attribute.
@@ -145,10 +156,10 @@ module OcflTools
       highest_version = @my_victim.version_id_list.max
       my_versions     = @my_victim.version_id_list.sort
 
-      version_check = nil
+      @version_check = nil
       if version_count != highest_version
         @my_results.error('E014', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, but highest version is #{highest_version}")
-        version_check = true
+        @version_check = true
       elsif version_count == highest_version
         @my_results.ok('O200', 'check_versions', "OCFL 3.5.3 Found #{version_count} versions, highest version is #{highest_version}")
       end
@@ -159,7 +170,7 @@ module OcflTools
         count += 1
         if count != my_versions[count - 1]
           @my_results.error('E015', 'check_versions', "OCFL 3.5.3 Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}.")
-          version_check = true
+          @version_check = true
         end
       end
       # We do NOT need to check the @versions.keys here for 'v0001', etc.
@@ -170,11 +181,27 @@ module OcflTools
         %w[created message user state].each do |key|
           if hash.key?(key) == false
             @my_results.error('E016', 'check_versions', "OCFL 3.5.3.1 version #{version} is missing #{key} block.")
-            version_check = true
+            @version_check = true
+            next
+          end # key is present, does it conform?
+
+          case key
+            when 'created'
+              check_version_created(hash['created'], version)
+            when 'user'
+              check_version_user(hash['user'], version)
+            when 'state'
+              check_version_state(hash['state'], version)
+            when 'message'
+              check_version_message(hash['message'], version)
+            else
+              @my_results.error('E111', 'check_versions', "OCFL 3.5.3.1 version #{version} contains unknown key #{key} block.")
+              @version_check = true
           end
         end
       end
-      if version_check.nil?
+
+      if @version_check.nil?
         @my_results.ok('O200', 'check_versions', 'OCFL 3.5.3.1 version syntax is OK.')
       end
       @my_results
@@ -212,8 +239,16 @@ module OcflTools
       errors = nil
       my_checksums = []
 
-      @my_victim.versions.each do |_version, block|
+      @my_victim.versions.each do |version, block|
+        if !block.is_a?(Hash)
+          @my_results.error('E111', 'crosscheck_digests', "version #{version} block is wrong type.")
+          next
+        end
         version_digests = block['state']
+        if !version_digests.is_a?(Hash)
+          @my_results.error('E111', 'crosscheck_digests', "version #{version} state block is wrong type.")
+          next
+        end
         version_digests.each_key { |k| my_checksums << k }
       end
 
@@ -256,6 +291,141 @@ module OcflTools
           raise "Object does not respond to #{mthd}"
         end
       end
+    end
+
+    private
+
+    def check_version_message(value, version)
+      # version.message must be a String.
+      if !value.is_a?(String)
+        @my_results.error('E111', 'check_version', "Value in version #{version} message block is wrong type.")
+        @version_check = true
+        return # No point in processing further.
+      end
+      # version.message is valid!
+    end
+
+    # 'user'.'name' must contain a string value.
+    # 'user'.'address' should contain value
+    def check_version_user(value, version)
+      # 'user' must be a hash.
+      if !value.is_a?(Hash)
+        @my_results.error('E111', 'check_version', "Value in version #{version} user block is wrong type.")
+        @version_check = true
+        return # No point in processing further.
+      end
+
+      # 'user' must contain 'name'
+      # 'user' must contain 'address'
+      value.each do |user_key, user_value|
+        case user_key
+          when 'name'
+            # user_name must be String.
+            if !user_value.is_a?(String)
+              @my_results.error('E111', 'check_version', "Value in version #{version} user name block is not a String.")
+              @version_check = true
+              next
+            end
+            # user_name must have content.
+            if user_value.empty?
+              @my_results.error('E111', 'check_version', "Value in version #{version} user name block cannot be empty.")
+              @version_check = true
+            end
+            # user.name is valid!
+          when 'address'
+            # user_address must be String.
+            if !user_value.is_a?(String)
+              @my_results.error('E111', 'check_version', "Value in version #{version} user address block is not a String.")
+              @version_check = true
+              next
+            end
+            # user_address SHOULD have content.
+            if user_value.empty?
+              @my_results.warn('W111', 'check_version', "Value in version #{version} user address block SHOULD NOT be empty.")
+              next
+            end
+            # user.address should be either mailto: or URI.
+            if check_for_mailto(user_value) == true
+              next # It's a mailto:, we don't need to process further.
+            end
+
+            if check_for_uri(user_value) == true
+              next # It's a URI, don't need to process further.
+            end
+            # If we get to here, it wasn't a mailto or a URI.
+            @my_results.error('E111', 'check_version', "Value in #{version} #{user_value} is not a valid URI or mailto: format.")
+            @version_check = true
+
+          else           # unexpected value in user block.
+            @my_results.error('E111', 'check_version', "Unexpected value in version #{version} user block #{user_key}.")
+            @version_check = true
+          end
+
+      end
+      # user block is valid!
+    end
+
+    # used by user.address validation. RFC6068.
+    def check_for_mailto(value)
+      if value =~ /^mailto:*/
+        value.slice!('mailto:')
+        return value.match?(URI::MailTo::EMAIL_REGEXP) # returns true if it's an email.
+      else
+        return value.match?(URI::MailTo::EMAIL_REGEXP) # Is it still an email?
+      end
+    end
+
+    # used by check_id and user.address validation. RFC3986.
+    def check_for_uri(value)
+      if value =~ /\A#{URI::regexp}\z/
+        return true # emits OK result.
+      else
+        # if it doesn't pass the check, it's a problem.
+        return false
+      end
+    end
+
+    # 'state' must be a hash.
+    # 'state' must contain at least 1 key/value pair
+    def check_version_state(value, version)
+      if !value.is_a?(Hash)
+        @my_results.error('E111', 'check_version', "Value in version #{version} state block is wrong type.")
+        @version_check = true
+        return # No point in processing further.
+      end
+      # State hash must have content.
+      if value.empty?
+        @my_results.error('E111', 'check_version', "Version #{version} state block is empty.")
+        @version_check = true
+        return # No point in processing further.
+      end
+      # State block is valid!
+    end
+
+    # 'created' block must be a String.
+    # 'created' must contain ISO8601 value.
+    def check_version_created(value, version)
+      if !value.is_a?(String)
+        @my_results.error('E111', 'check_version', "Value in version #{version} created address block is not a String.")
+        @version_check = true
+        return
+      end
+      # 'created' cannot be empty.
+      if value.empty?
+        @my_results.error('E111', 'check_version', "Version #{version} created block is empty.")
+        @version_check = true
+        return # No point in processing further.
+      end
+
+      #  This throws an exception if 'value' isn't a String in iso8601 notation.
+      begin
+        Time.iso8601(value)
+      rescue ArgumentError => e
+        @my_results.error('E111', 'check_version', "Version #{version} created block contains #{e}.")
+        @version_check = true
+        return
+      end
+      # Created block is valid!
     end
   end
 end

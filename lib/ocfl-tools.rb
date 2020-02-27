@@ -15,3 +15,5 @@ require 'json'
 require 'anyway'
 require 'fileutils'
 require 'digest'
+require 'time' # for iso8601 checking.
+require 'uri' # for, well, uri testing.
