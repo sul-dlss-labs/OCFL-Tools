@@ -28,7 +28,7 @@ describe OcflTools::OcflValidator do
 
     it 'checks the root inventory' do
       expect(validate.verify_inventory.results).to match(
-        {"error"=>{}, "warn"=>{"W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O200"=>{"check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}}
+        {"error"=>{"E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty."]}}, "warn"=>{"W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W111"=>{"check_version"=>["Value in version v0001 user address block SHOULD NOT be empty.", "Value in version v0002 user address block SHOULD NOT be empty.", "Value in version v0003 user address block SHOULD NOT be empty."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O200"=>{"check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3"], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}}
       )
     end
 
@@ -111,20 +111,20 @@ describe OcflTools::OcflValidator do
   describe 'check results' do
     validate_a.validate_ocfl_object_root.results
 
-    it 'expects results.warn to be 2' do
-      expect(validate_a.results.warn_count).to eq 3
+    it 'expects results.warn to be 6' do
+      expect(validate_a.results.warn_count).to eq 6
     end
 
-    it 'expects results.error to be 0' do
-      expect(validate_a.results.error_count).to eq 0
+    it 'expects results.error to be 6' do
+      expect(validate_a.results.error_count).to eq 6
     end
 
     it 'expects results.info to be 2' do
       expect(validate_a.results.info_count).to eq 2
     end
 
-    it 'expects results.ok to be 13' do
-      expect(validate_a.results.ok_count).to eq 12
+    it 'expects results.ok to be 11' do
+      expect(validate_a.results.ok_count).to eq 11
     end
   end
 
@@ -162,7 +162,7 @@ describe OcflTools::OcflValidator do
     validate_i_all = OcflTools::OcflValidator.new(object_i)
     it 'validates the entire object using the fixity block instead of manifest checksums' do
       expect(validate_i_all.validate_ocfl_object_root(digest: 'md5').results).to match(
-        {"error"=>{}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."], "verify_fixity md5"=>["1 files in manifest are missing from fixity block."]}, "W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I111"=>{"check_fixity"=>["Fixity block is present."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "check_fixity"=>["Fixity block is present and contains valid algorithms."]}, "O200"=>{"verify_manifest"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."], "verify_fixity md5"=>["All digests successfully verified."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3", "OCFL 3.5.3.1 version syntax is OK."], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}},
+        {"error"=>{"E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty."]}}, "warn"=>{"W111"=>{"verify_structure"=>["OCFL 3.1 optional logs directory found in object root."], "verify_fixity md5"=>["1 files in manifest are missing from fixity block."], "check_version"=>["Value in version v0001 user address block SHOULD NOT be empty.", "Value in version v0002 user address block SHOULD NOT be empty.", "Value in version v0003 user address block SHOULD NOT be empty."]}, "W201"=>{"check_id"=>["OCFL 3.5.1 Inventory ID present, but does not appear to be a URI."]}, "W220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 SHOULD be Sha512."]}}, "info"=>{"I200"=>{"check_head"=>["OCFL 3.5.1 Inventory Head version 3 matches highest version in versions."]}, "I111"=>{"check_fixity"=>["Fixity block is present."]}, "I220"=>{"check_digestAlgorithm"=>["OCFL 3.5.1 sha256 is a supported digest algorithm."]}}, "ok"=>{"O111"=>{"version_format"=>["OCFL conforming first version directory found."], "verify_structure"=>["OCFL 3.1 Object root passed file structure test."], "check_fixity"=>["Fixity block is present and contains valid algorithms."]}, "O200"=>{"verify_manifest"=>["All files in inventory were found in expected contentDirectory.", "All discovered files in contentDirectory are referenced in inventory file."], "verify_fixity md5"=>["All digests successfully verified."], "check_type"=>["OCFL 3.5.1 Inventory Type is OK."], "check_head"=>["OCFL 3.5.1 Inventory Head is OK."], "check_manifest"=>["OCFL 3.5.2 Inventory Manifest syntax is OK."], "check_versions"=>["OCFL 3.5.3 Found 3 versions, highest version is 3"], "crosscheck_digests"=>["OCFL 3.5.3.1 Digests are OK."], "check_digestAlgorithm"=>["OCFL 3.5.1 Inventory Algorithm is OK."]}}},
       )
     end
   end
@@ -176,10 +176,10 @@ describe OcflTools::OcflValidator do
   describe 'Namaste file is incorrect version' do
 
     validate_i2.validate_ocfl_object_root.results
-    it 'expects 1 specific error in verify_structure' do
-      expect(validate_i2.results.error_count).to eq 1
+    it 'expects 7 specific errors in verify_structure' do
+      expect(validate_i2.results.error_count).to eq 7
       expect(validate_i2.results.get_errors).to match(
-        {"E107"=>{"verify_structure"=>["Required NamAsTe file in object root is for unexpected OCFL version: 0=ocfl_object_1.0"]}}
+        {"E107"=>{"verify_structure"=>["Required NamAsTe file in object root is for unexpected OCFL version: 0=ocfl_object_1.0"]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty."]}}
       )
     end
   end
@@ -192,9 +192,9 @@ describe OcflTools::OcflValidator do
   describe 'Namaste file exists but is empty' do
     validate_j.validate_ocfl_object_root.results
     it 'expects 1 specific error in verify_structure' do
-      expect(validate_j.results.error_count).to eq 1
+      expect(validate_j.results.error_count).to eq 8
       expect(validate_j.results.get_errors).to match(
-        "E105" => {"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}
+        {"E105"=>{"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date: \"2019-11-12\"."]}}
       )
     end
   end
@@ -205,9 +205,9 @@ describe OcflTools::OcflValidator do
   describe 'Namaste file exists but contains garbage' do
     validate_k.validate_ocfl_object_root.results
     it 'expects 1 specific error in verify_structure' do
-      expect(validate_k.results.error_count).to eq 1
+      expect(validate_k.results.error_count).to eq 8
       expect(validate_k.results.get_errors).to match(
-        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}}
+        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date: \"2019-11-12\"."]}}
       )
     end
   end
