@@ -1,5 +1,5 @@
 {
-  "id": "cd123fg4567",
+  "id": "druid:cd123fg4567",
   "head": "v0001",
   "type": "https://ocfl.io/1.0/spec/#inventory",
   "digestAlgorithm": "sha256",
@@ -14,11 +14,11 @@
   },
   "versions": {
     "v0001": {
-      "created": "",
-      "message": "",
+      "created": "2020-01-01T03:03:03Z",
+      "message": "Ia! Ia! cthulhu fhtagn!",
       "user": {
-        "name": "",
-        "address": ""
+        "name": "Yog-Sothoth",
+        "address": "all_seeing_spheres@miskatonic.edu"
       },
       "state": {
         "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [

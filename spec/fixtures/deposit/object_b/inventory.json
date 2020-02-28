@@ -1,6 +1,6 @@
 {
   "id": "bb123cd4567",
-  "head": "v0004",
+  "head": "v0003",
   "type": "https://ocfl.io/1.0/spec/#inventory",
   "digestAlgorithm": "sha256",
   "contentDirectory": "data",
@@ -13,9 +13,6 @@
     ],
     "2fcfa071498b30724bd1bd714ba89e38477d632b86d74e87559f6259d3917e36": [
       "v0003/data/my_content/dickens.txt"
-    ],
-    "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
-      "v0004/data/my_content/dunwich.txt"
     ]
   },
   "versions": {
@@ -64,30 +61,6 @@
         ],
         "2fcfa071498b30724bd1bd714ba89e38477d632b86d74e87559f6259d3917e36": [
           "my_content/dickens.txt"
-        ]
-      }
-    },
-    "v0004": {
-      "created": "",
-      "message": "",
-      "user": {
-        "name": "",
-        "address": ""
-      },
-      "state": {
-        "cffe55838a878a29da82a0e10b2909b7e46b6f7167ed7f815782465573e98f27": [
-          "my_content/dracula.txt",
-          "my_content/copy_of_dracula.txt",
-          "my_content/a_third_copy_of_dracula.txt"
-        ],
-        "f512eb0a032f562225e848ce88449895f3ec19f3d4836a80df80c77c74557bab": [
-          "my_content/poe.txt"
-        ],
-        "2fcfa071498b30724bd1bd714ba89e38477d632b86d74e87559f6259d3917e36": [
-          "my_content/dickens.txt"
-        ],
-        "9b4566a0455e76a392c43ec4d8b8e7d636b21ff2cf83b87fe99b97d00a501de0": [
-          "my_content/dunwich.txt"
         ]
       }
     }
