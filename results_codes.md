@@ -25,7 +25,7 @@ We're not passing judgement, we're just letting you know something neat.
 I111 Placeholder code
 I101 "OCFL 3.3.1 version #{version} does not contain a contentDirectory."
 I200 = <generic informational msg>
-I220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm.")
+I220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} is a supported digest algorithm."
 ```
 
 
@@ -37,10 +37,10 @@ Any error code means the resulting object has failed validation, and is not a va
 ```
 E111 Placeholder code
 
-E010	OCFL 3.1 Version directory #{directory} contains directories other than designated content directory
-E011	OCFL 3.1 Version directory #{directory} contains files other than an inventory and inventory digest
-E012	OCFL 3.1 Version directory #{directory} does not contain the contentDirectory specified in the inventory
-E013	OCFL 3.1 Expected version directory #{directory} missing from directory list #{directories}
+E010 "OCFL 3.1 Version directory #{directory} contains directories other than designated content directory"
+E011 "OCFL 3.1 Version directory #{directory} contains files other than an inventory and inventory digest"
+E012 "OCFL 3.1 Version directory #{directory} does not contain the contentDirectory specified in the inventory"
+E013 "OCFL 3.1 Expected version directory #{directory} missing from directory list #{directories}"
 E014 "OCFL 3.5.3 Found #{version_count} versions, but highest version is #{highest_version}"
 E015 "OCFL 3.5.3 Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}."
 E016 "OCFL 3.5.3.1 version #{version} is missing #{key} block."
