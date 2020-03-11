@@ -10,6 +10,54 @@ an updated inventory file.
 
 This is beta software. No guarantee of fitness for purpose is made.
 
+## Quickstart
+
+### Install Ruby > 2.5.3
+
+See: https://www.ruby-lang.org/en/documentation/installation/
+
+### Install OCFL-Tools gem
+
+Ruby gems is part of all modern distributions of Ruby.
+
+```
+gem install ocfl-tools
+```
+
+### Get the example scripts
+```
+wget https://raw.githubusercontent.com/sul-dlss-labs/OCFL-Tools/master/examples/list_files.rb
+wget https://raw.githubusercontent.com/sul-dlss-labs/OCFL-Tools/master/examples/validate_object.rb
+```
+
+### Checkout a copy of the OCFL Sample Fixtures
+```
+git clone https://github.com/OCFL/fixtures.git
+```
+
+### Validate a fixture
+
+From the directory you downloaded the example scripts to, do:
+```
+ruby ./validate_object.rb -d /[full path to fixture checkout dir]/fixtures/1.0/objects/of3
+```
+
+### List all files in latest version of a fixture
+
+From the directory you downloaded the example scripts to, do:
+```
+ruby ./list_files.rb -d /[full path to fixture checkout dir]/fixtures/1.0/objects/of3
+```
+
+### List all files in version 1 of a fixture
+
+From the directory you downloaded the example scripts to, do:
+```
+ruby ./list_files.rb -d /[full path to fixture checkout dir]/fixtures/1.0/objects/of3 -v 1
+```
+
+
+
 ## Development setup (assuming bundler is installed)
 
 ```
