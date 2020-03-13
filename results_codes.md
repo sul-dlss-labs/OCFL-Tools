@@ -79,6 +79,8 @@ E231 'OCFL 3.5.1 Required OCFL key type does not match expected value.'
 E250 'OCFL 3.5.2 there MUST be a manifest block.'
 E251 'OCFL 3.5.2 manifest block cannot be empty.'
 
+E260 "OCFL 3.5.3.1 logical path syntax error: #{error_details}"
+
 E911 'An unknown error has occurred.'
 ```
 
