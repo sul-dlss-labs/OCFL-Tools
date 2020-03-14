@@ -80,6 +80,7 @@ E250 'OCFL 3.5.2 there MUST be a manifest block.'
 E251 'OCFL 3.5.2 manifest block cannot be empty.'
 
 E260 "OCFL 3.5.3.1 logical path syntax error: #{error_details}"
+E261 "OCFL 3.5.3.1 Version #{version} created block must be expressed in RFC3339 format."
 
 E270 "OCFL 3.7 version state mismatch between inventory files: #{error_details}"
 
