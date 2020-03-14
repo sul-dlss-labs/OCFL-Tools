@@ -228,4 +228,32 @@ describe OcflTools::OcflValidator do
     end
   end
 
+  ## New of3-based object tests.
+  describe 'OCFL 3.7 testing' do
+    bad102 = File.join(File.dirname(__dir__), 'spec', 'fixtures', '1.0', 'bad-objects', 'bad102_version_diffs')
+    validate_bad102 = OcflTools::OcflValidator.new(bad102)
+    validate_bad102.validate_ocfl_object_root
+
+    it 'expects 2 errors' do
+      expect(validate_bad102.results.error_count).to equal 2
+    end
+
+    it 'expects only 1 error code; an E270' do
+      expect(validate_bad102.results.get_errors).to include('E270')
+      expect(validate_bad102.results.get_errors.count).to equal 1
+    end
+
+    it 'expects 6 warns' do
+      expect(validate_bad102.results.warn_count).to equal 6
+    end
+
+    it 'expects only 3 warn codes; W270, W271, W272' do
+      expect(validate_bad102.results.get_warnings).to include('W270')
+      expect(validate_bad102.results.get_warnings).to include('W271')
+      expect(validate_bad102.results.get_warnings).to include('W272')
+      expect(validate_bad102.results.get_warnings.count).to equal 3
+    end
+
+  end
+
 end

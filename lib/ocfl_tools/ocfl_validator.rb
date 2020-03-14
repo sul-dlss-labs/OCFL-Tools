@@ -130,6 +130,8 @@ module OcflTools
       if files_on_disk == files_in_manifest
         @my_results.ok('O200', 'verify_manifest', "All files in inventory were found in expected contentDirectory.")
         @my_results.ok('O200', 'verify_manifest', "All discovered files in contentDirectory are referenced in inventory file.")
+        # Now call verify_versions_across_inventories;  this will check to make sure all prior inventories match this one.
+        verify_versions_across_inventories
         return @my_results
       end
 
@@ -153,6 +155,8 @@ module OcflTools
           @my_results.ok('O200', 'verify_manifest', "All discovered files in contentDirectory are referenced in inventory file.")
         end
       end
+      # Now call verify_versions_across_inventories;  this will check to make sure all prior inventories match this one.
+      verify_versions_across_inventories
       @my_results
     end
 
@@ -199,18 +203,24 @@ module OcflTools
 
       # 1. Determine the format used for version directories.
       #    If we can't deduce it by inspection, warn and try to process object using site-wide default.
-      begin
-        if @version_format.nil?
-          @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
-          @my_results.ok('O111', 'version_format', 'OCFL conforming first version directory found.')
-        end
-      rescue StandardError
-        @my_results.error('E111', 'version_format', 'OCFL unable to determine version format by inspection of directories.')
+#      begin
+#        if @version_format.nil?
+#          @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
+#          @my_results.ok('O111', 'version_format', 'OCFL conforming first version directory found.')
+#        end
+#      rescue StandardError
+#        @my_results.error('E111', 'version_format', 'OCFL unable to determine version format by inspection of directories.')
+#        error = true
+#        # raise "Can't determine appropriate version format"
+#        # The rest of the method simply won't work without @version_format.
+#        @version_format = OcflTools.config.version_format
+#        @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
+#      end
+
+      # 1. use get_version_format to determine the format used for version directories.
+      #    If we can't deduce it by inspection of the object_root, ERROR and try and process using site-wide defaults.
+      if get_version_format == false
         error = true
-        # raise "Can't determine appropriate version format"
-        # The rest of the method simply won't work without @version_format.
-        @version_format = OcflTools.config.version_format
-        @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
       end
 
       object_root_dirs  = []
@@ -574,5 +584,109 @@ module OcflTools
       @verify    = OcflTools::OcflVerify.new(@inventory)
       @verify.check_all # creates & returns @results object from OcflVerify
     end
+
+  private
+    # Compares the state blocks for all versions across all inventories in the object,
+    # and errors if the state block for a given version differs between inventory files.
+    # NOTE: this is a private method that should only be called by #verify_manifest.
+    # That way, we know that @inventory is valid and set by the time we get here.
+    def verify_versions_across_inventories
+      # OCFL 3.7: In the case that prior version directories include an inventory file
+      # there will be multiple inventory files describing prior versions within the OCFL
+      # Object. Each version block in each prior inventory file must represent the same
+      # object state as the corresponding version block in the current inventory file.
+      # Additionally, the values of the created, message and user keys in each version
+      # block in each prior inventory file should have the same values as the
+      # corresponding keys in the corresponding version block in the current inventory file.
+
+      current_version = @inventory.version_id_list.max
+      # Nothing to do if there's only 1 version. Other checks will catch if the inventory
+      # in the v1 directory doesn't match the inventory in the object_root.
+      return if current_version == 1
+
+      prior_versions = @inventory.version_id_list.max - 1
+
+      until current_version == 1
+        compare_inventories(current_version)
+        current_version -= 1
+      end
+    end
+
+    # PRIVATE METHOD called by verify_versions_across_inventories
+    # Tries to load up an inventory file from the given version directory,
+    # and the inventory in the previous version directory.
+    def compare_inventories(version)
+      # @version_format is important here.
+      if get_version_format == false
+        @my_results.error('E111', 'compare_inventories', 'OCFL unable to determine version format by inspection of directories.')
+        return
+      end
+
+      current_version = @version_format % version.to_i
+      current_inventory = OcflTools::OcflInventory.new.from_file("#{@ocfl_object_root}/#{current_version}/inventory.json")
+
+      previous_version_int = version - 1
+      previous_version = @version_format % previous_version_int.to_i
+
+
+      if !File.exist? "#{@ocfl_object_root}/#{previous_version}/inventory.json"
+        @my_results.error('E111', 'compare_inventories', "OCFL unable to locate previous inventory file at #{@ocfl_object_root}/#{previous_version}/inventory.json.")
+        return
+      end
+
+      previous_inventory = OcflTools::OcflInventory.new.from_file("#{@ocfl_object_root}/#{previous_version}/inventory.json")
+
+      # Now we have two inventories, we can get their versions blocks.
+      #puts current_inventory.versions
+      compare_inventories_to_version(current_inventory, previous_inventory, previous_version_int)
+    end
+
+    # Given 2 inventories and a version, step down thru versions until you reach 1 and compare their states.
+    def compare_inventories_to_version(current_inventory, previous_inventory, version)
+      # increment thru versions, calling compare_inventories_version for each.
+      until version == 0
+        compare_inventories_version(current_inventory, previous_inventory, version)
+        version -= 1
+      end
+    end
+
+    # Get the version state from each inventory and compare.
+    def compare_inventories_version(current_inventory, previous_inventory, version)
+      current_version_string = @version_format % version.to_i
+      current_version_block = current_inventory.versions[current_version_string]
+      previous_version_block = previous_inventory.versions[current_version_string]
+
+      # message, user, created are WARN if different. state is ERROR if different.
+      if current_version_block['message'] != previous_version_block['message']
+        @my_results.warn('W270', 'compare_inventories_version', "OCFL 3.7 version message mismatch between inventory files: version #{version} message block in #{current_inventory.head}/inventory.json differs from previous inventory.json.")
+      end
+
+      if current_version_block['user'] != previous_version_block['user']
+        @my_results.warn('W272', 'compare_inventories_version', "OCFL 3.7 version user mismatch between inventory files: version #{version} user block in #{current_inventory.head}/inventory.json differs from previous inventory.json.")
+      end
+
+      if current_version_block['created'] != previous_version_block['created']
+        @my_results.warn('W271', 'compare_inventories_version', "OCFL 3.7 version created mismatch between inventory files: version #{version} created block in #{current_inventory.head}/inventory.json differs from previous inventory.json.")
+      end
+
+      if current_version_block['state'] != previous_version_block['state']
+        @my_results.error('E270', 'compare_inventories_version', "OCFL 3.7 version state mismatch between inventory files: version #{version} state block in #{current_inventory.head}/inventory.json differs from previous inventory.json.")
+      end
+
+    end
+
+    def get_version_format
+      begin
+        @version_format ||= OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
+        @my_results.ok('O111', 'version_format', 'OCFL conforming first version directory found.')
+        return true
+      rescue StandardError
+        @my_results.error('E111', 'version_format', 'OCFL unable to determine version format by inspection of directories.')
+        @version_format = OcflTools.config.version_format
+        @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
+        return false
+      end
+    end
+
   end
 end

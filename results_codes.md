@@ -81,6 +81,8 @@ E251 'OCFL 3.5.2 manifest block cannot be empty.'
 
 E260 "OCFL 3.5.3.1 logical path syntax error: #{error_details}"
 
+E270 "OCFL 3.7 version state mismatch between inventory files: #{error_details}"
+
 E911 'An unknown error has occurred.'
 ```
 
@@ -95,6 +97,8 @@ W101 "OCFL 3.3 version directory should not contain any directories other than t
 W102 "OCFL 3.3.1 version #{version} contentDirectory should not be empty."
 W201 'OCFL 3.5.1 Inventory ID present, but does not appear to be a URI.'
 W220 "OCFL 3.5.1 #{@my_victim.digestAlgorithm.downcase} SHOULD be SHA512."
-
+W270 "OCFL 3.7 version message mismatch between inventory files: #{warn_details}"
+W271 "OCFL 3.7 version created mismatch between inventory files: #{warn_details}"
+W272 "OCFL 3.7 version user mismatch between inventory files: #{warn_details}"
 
 ```
