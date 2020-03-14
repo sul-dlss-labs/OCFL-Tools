@@ -194,7 +194,7 @@ describe OcflTools::OcflValidator do
     it 'expects 1 specific error in verify_structure' do
       expect(validate_j.results.error_count).to eq 8
       expect(validate_j.results.get_errors).to match(
-        {"E105"=>{"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date: \"2019-11-12\"."]}}
+        {"E105"=>{"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date."]}}
       )
     end
   end
@@ -207,7 +207,7 @@ describe OcflTools::OcflValidator do
     it 'expects 1 specific error in verify_structure' do
       expect(validate_k.results.error_count).to eq 8
       expect(validate_k.results.get_errors).to match(
-        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date: \"2019-11-12\"."]}}
+        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date."]}}
       )
     end
   end

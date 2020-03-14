@@ -465,7 +465,7 @@ module OcflTools
     end
 
     # 'created' block must be a String.
-    # 'created' must contain ISO8601 value.
+    # 'created' must contain rfc3339 value.
     def check_version_created(value, version)
       if !value.is_a?(String)
         @my_results.error('E111', 'check_version', "Value in version #{version} created address block is not a String.")
@@ -479,9 +479,9 @@ module OcflTools
         return # No point in processing further.
       end
 
-      #  This throws an exception if 'value' isn't a String in iso8601 notation.
+      #  This throws an exception if 'value' isn't a String in rfc3339 notation.
       begin
-        Time.iso8601(value)
+        DateTime.rfc3339(value)
       rescue ArgumentError => e
         @my_results.error('E111', 'check_version', "Version #{version} created block contains #{e}.")
         @version_check = true
