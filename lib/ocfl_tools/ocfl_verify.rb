@@ -483,7 +483,7 @@ module OcflTools
       begin
         DateTime.rfc3339(value)
       rescue ArgumentError => e
-        @my_results.error('E111', 'check_version', "Version #{version} created block contains #{e}.")
+        @my_results.error('E261', 'check_version', "OCFL 3.5.3.1 Version #{version} created block must be expressed in RFC3339 format.")
         @version_check = true
         return
       end
