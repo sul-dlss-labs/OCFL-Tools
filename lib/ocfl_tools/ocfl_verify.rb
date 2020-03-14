@@ -399,11 +399,73 @@ module OcflTools
         @version_check = true
         return # No point in processing further.
       end
+
+      # Now that we have a prima facie valid state block, check for logical path.
+      value.each do | digest, logical_path |
+        # logical_path must be an Array.
+        if !logical_path.is_a?(Array)
+          @my_results.error('E260', 'check_version', "OCFL 3.5.3.1 logical path syntax error: Version #{version} state block key #{digest} contains a value that is not an array.")
+          @version_check = true
+          next # No point in processing this digest key further.
+        end
+
+        # Now for each value in this array, it's a String and must conform to logical_path content restrictions.
+        logical_path.each do | content |
+          # Must be a String (and not an Array or Hash)
+          if !content.is_a?(String)
+            @my_results.error('E260', 'check_version', "OCFL 3.5.3.1 logical path syntax error: Value in version #{version} state block key #{digest} contains an array value that is not a String.")
+            @version_check = true
+            next # No point in processing this digest key further.
+          end
+
+          logical_path_result = check_logical_path(content)
+
+          if logical_path_result.size == 0
+            next # all is well; evaluate next logical_path content string.
+          else
+            # All is not well. What is wrong?
+            @my_results.error('E260', 'check_version', "OCFL 3.5.3.1 logical path syntax error: Value in version #{version} state block key #{digest} contains logical_path #{content} with error: #{logical_path_result}")
+            @version_check = true
+            next # evaluate next logical_path content string.
+          end
+        end
+      end
       # State block is valid!
     end
 
+    # "[Logical] Path elements MUST NOT be ., .., or empty (//). Additionally, a logical path MUST NOT begin with a leading /."
+    # Returns an Array of errors, or an Array of zero size if logical_path is fine.
+    def check_logical_path(content)
+      results = Array.new
+
+      if content.size == 0
+        results << "logical_path content must not be empty."
+        return results # We're done here; no point processing further.
+      end
+
+      # a logical path MUST NOT begin with a leading /."
+      if content.match(/^\//)
+        results << "logical_path content must not start with a /"
+      end
+
+      # Get all elements in content (we know there is at least 1 element in content)
+      elements = content.split("/")
+      # "[Logical] Path elements MUST NOT be ., .., or empty (//).
+      elements.each do | element |
+        case
+          when element.match(/^\.$/)
+            results << "logical_path element must not be '.'"
+          when element.match(/^\.\.$/)
+            results << "logical_path element must not be '..'"
+          when element.size == 0
+            results << "logical_path element must not be empty."
+        end
+      end
+      return results
+    end
+
     # 'created' block must be a String.
-    # 'created' must contain ISO8601 value.
+    # 'created' must contain rfc3339 value.
     def check_version_created(value, version)
       if !value.is_a?(String)
         @my_results.error('E111', 'check_version', "Value in version #{version} created address block is not a String.")
@@ -417,9 +479,9 @@ module OcflTools
         return # No point in processing further.
       end
 
-      #  This throws an exception if 'value' isn't a String in iso8601 notation.
+      #  This throws an exception if 'value' isn't a String in rfc3339 notation.
       begin
-        Time.iso8601(value)
+        DateTime.rfc3339(value)
       rescue ArgumentError => e
         @my_results.error('E111', 'check_version', "Version #{version} created block contains #{e}.")
         @version_check = true
