@@ -193,8 +193,11 @@ describe OcflTools::OcflValidator do
     validate_j.validate_ocfl_object_root.results
     it 'expects 1 specific error in verify_structure' do
       expect(validate_j.results.error_count).to eq 8
-      expect(validate_j.results.get_errors).to match(
-        {"E105"=>{"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date: \"2019-11-12\"."]}}
+      expect(validate_j.results.get_errors).to include(
+        {"E105"=>{"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}}
+      )
+      expect(validate_j.results.get_errors).to include(
+        {"E261"=>{"check_version"=>["OCFL 3.5.3.1 Version v0004 created block must be expressed in RFC3339 format."]}}
       )
     end
   end
@@ -206,8 +209,11 @@ describe OcflTools::OcflValidator do
     validate_k.validate_ocfl_object_root.results
     it 'expects 1 specific error in verify_structure' do
       expect(validate_k.results.error_count).to eq 8
-      expect(validate_k.results.get_errors).to match(
-        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty.", "Version v0004 created block contains invalid date: \"2019-11-12\"."]}}
+      expect(validate_k.results.get_errors).to include(
+        {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}}
+      )
+      expect(validate_k.results.get_errors).to include(
+        {"E261"=>{"check_version"=>["OCFL 3.5.3.1 Version v0004 created block must be expressed in RFC3339 format."]}}
       )
     end
   end
@@ -226,6 +232,34 @@ describe OcflTools::OcflValidator do
         "W101"=>{"version_structure"=>["OCFL 3.3 version directory should not contain any directories other than the designated content sub-directory. Additional directories found: [\"manifests\"]"]}
       )
     end
+  end
+
+  ## New of3-based object tests.
+  describe 'OCFL 3.7 testing' do
+    bad102 = File.join(File.dirname(__dir__), 'spec', 'fixtures', '1.0', 'bad-objects', 'bad102_version_diffs')
+    validate_bad102 = OcflTools::OcflValidator.new(bad102)
+    validate_bad102.validate_ocfl_object_root
+
+    it 'expects 2 errors' do
+      expect(validate_bad102.results.error_count).to equal 2
+    end
+
+    it 'expects only 1 error code; an E270' do
+      expect(validate_bad102.results.get_errors).to include('E270')
+      expect(validate_bad102.results.get_errors.count).to equal 1
+    end
+
+    it 'expects 6 warns' do
+      expect(validate_bad102.results.warn_count).to equal 6
+    end
+
+    it 'expects only 3 warn codes; W270, W271, W272' do
+      expect(validate_bad102.results.get_warnings).to include('W270')
+      expect(validate_bad102.results.get_warnings).to include('W271')
+      expect(validate_bad102.results.get_warnings).to include('W272')
+      expect(validate_bad102.results.get_warnings.count).to equal 3
+    end
+
   end
 
 end

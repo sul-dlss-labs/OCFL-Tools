@@ -45,4 +45,27 @@ describe OcflTools::OcflVerify do
   #  puts results2.results
 
   end
+
+  # Bad101 is a modified of3 object, deliberately broken v4.
+  describe 'checks bad101 for logical path content issues' do
+    # There are 5 errors with this object, and they are all E260 syntax errors.
+    bad101 = OcflTools::OcflInventory.new
+    bad101_rootdir = File.join(File.dirname(__dir__), 'spec', 'fixtures', '1.0', 'bad-objects', 'bad101_content')
+    bad101.from_file("#{bad101_rootdir}/inventory.json")
+
+    verify_bad101 = OcflTools::OcflVerify.new(bad101)
+    # puts verify_bad101.check_all.print
+    it 'expects 5 problems' do
+      expect(verify_bad101.check_all.error_count).to equal 5
+    end
+
+    bad101_errors = verify_bad101.check_all.get_errors
+
+    # expects a single error code: E260
+    it 'expects only 1 error code' do
+      expect(bad101_errors).to include('E260')
+      expect(bad101_errors.count).to equal 1
+    end
+  end
+
 end
