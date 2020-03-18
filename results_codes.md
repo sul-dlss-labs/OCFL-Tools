@@ -61,12 +61,13 @@ E201 'OCFL 3.5.1 Object ID cannot be 0 length'
 E202 'OCFL 3.5.1 Object ID cannot be nil'
 
 E210 "Unable to read Inventory file #{inventory}."
-E211 'Inventory head cannot be 0'
+E211 "OCFL 3.5 An OCFL Object Inventory must follow the [JSON] structure described in this section and must be named inventory.json."
 E212 'OCFL 3.5.1 Inventory Head cannot be nil'
 E213 'OCFL 3.5.1 Inventory Head cannot be an Integer'
 E214 "OCFL 3.5.1 Inventory Head version #{version} does not match expected version #{target_version}"
-E215 "Expected inventory file #{file} not found."
-E216 "Expected key #{key} not found in inventory file #{file}"
+E215 "OCFL 3.1 Expected inventory file #{file} not found."
+E216 "OCFL 3.5.1 Expected key #{key} not found in inventory file #{file}"
+E217 "OCFL 3.5.1 Expected key #{key} cannot be empty."
 
 E220  Algorithm not found
 E221  Algorithm cannot be 0 length

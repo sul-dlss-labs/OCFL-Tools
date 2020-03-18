@@ -121,12 +121,13 @@ module OcflTools
         return @my_results
       end
 
-      begin
+      if load_inventory(inventory_file) == true
         @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
-      rescue RuntimeError
-        @my_results.error('E210', 'verify_fixity', "Unable to read inventory file #{inventory_file}.")
+      else
+        @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
+
       # These are arrays, not hashes, so they must be sorted for the comparison below to work.
       files_in_manifest  = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root).keys.sort
       files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max).sort
@@ -259,13 +260,12 @@ module OcflTools
         return @my_results
       end
 
-      begin
+      if load_inventory(inventory_file) == true
         @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-      rescue RuntimeError
-        @my_results.error('E210', 'verify_checksums', "Unable to read inventory file #{inventory_file}.")
+      else
+        @my_results.error('E210', 'verify_checksums', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
-
 
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
@@ -308,7 +308,7 @@ module OcflTools
     # @return {OcflTools::OcflResults} of event results
     def verify_structure
       error = nil
-
+      @my_results ||= OcflTools::OcflResults.new
       # 1. use get_version_format to determine the format used for version directories.
       #    If we can't deduce it by inspection of the object_root, ERROR and try and process using site-wide defaults.
       if get_version_format == false
@@ -339,33 +339,17 @@ module OcflTools
       # 2b. What's the highest version we should find here?
       # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-
-        begin
+        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
           json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
+          contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
+          expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
           file_checks << "inventory.json.#{json_digest}"
-        rescue RuntimeError
-          # For when we have a malformed inventory.json
+        else
+          # We couldn't load up the inventory; use site defaults.
+          contentDirectory = OcflTools.config.content_directory
           json_digest      = OcflTools.config.digest_algorithm
           file_checks << "inventory.json.#{json_digest}"
-          @my_results ||= OcflTools::OcflResults.new
-          @my_results.error('E210', 'verify_structure', "Unable to read Inventory file #{@ocfl_object_root}/inventory.json.")
         end
-
-        begin
-          contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
-        rescue RuntimeError
-          contentDirectory = OcflTools.config.content_directory
-          @my_results ||= OcflTools::OcflResults.new
-          @my_results.error('E210', 'verify_structure', "Unable to read Inventory file #{@ocfl_object_root}/inventory.json.")
-        end
-
-        begin
-          expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
-        rescue RuntimeError
-          @my_results ||= OcflTools::OcflResults.new
-          @my_results.error('E210', 'verify_structure', "Unable to read Inventory file #{@ocfl_object_root}/inventory.json.")
-        end
-
       else
         # If we can't get these values from a handy inventory.json, use the site defaults.
         contentDirectory = OcflTools.config.content_directory
@@ -515,31 +499,21 @@ module OcflTools
         # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-
-          begin
+          if load_inventory("#{@ocfl_object_root}/inventory.json") == true
             json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
-          rescue RuntimeError
-            # For when we have a malformed inventory.json
-            json_digest      = OcflTools.config.digest_algorithm
-            @my_results ||= OcflTools::OcflResults.new
-            @my_results.error('E210', 'verify_structure', "Unable to read Inventory file #{@ocfl_object_root}/#{ver}/inventory.json")          end
-          file_checks << 'inventory.json'
-          file_checks << "inventory.json.#{json_digest}"
-          # 9b. Error if the contentDirectory value in the version's inventory does not match the value given in the object root's inventory file.
-
-          begin
-          versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
-          rescue RuntimeError
-            # If we can't read this version's inventory b/c it's corrupt or not there.
-            versionContentDirectory = OcflTools.config.content_directory
-            @my_results ||= OcflTools::OcflResults.new
-            @my_results.error('E210', 'verify_structure', "Unable to read Inventory file #{@ocfl_object_root}/#{ver}/inventory.json")
+            file_checks << 'inventory.json'
+            file_checks << "inventory.json.#{json_digest}"
+            versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
+            if versionContentDirectory != contentDirectory
+              @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
+              error = true
+            end
+          else
+            json_digest = OcflTools.config.digest_algorithm
+            file_checks << 'inventory.json'
+            file_checks << "inventory.json.#{json_digest}"
           end
 
-          if versionContentDirectory != contentDirectory
-            @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
-            error = true
-          end
         else
           file_checks << 'inventory.json'         # We look for it, even though we know we won't find it, so we can log the omission.
           file_checks << 'inventory.json.sha512'  # We look for it, even though we know we won't find it, so we can log the omission.
@@ -678,26 +652,46 @@ module OcflTools
     # @return {OcflTools::OcflResults} event results
     def verify_inventory(inventory_file = "#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
-
+      @my_results ||= OcflTools::OcflResults.new
       # Inventory file does not exist; create a results object, record this epic fail, and return.
-      unless File.exist?(inventory_file)
-        @my_results ||= OcflTools::OcflResults.new
+      if File.exist?(inventory_file)
+        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+          @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+          @verify    = OcflTools::OcflVerify.new(@inventory)
+          @verify.check_all # creates & returns @results object from OcflVerify
+        else
+          # The inventory had problems; we can't run verify.
+          @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
+          return @my_results
+        end
+      else
         @my_results.error('E215', 'verify_inventory', "Expected inventory file #{inventory_file} not found.")
         return @my_results
       end
-
-      begin
-        @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-        @verify    = OcflTools::OcflVerify.new(@inventory)
-        @verify.check_all # creates & returns @results object from OcflVerify
-      rescue RuntimeError
-        @my_results.error('E210', 'verify_inventory', "Unable to read inventory file #{inventory_file}.")
-        return @my_results
-      end
-
     end
 
   private
+    # load up an inventory file and handle any errors.
+    def load_inventory(inventory_file)
+      begin
+        @my_results ||= OcflTools::OcflResults.new
+        OcflTools::OcflInventory.new.from_file(inventory_file)
+        return true
+      rescue RuntimeError
+        @my_results.error('E210', 'load_inventory', "Unable to read Inventory file #{inventory_file}")
+        return false
+      rescue OcflTools::Errors::Error211
+        @my_results.error('E211', 'load_inventory', "#{inventory_file} is not valid JSON.")
+        return false
+      rescue OcflTools::Errors::Error216 => e
+        @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
+        return false
+      rescue OcflTools::Errors::Error217 => e
+        @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
+        return false
+      end
+    end
+
     # Compares the state blocks for all versions across all inventories in the object,
     # and errors if the state block for a given version differs between inventory files.
     # NOTE: this is a private method that should only be called by #verify_manifest.

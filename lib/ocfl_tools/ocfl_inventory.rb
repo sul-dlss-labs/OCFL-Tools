@@ -51,9 +51,13 @@ module OcflTools
     # @param [Pathname] file resolvable path to alleged inventory.json.
     # @return [Hash] of JSON keys & values.
     def read_json(file)
-      JSON.parse(File.read(file))
-    rescue StandardError
-      raise "Unable to parse JSON from file #{file}" # catch/encapsulate any JSON::Parser or FileIO issues
+      begin
+        JSON.parse(File.read(file))
+      rescue JSON::ParserError
+        raise OcflTools::Errors::Error211
+      rescue StandardError
+        raise "An unknown error occured reading file #{file}" # catch/encapsulate any JSON::Parser or FileIO issues
+      end
     end
 
     # Reads in a file, parses the JSON and ingests it into an {OcflTools::OcflInventory}
@@ -61,6 +65,16 @@ module OcflTools
     # @return [self]
     def from_file(file)
       import_hash = read_json(file)
+
+      # REQUIRED keys; raise exception if not found.
+      [ 'id', 'head', 'type', 'digestAlgorithm', 'manifest', 'versions' ].each do | key |
+        unless import_hash.key?(key)
+          raise OcflTools::Errors::Error216, "Required key #{key} not found"
+        end
+        if import_hash[key].empty?
+          raise OcflTools::Errors::Error217, "Required key #{key} must contain a value"
+        end
+      end
 
       @id               = import_hash['id']
       @head             = import_hash['head']
