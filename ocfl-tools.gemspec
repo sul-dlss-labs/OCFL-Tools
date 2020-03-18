@@ -8,7 +8,10 @@ Gem::Specification.new do |gem|
   gem.homepage      = 'https://github.com/sul-dlss-labs/OCFL-Tools'
   gem.licenses      = ['Apache-2.0']
 
-  gem.files         = `git ls-files`.split($OUTPUT_RECORD_SEPARATOR)
+  # Don't include fixtures in the gem.
+  gem.files         = `git ls-files -z`.split("\x0").reject do |f|
+    f.match(%r{^(test|spec|features)/})
+  end
 
   gem.add_runtime_dependency 'anyway_config', '~> 1.0'
   gem.add_runtime_dependency 'fileutils', '~> 1.3'
