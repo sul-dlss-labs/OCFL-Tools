@@ -115,44 +115,124 @@ module OcflTools
     # @param [Pathname] inventory_file fully-qualified path to a valid OCFL inventory.json.
     # @return {OcflTools::OcflResults} of event results
     def verify_manifest(inventory_file = "#{@ocfl_object_root}/inventory.json")
+      @my_results ||= OcflTools::OcflResults.new
       unless File.exist?(inventory_file)
-        @my_results ||= OcflTools::OcflResults.new
         @my_results.error('E215', 'verify_files', "Expected inventory file #{inventory_file} not found.")
         return @my_results
       end
 
-      @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
+      if load_inventory(inventory_file) == true
+        @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
+      else
+        @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
+        return @my_results
+      end
+
       # These are arrays, not hashes, so they must be sorted for the comparison below to work.
-      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max).sort
       files_in_manifest  = OcflTools::Utils::Files.invert_and_expand_and_prepend(@inventory.manifest, @ocfl_object_root).keys.sort
+      files_on_disk      = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max).sort
+
+      # E012: Check that the contentDirectory value in inventory is present on disk.
+      # 3.3.1 Content directory
+      # Version directories MUST contain a designated content sub-directory if the version contains files to be preserved,
+      # and SHOULD NOT contain this sub-directory otherwise.
+      @inventory.versions.keys.each do | version |
+        # Are there files mentioned in the manifest for this version?
+        files_in_this_version = files_in_manifest.grep(/^#{@ocfl_object_root}\/#{version}/)
+        if files_in_this_version.size > 0
+          if Dir.exist?("#{@ocfl_object_root}/#{version}/#{@inventory.contentDirectory}")
+            @my_results.info('I200', 'verify_manifest', "OCFL 3.3.1 Expected content directory #{version}/#{@inventory.contentDirectory} found.")
+          else
+            @my_results.error('E012', 'verify_manifest', "OCFL 3.3.1 Expected content directory #{version}/#{@inventory.contentDirectory} not found.")
+            # IF WE GET THIS RESULT, then files_on_disk is likely not going to work (it expects contentDirectory to NOT LIE).
+          end
+        else
+          if Dir.exist?("#{@ocfl_object_root}/#{version}/#{@inventory.contentDirectory}")
+            @my_results.warn('W102', 'verify_manifest', "OCFL 3.3.1 version #{version} contentDirectory should not be empty.")
+          else
+            @my_results.info('I200', 'verify_manifest', "OCFL 3.3.1 version #{version} does not have (and should not have) a contentDirectory directory.")
+          end
+        end
+      end
+
+      # get_versions_dir_files relies on contentDirectory value being correct. Check!
+      # If the prefix of files_in_manifest DOES NOT MATCH object_root/<ver>/contentDirectory, we have a problem.
+      case
+        when files_in_manifest.size > 0
+          working_files = OcflTools::Utils::Files.invert_and_expand(@inventory.manifest).keys
+          # gives me version/contentDir/<foo>
+          # ....and I know that '/' is the delimiter, and element 0 is version. I want element 1, the content_dir value.
+          manifest_content_dirs = []
+          working_files.each do | file |
+            manifest_content_dirs << file.split('/')[1]
+            # Need this from manifest: /object_root/version/[contentDirectory]/file
+          end
+          manifest_content_dirs.uniq!
+          manifest_content_dirs.each do | mcd |
+          if "#{mcd}" != "#{@inventory.contentDirectory}"
+            # Don't need this; version_structure test will pick up on this directory's presence.
+            # @my_results.error('E111', 'verify_manifest', "content directory '#{mcd}' discovered in manifest DOES NOT match inventory contentDirectory value!")
+            # We should check that path on disk to see if there's content there.
+            @inventory.versions.keys.each do | version |
+              my_files = OcflTools::Utils::Files.get_dir_files("#{@ocfl_object_root}/#{version}/#{mcd}")
+              # And expand it to a full file path (returns an array, so flatten it out and append to files_on_disk.
+              OcflTools::Utils::Files.expand_filepaths(my_files, "#{@ocfl_object_root}/#{version}/#{mcd}").each do | file |
+                files_on_disk << file
+              end
+            end
+            files_on_disk.uniq! # Just to make sure there's no funky business.
+          end
+        end
+      end
 
       # we only need the files (keys), not the digests here.
       if files_on_disk == files_in_manifest
-        @my_results.ok('O200', 'verify_manifest', "All files in inventory were found in expected contentDirectory.")
-        @my_results.ok('O200', 'verify_manifest', "All discovered files in contentDirectory are referenced in inventory file.")
+        @my_results.ok('O200', 'verify_manifest', "All files in inventory were found on disk.")
+        @my_results.ok('O200', 'verify_manifest', "All discovered files on disk are referenced in inventory file.")
         # Now call verify_versions_across_inventories;  this will check to make sure all prior inventories match this one.
         verify_versions_across_inventories
         return @my_results
       end
 
-      missing_from_disk     = files_in_manifest - files_on_disk
-      missing_from_manifest = files_on_disk - files_in_manifest
+      missing_from_disk = []
+      files_in_manifest.each do | file |
+        # Is there a match to a file in files_on_disk ?
+        unless files_on_disk.include? file  # Unless this returns true, the file's not there.
+          missing_from_disk << file
+        end
+      end
+
+      missing_from_manifest = []
+      files_on_disk.each do | file |
+        unless files_in_manifest.include? file
+          missing_from_manifest << file
+        end
+      end
 
       unless missing_from_manifest.empty?
         missing_from_manifest.each do |missing|
-          @my_results.error('E111', 'verify_manifest', "Extraneous file #{missing} discovered in contentDirectory.")
+          @my_results.error('E111', 'verify_manifest', "Unexpected file #{missing} discovered on disk.")
         end
         if missing_from_disk.empty?
-          @my_results.ok('O200', 'verify_manifest', "All files in inventory were found in expected contentDirectory.")
+          if files_in_manifest.size < 1
+            @my_results.warn('W111', 'verify_manifest', 'No files were found in manifest.')
+          else
+            @my_results.ok('O200', 'verify_manifest', "All files in inventory were found on disk.")
+          end
         end
       end
 
       unless missing_from_disk.empty?
         missing_from_disk.each do |missing|
-          @my_results.error('E111', 'verify_manifest', "Expected file #{missing} not found in contentDirectory.")
+          @my_results.error('E111', 'verify_manifest', "Expected file #{missing} not found on disk.")
         end
         if missing_from_manifest.empty?
-          @my_results.ok('O200', 'verify_manifest', "All discovered files in contentDirectory are referenced in inventory file.")
+          # This is NOT TRUE if there were no files_on_disk in the first place!
+          if files_on_disk.size < 1
+            @my_results.warn('W111', 'verify_manifest', "No files discovered on disk.")
+          else
+            @my_results.ok('O200', 'verify_manifest', "All discovered files on disk are referenced in inventory file.")
+          end
         end
       end
       # Now call verify_versions_across_inventories;  this will check to make sure all prior inventories match this one.
@@ -174,18 +254,46 @@ module OcflTools
       # cross_check digestss.
       # Report out via @my_results.
       # Inventory file does not exist; create a results object, record this epic fail, and return.
+      @my_results ||= OcflTools::OcflResults.new
       unless File.exist?(inventory_file)
-        @my_results ||= OcflTools::OcflResults.new
         @my_results.error('E215', 'verify_checksums', "Expected inventory file #{inventory_file} not found.")
         return @my_results
       end
 
-      @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+      if load_inventory(inventory_file) == true
+        @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+      else
+        @my_results.error('E210', 'verify_checksums', "Unable to process inventory file #{inventory_file}.")
+        return @my_results
+      end
 
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
       # Otherwise, use the value of inventory.digestAlgorithm
-      files_on_disk = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
+      # TODO: files_on_disk here LIES if contentDirectory value is wrong!
+#      files_on_disk = OcflTools::Utils::Files.get_versions_dir_files(@ocfl_object_root, @inventory.version_id_list.min, @inventory.version_id_list.max)
+      # WORK OUT what contentDirectory is by inspecting all paths in inventory.manifest.
+      files_on_disk = []
+      working_files = OcflTools::Utils::Files.invert_and_expand(@inventory.manifest).keys
+      # gives me version/contentDir/<foo>
+      # ....and I know that '/' is the delimiter, and element 0 is version. I want element 1, the content_dir value.
+      manifest_content_dirs = []
+      working_files.each do | file |
+        manifest_content_dirs << file.split('/')[1]
+      end
+      manifest_content_dirs.uniq!
+      manifest_content_dirs.each do | mcd |
+        # We should check that path on disk to see if there's content there.
+        @inventory.versions.keys.each do | version |
+          my_files = OcflTools::Utils::Files.get_dir_files("#{@ocfl_object_root}/#{version}/#{mcd}")
+          # And expand it to a full file path (returns an array, so flatten it out and append to files_on_disk.
+          OcflTools::Utils::Files.expand_filepaths(my_files, "#{@ocfl_object_root}/#{version}/#{mcd}").each do | file |
+            files_on_disk << file
+          end
+        end
+        files_on_disk.uniq! # Just to make sure there's no funky business.
+      end
+
       # Now generate checksums for the files we found on disk, and Hash them.
       disk_checksums = OcflTools::Utils::Files.create_digests(files_on_disk, @inventory.digestAlgorithm)
       # Get an equivalent hash by manipulating the inventory.manifest hash.
@@ -200,23 +308,7 @@ module OcflTools
     # @return {OcflTools::OcflResults} of event results
     def verify_structure
       error = nil
-
-      # 1. Determine the format used for version directories.
-      #    If we can't deduce it by inspection, warn and try to process object using site-wide default.
-#      begin
-#        if @version_format.nil?
-#          @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
-#          @my_results.ok('O111', 'version_format', 'OCFL conforming first version directory found.')
-#        end
-#      rescue StandardError
-#        @my_results.error('E111', 'version_format', 'OCFL unable to determine version format by inspection of directories.')
-#        error = true
-#        # raise "Can't determine appropriate version format"
-#        # The rest of the method simply won't work without @version_format.
-#        @version_format = OcflTools.config.version_format
-#        @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
-#      end
-
+      @my_results ||= OcflTools::OcflResults.new
       # 1. use get_version_format to determine the format used for version directories.
       #    If we can't deduce it by inspection of the object_root, ERROR and try and process using site-wide defaults.
       if get_version_format == false
@@ -247,28 +339,17 @@ module OcflTools
       # 2b. What's the highest version we should find here?
       # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-
-        begin
+        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
           json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
-        rescue RuntimeError
-          # For when we have a malformed inventory.json
-          json_digest      = OcflTools.config.digest_algorithm
-          @my_results ||= OcflTools::OcflResults.new
-          @my_results.error('E216', 'verify_structure', "Expected key digestAlgorithm not found in inventory file #{@ocfl_object_root}/inventory.json.")
-        end
-
-        begin
           contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
-        rescue RuntimeError
-          contentDirectory = OcflTools.config.content_directory
-          @my_results ||= OcflTools::OcflResults.new
-          @my_results.error('E216', 'verify_structure', "Expected key contentDirectory not found in inventory file #{@ocfl_object_root}/inventory.json.")
-        end
-
-          # This returns nil if the value isn't there; it doesn't throw an exception.
           expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
           file_checks << "inventory.json.#{json_digest}"
-
+        else
+          # We couldn't load up the inventory; use site defaults.
+          contentDirectory = OcflTools.config.content_directory
+          json_digest      = OcflTools.config.digest_algorithm
+          file_checks << "inventory.json.#{json_digest}"
+        end
       else
         # If we can't get these values from a handy inventory.json, use the site defaults.
         contentDirectory = OcflTools.config.content_directory
@@ -418,23 +499,21 @@ module OcflTools
         # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-
-          begin
+          if load_inventory("#{@ocfl_object_root}/inventory.json") == true
             json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
-          rescue RuntimeError
-            # For when we have a malformed inventory.json
-            json_digest      = OcflTools.config.digest_algorithm
-            @my_results ||= OcflTools::OcflResults.new
-            @my_results.error('E216', 'verify_structure', "Expected key digestAlgorithm not found in inventory file #{@ocfl_object_root}/#{ver}/inventory.json.")
+            file_checks << 'inventory.json'
+            file_checks << "inventory.json.#{json_digest}"
+            versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
+            if versionContentDirectory != contentDirectory
+              @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
+              error = true
+            end
+          else
+            json_digest = OcflTools.config.digest_algorithm
+            file_checks << 'inventory.json'
+            file_checks << "inventory.json.#{json_digest}"
           end
-          file_checks << 'inventory.json'
-          file_checks << "inventory.json.#{json_digest}"
-          # 9b. Error if the contentDirectory value in the version's inventory does not match the value given in the object root's inventory file.
-          versionContentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/#{ver}/inventory.json")
-          if versionContentDirectory != contentDirectory
-            @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
-            error = true
-          end
+
         else
           file_checks << 'inventory.json'         # We look for it, even though we know we won't find it, so we can log the omission.
           file_checks << 'inventory.json.sha512'  # We look for it, even though we know we won't find it, so we can log the omission.
@@ -474,15 +553,16 @@ module OcflTools
           error = true
         end
 
+        ###### CHECK THIS; I think this is superseded by the verify_manifest content_dir check.
         # 11. WARN if a contentDirectory exists, but is empty.
         if version_dirs.include? contentDirectory
           version_dirs.delete(contentDirectory)
-          if Dir.empty?(contentDirectory)
-            @my_results.warn('W102', 'verify_structure', "OCFL 3.3.1 version #{ver} contentDirectory should not be empty.")
-          end
-        else
-          # Informational message that contentDir does not exist. Not necssarily a problem!
-          @my_results.info('I101', 'verify_structure', "OCFL 3.3.1 version #{ver} does not contain a contentDirectory.")
+#          if Dir.empty?(contentDirectory)
+#            @my_results.warn('W102', 'verify_structure', "OCFL 3.3.1 version #{ver} contentDirectory should not be empty.")
+#          end
+#        else
+#          # Informational message that contentDir does not exist. Not necssarily a problem!
+#          @my_results.info('I101', 'verify_structure', "OCFL 3.3.1 version #{ver} does not contain a contentDirectory.")
         end
 
         # 12. Warn if any directories other than the expected 'content' directory are found in the version directory.
@@ -572,20 +652,47 @@ module OcflTools
     # @return {OcflTools::OcflResults} event results
     def verify_inventory(inventory_file = "#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
-
+      @my_results ||= OcflTools::OcflResults.new
       # Inventory file does not exist; create a results object, record this epic fail, and return.
-      unless File.exist?(inventory_file)
-        @my_results ||= OcflTools::OcflResults.new
+      if File.exist?(inventory_file)
+        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+          @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+          @verify    = OcflTools::OcflVerify.new(@inventory)
+          @verify.check_all # creates & returns @results object from OcflVerify
+        else
+          # The inventory had problems; we can't run verify.
+          @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
+          return @my_results
+        end
+      else
         @my_results.error('E215', 'verify_inventory', "Expected inventory file #{inventory_file} not found.")
         return @my_results
       end
-
-      @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-      @verify    = OcflTools::OcflVerify.new(@inventory)
-      @verify.check_all # creates & returns @results object from OcflVerify
     end
 
   private
+    # load up an inventory file and handle any errors.
+    # Returns true if the inventory file is syntatically correct; false if otherwise.
+    def load_inventory(inventory_file)
+      begin
+        @my_results ||= OcflTools::OcflResults.new
+        OcflTools::OcflInventory.new.from_file(inventory_file)
+        return true
+      rescue RuntimeError
+        @my_results.error('E210', 'load_inventory', "Unable to read Inventory file #{inventory_file}")
+        return false
+      rescue OcflTools::Errors::Error211
+        @my_results.error('E211', 'load_inventory', "#{inventory_file} is not valid JSON.")
+        return false
+      rescue OcflTools::Errors::Error216 => e
+        @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
+        return false
+      rescue OcflTools::Errors::Error217 => e
+        @my_results.error('E217', 'load_inventory', "#{e} in #{inventory_file}")
+        return false
+      end
+    end
+
     # Compares the state blocks for all versions across all inventories in the object,
     # and errors if the state block for a given version differs between inventory files.
     # NOTE: this is a private method that should only be called by #verify_manifest.

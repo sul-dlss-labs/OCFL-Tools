@@ -37,7 +37,6 @@ Any error code means the resulting object has failed validation, and is not a va
 ```
 E111 Placeholder code
 
-E010 "OCFL 3.1 Version directory #{directory} contains directories other than designated content directory"
 E011 "OCFL 3.1 Version directory #{directory} contains files other than an inventory and inventory digest"
 E012 "OCFL 3.1 Version directory #{directory} does not contain the contentDirectory specified in the inventory"
 E013 "OCFL 3.1 Expected version directory #{directory} missing from directory list #{directories}"
@@ -61,12 +60,14 @@ E200 'OCFL 3.5.1 Object ID not found'
 E201 'OCFL 3.5.1 Object ID cannot be 0 length'
 E202 'OCFL 3.5.1 Object ID cannot be nil'
 
-E211 'Inventory head cannot be 0'
+E210 "Unable to read Inventory file #{inventory}."
+E211 "OCFL 3.5 An OCFL Object Inventory must follow the [JSON] structure described in this section and must be named inventory.json."
 E212 'OCFL 3.5.1 Inventory Head cannot be nil'
 E213 'OCFL 3.5.1 Inventory Head cannot be an Integer'
 E214 "OCFL 3.5.1 Inventory Head version #{version} does not match expected version #{target_version}"
-E215 "Expected inventory file #{file} not found."
-E216 "Expected key #{key} not found in inventory file #{file}"
+E215 "OCFL 3.1 Expected inventory file #{file} not found."
+E216 "OCFL 3.5.1 Expected key #{key} not found in inventory file #{file}"
+E217 "OCFL 3.5.1 Expected key #{key} cannot be empty."
 
 E220  Algorithm not found
 E221  Algorithm cannot be 0 length
