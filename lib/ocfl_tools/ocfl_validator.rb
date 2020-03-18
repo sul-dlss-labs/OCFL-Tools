@@ -672,6 +672,7 @@ module OcflTools
 
   private
     # load up an inventory file and handle any errors.
+    # Returns true if the inventory file is syntatically correct; false if otherwise.
     def load_inventory(inventory_file)
       begin
         @my_results ||= OcflTools::OcflResults.new
@@ -687,7 +688,7 @@ module OcflTools
         @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
         return false
       rescue OcflTools::Errors::Error217 => e
-        @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
+        @my_results.error('E217', 'load_inventory', "#{e} in #{inventory_file}")
         return false
       end
     end

@@ -197,7 +197,7 @@ describe OcflTools::OcflInventory do
     it 'fails to read a bad file' do
       bad_content = OcflTools::OcflInventory.new
       bad_file = './spec/fixtures/bad_json/inventory.json'
-      expect { ocfl.from_file(bad_file) }.to raise_error(RuntimeError)
+      expect { ocfl.from_file(bad_file) }.to raise_error(OcflTools::Errors::Error211)
     end
   end
 
