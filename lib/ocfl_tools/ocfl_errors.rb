@@ -14,7 +14,7 @@ module OcflTools
     end
 
     class Error217 < StandardError
-      def initialize(msg="Required key in inventory.json must contain a value.")
+      def initialize(msg="Required key in inventory.json cannot be empty.")
         super
       end
     end
