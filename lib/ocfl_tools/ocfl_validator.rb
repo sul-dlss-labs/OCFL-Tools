@@ -63,7 +63,13 @@ module OcflTools
     # @return {OcflTools::OcflResults} of event results
     def verify_fixity(inventory_file: "#{@ocfl_object_root}/inventory.json", digest: 'md5')
       # Gets the appropriate fixity block, calls compare_hash_checksums
-      @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+      @inventory = load_inventory(inventory_file)
+
+      if @inventory == false
+        @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
+        return @my_results
+      end
+    
       # Since fixity blocks are not required to be complete, we just validate what's there.
       # So get the fixity block, flip it, expand it, checksum it against the same files on disk.
 
@@ -121,9 +127,10 @@ module OcflTools
         return @my_results
       end
 
-      if load_inventory(inventory_file) == true
-        @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
-      else
+
+      @inventory = load_inventory(inventory_file)
+
+      if @inventory == false
         @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -260,13 +267,12 @@ module OcflTools
         return @my_results
       end
 
-      if load_inventory(inventory_file) == true
-        @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-      else
+      @inventory = load_inventory(inventory_file)
+
+      if @inventory == false
         @my_results.error('E210', 'verify_checksums', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
-
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
       # Otherwise, use the value of inventory.digestAlgorithm
@@ -339,7 +345,7 @@ module OcflTools
       # 2b. What's the highest version we should find here?
       # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+        if load_inventory("#{@ocfl_object_root}/inventory.json") != false # quick hack to keep this working
           json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
           contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
           expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
@@ -499,7 +505,7 @@ module OcflTools
         # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-          if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+          if load_inventory("#{@ocfl_object_root}/inventory.json") != false # quick hack to keep this working
             json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
             file_checks << 'inventory.json'
             file_checks << "inventory.json.#{json_digest}"
@@ -655,7 +661,7 @@ module OcflTools
       @my_results ||= OcflTools::OcflResults.new
       # Inventory file does not exist; create a results object, record this epic fail, and return.
       if File.exist?(inventory_file)
-        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+        if load_inventory("#{@ocfl_object_root}/inventory.json") != false # Quick dirty fix
           @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
           @verify    = OcflTools::OcflVerify.new(@inventory)
           @verify.check_all # creates & returns @results object from OcflVerify
@@ -672,12 +678,12 @@ module OcflTools
 
   private
     # load up an inventory file and handle any errors.
-    # Returns true if the inventory file is syntatically correct; false if otherwise.
+    # Returns an inventory file is syntatically correct; false if otherwise.
     def load_inventory(inventory_file)
       begin
-        @my_results ||= OcflTools::OcflResults.new
-        OcflTools::OcflInventory.new.from_file(inventory_file)
-        return true
+      @my_results ||= OcflTools::OcflResults.new
+      return OcflTools::OcflInventory.new.from_file(inventory_file)
+      # return true
       rescue RuntimeError
         @my_results.error('E210', 'load_inventory', "Unable to read Inventory file #{inventory_file}")
         return false
