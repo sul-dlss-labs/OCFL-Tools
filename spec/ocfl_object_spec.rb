@@ -162,23 +162,23 @@ describe OcflTools::OcflObject do
 
   describe 'bad file operations' do
     it 'fails to delete a nonexistent file' do
-      expect { ocfl.delete_file('my_content/file_not_found.txt', 6) }.to raise_error(RuntimeError)
+      expect { ocfl.delete_file('my_content/file_not_found.txt', 6) }.to raise_error(OcflTools::Errors::FileMissingFromVersionState)
     end
 
     it 'fails to copy a nonexistent file' do
-      expect { ocfl.copy_file('my_content/file_not_found.txt', 'another_dir/copy_of_second_file.txt', 6) }.to raise_error(RuntimeError)
+      expect { ocfl.copy_file('my_content/file_not_found.txt', 'another_dir/copy_of_second_file.txt', 6) }.to raise_error(OcflTools::Errors::FileMissingFromVersionState)
     end
 
     it 'fails to move a nonexistent file' do
-      expect { ocfl.move_file('my_content/file_not_found.txt', 'another_dir/copy_of_second_file.txt', 6) }.to raise_error(RuntimeError)
+      expect { ocfl.move_file('my_content/file_not_found.txt', 'another_dir/copy_of_second_file.txt', 6) }.to raise_error(OcflTools::Errors::FileMissingFromVersionState)
     end
 
     it 'tries to add a file to a previous version' do
-      expect { ocfl.add_file('my_content/you_shall_not_add.txt', 'checksum_zzzzzzzzzzzz', 4) }.to raise_error(RuntimeError)
+      expect { ocfl.add_file('my_content/you_shall_not_add.txt', 'checksum_zzzzzzzzzzzz', 4) }.to raise_error(OcflTools::Errors::CannotEditPreviousVersion)
     end
 
     it 'tries to delete a file from a previous version' do
-      expect { ocfl.delete_file('my_content/a_second_file.txt', 2) }.to raise_error(RuntimeError)
+      expect { ocfl.delete_file('my_content/a_second_file.txt', 2) }.to raise_error(OcflTools::Errors::CannotEditPreviousVersion)
     end
   end
 
@@ -188,7 +188,7 @@ describe OcflTools::OcflObject do
       %w[created message user].each do |key|
         missing_state_hash[key] = ''
       end
-      expect { ocfl.set_version(7, missing_state_hash) }.to raise_error(RuntimeError)
+      expect { ocfl.set_version(7, missing_state_hash) }.to raise_error(OcflTools::Errors::Error216)
     end
   end
 
