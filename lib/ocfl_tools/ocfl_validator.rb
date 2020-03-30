@@ -319,7 +319,8 @@ module OcflTools
       # 1. use get_version_format to determine the format used for version directories.
       #    If we can't deduce it by inspection of the object_root, ERROR and try and process using site-wide defaults.
       if get_version_format == false
-        error = true
+        @my_results.error('E111', 'verify_structure', 'OCFL unable to determine version format by inspection of directories.')
+        @error = true
       end
 
       object_root_dirs  = []
@@ -602,11 +603,8 @@ module OcflTools
     # @return {OcflTools::OcflResults} of verify events
     def verify_directory(version)
       # start by getting version format and directories.
-      if @version_format.nil?
-        @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
-      end
+      get_version_format # sets @version_format, one way or another.
 
-      # result = OcflTools.config.version_format % version.to_i
       version_name = @version_format % version.to_i
       # Make sure this directory actually exists.
       unless File.directory?("#{@ocfl_object_root}/#{version_name}")
@@ -793,13 +791,22 @@ module OcflTools
 
     def get_version_format
       begin
+        @my_results ||= OcflTools::OcflResults.new
         @version_format ||= OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
         @my_results.ok('O111', 'version_format', 'OCFL conforming first version directory found.')
-        return true
-      rescue StandardError
+        return @version_format
+      rescue OcflTools::Errors::ValidationError => e
+        # OcflTools::Utils::Files.get_version_format doesn't set errors, so capture them here.
+        e.details.each do | code, messages |
+          # code is a string, messages is an array.
+          messages.each do | msg |
+            @my_results.error(code, 'load_inventory', msg)
+          end
+        end
+        # Add on another error explaining how we got here.
         @my_results.error('E111', 'version_format', 'OCFL unable to determine version format by inspection of directories.')
-        @version_format = OcflTools.config.version_format
         @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
+        @version_format = OcflTools.config.version_format
         return false
       end
     end
