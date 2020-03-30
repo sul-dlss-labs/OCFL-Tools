@@ -689,21 +689,21 @@ module OcflTools
       @my_results ||= OcflTools::OcflResults.new
       return OcflTools::OcflInventory.new.from_file(inventory_file)
       # return true
-      rescue RuntimeError
-        @my_results.error('E210', 'load_inventory', "Unable to read Inventory file #{inventory_file}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile
+    rescue RuntimeError => e
+        @my_results.error('E210', 'load_inventory', "#{e}")
+        raise OcflTools::Errors::UnableToLoadInventoryFile, "E210: #{e}"
 #        return false
-      rescue OcflTools::Errors::Error211
-        @my_results.error('E211', 'load_inventory', "#{inventory_file} is not valid JSON.")
-        raise OcflTools::Errors::UnableToLoadInventoryFile
+      rescue OcflTools::Errors::Error211 => e
+        @my_results.error('E211', 'load_inventory', "#{e}")
+        raise OcflTools::Errors::UnableToLoadInventoryFile, "E211 occured while processing #{inventory_file}"
 #        return false
       rescue OcflTools::Errors::Error216 => e
         @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile
+        raise OcflTools::Errors::UnableToLoadInventoryFile, "E216 occured while processing #{inventory_file}"
 #        return false
       rescue OcflTools::Errors::Error217 => e
         @my_results.error('E217', 'load_inventory', "#{e} in #{inventory_file}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile
+        raise OcflTools::Errors::UnableToLoadInventoryFile, "E217 occured while processing #{inventory_file}"
 #        return false
       end
     end
