@@ -31,6 +31,16 @@ module OcflTools
       end
     end
 
+    class RequestedFileNotFound < ClientError
+      def initialize(msg="Requested file does not exist.")
+      end
+    end
+
+    class RequestedDirectoryNotFound < ClientError
+      def initialize(msg="Requested directory does not exist.")
+      end
+    end
+
     class FileMissingFromVersionState < ClientError
       def initialize(msg="The requested file cannot be found in the provided version state block.")
       end

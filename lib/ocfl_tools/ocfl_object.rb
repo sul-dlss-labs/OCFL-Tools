@@ -289,7 +289,7 @@ module OcflTools
       my_state = get_state(version) # Creates version & copies state from prior version if doesn't exist.
 
       unless version == version_id_list.max
-        raise OcflTools::Errors::CannotEditPreviousVersion, "Can't edit prior versions! Only version #{version} can be modified now."
+        raise OcflTools::Errors::CannotEditPreviousVersion, "Can't edit prior versions! Only version #{version_id_list.max} can be modified now."
       end
 
       my_digest = get_digest(file, version)

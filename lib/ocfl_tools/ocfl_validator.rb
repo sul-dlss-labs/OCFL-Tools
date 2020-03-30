@@ -354,7 +354,6 @@ module OcflTools
           file_checks << "inventory.json.#{json_digest}"
         rescue OcflTools::Errors::ValidationError
           # We couldn't load up the inventory; use site defaults.
-          # We should also record the error in @my_results?
           contentDirectory = OcflTools.config.content_directory
           json_digest      = OcflTools.config.digest_algorithm
           file_checks << "inventory.json.#{json_digest}"
@@ -453,7 +452,18 @@ module OcflTools
         object_root_dirs.delete('extensions')
       end
 
-      version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
+      begin
+        version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
+      rescue OcflTools::Errors::ValidationError => e
+        e.details.each do | code, messages |
+          messages.each do | msg |
+            puts "#{code} #{msg}"
+            @my_results.error(code, 'verify_structure', msg)
+          end
+        end
+        # If we actually throw a validation error, we can't proceed: no version directories found!
+        return @my_results
+      end
 
       remaining_dirs = object_root_dirs - version_directories
 
@@ -475,7 +485,7 @@ module OcflTools
         # just that they're valid version dir names, sorted in ascending order, and they exist.
         if version_directories.include? expected_directory
           # Could verbose log this here.
-          # @my_results.ok('O200', 'verify_sructure', "Expected version directory #{expected_directory} found.")
+          # @my_results.info('I200', 'verify_sructure', "Expected version directory #{expected_directory} found.")
         else
           @my_results.error('E013', 'verify_structure', "Expected version directory #{expected_directory} missing from directory list #{version_directories} ")
           error = true
