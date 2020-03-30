@@ -36,6 +36,11 @@ module OcflTools
       end
     end
 
+    class FileDigestMismatch < ClientError
+      def initialize(msg="The requested file already exists in inventory with different digest.")
+      end
+    end
+
     # You asked for version -1, or version 44c.
     class NonCompliantValue < ClientError
       def initialize(msg="Value provided is outside of specification bounds.")

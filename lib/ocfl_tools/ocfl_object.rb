@@ -52,7 +52,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def set_version_message(version, message)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['message'] = message
@@ -64,7 +64,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def get_version_message(version)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['message']
@@ -76,7 +76,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def set_version_created(version, created)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['created'] = created
@@ -88,7 +88,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def get_version_created(version)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['created']
@@ -100,7 +100,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a nonexistent version.
     def set_version_user(version, user)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['user'] = user
@@ -112,7 +112,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a nonexistent version.
     def get_version_user(version)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['user']
@@ -205,7 +205,7 @@ module OcflTools
       # If so; fail. We don't do implicit / soft adds. You want that, be explict: do an update_file instead.
       existing_files = get_files(version)
       if existing_files.key?(file)
-        raise 'File already exists with different digest in this version! Consider update instead.'
+        raise OcflTools::Errors::FileDigestMismatch, "#{file} already exists with different digest in version #{version}. Consider update instead."
       end
 
       # if it's not in State already, just add it.
@@ -364,7 +364,7 @@ module OcflTools
       end
       # Now see if the requested file is actually here.
       unless my_files.key?(file)
-        raise OcflTools::Errors::FileMissingFromVersionState, "Get_digest can't find requested file #{file} in given version!"
+        raise OcflTools::Errors::FileMissingFromVersionState, "Get_digest can't find requested file #{file} in version #{version}."
       end
 
       my_files[file]
