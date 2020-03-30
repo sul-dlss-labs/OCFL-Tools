@@ -63,13 +63,14 @@ module OcflTools
     # @return {OcflTools::OcflResults} of event results
     def verify_fixity(inventory_file: "#{@ocfl_object_root}/inventory.json", digest: 'md5')
       # Gets the appropriate fixity block, calls compare_hash_checksums
-      @inventory = load_inventory(inventory_file)
 
-      if @inventory == false
+      begin
+        @inventory = load_inventory(inventory_file)
+      rescue OcflTools::Errors::UnableToLoadInventoryFile
         @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
-    
+
       # Since fixity blocks are not required to be complete, we just validate what's there.
       # So get the fixity block, flip it, expand it, checksum it against the same files on disk.
 
@@ -127,10 +128,9 @@ module OcflTools
         return @my_results
       end
 
-
-      @inventory = load_inventory(inventory_file)
-
-      if @inventory == false
+      begin
+        @inventory = load_inventory(inventory_file)
+      rescue OcflTools::Errors::UnableToLoadInventoryFile
         @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -267,12 +267,13 @@ module OcflTools
         return @my_results
       end
 
-      @inventory = load_inventory(inventory_file)
-
-      if @inventory == false
+      begin
+        @inventory = load_inventory(inventory_file)
+      rescue OcflTools::Errors::UnableToLoadInventoryFile
         @my_results.error('E210', 'verify_checksums', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
+
       # if @digest is set, use that as the digest for checksumming.
       # ( but check inventory.fixity to make sure it's there first )
       # Otherwise, use the value of inventory.digestAlgorithm
@@ -345,13 +346,15 @@ module OcflTools
       # 2b. What's the highest version we should find here?
       # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-        if load_inventory("#{@ocfl_object_root}/inventory.json") != false # quick hack to keep this working
+        begin
+          @inventory = load_inventory("#{@ocfl_object_root}/inventory.json")
           json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
           contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
           expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
           file_checks << "inventory.json.#{json_digest}"
-        else
+        rescue OcflTools::Errors::UnableToLoadInventoryFile
           # We couldn't load up the inventory; use site defaults.
+          # We should also record the error in @my_results?
           contentDirectory = OcflTools.config.content_directory
           json_digest      = OcflTools.config.digest_algorithm
           file_checks << "inventory.json.#{json_digest}"
@@ -505,7 +508,8 @@ module OcflTools
         # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-          if load_inventory("#{@ocfl_object_root}/inventory.json") != false # quick hack to keep this working
+          begin
+            @inventory = load_inventory("#{@ocfl_object_root}/#{ver}/inventory.json")
             json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
             file_checks << 'inventory.json'
             file_checks << "inventory.json.#{json_digest}"
@@ -514,12 +518,13 @@ module OcflTools
               @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
               error = true
             end
-          else
+          rescue OcflTools::Errors::UnableToLoadInventoryFile
+            # We couldn't load up the inventory; use site defaults.
+            # We should also record the error in @my_results?
             json_digest = OcflTools.config.digest_algorithm
             file_checks << 'inventory.json'
             file_checks << "inventory.json.#{json_digest}"
           end
-
         else
           file_checks << 'inventory.json'         # We look for it, even though we know we won't find it, so we can log the omission.
           file_checks << 'inventory.json.sha512'  # We look for it, even though we know we won't find it, so we can log the omission.
@@ -661,12 +666,12 @@ module OcflTools
       @my_results ||= OcflTools::OcflResults.new
       # Inventory file does not exist; create a results object, record this epic fail, and return.
       if File.exist?(inventory_file)
-        if load_inventory("#{@ocfl_object_root}/inventory.json") != false # Quick dirty fix
+        begin
+          @inventory = load_inventory(inventory_file)
           @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
           @verify    = OcflTools::OcflVerify.new(@inventory)
           @verify.check_all # creates & returns @results object from OcflVerify
-        else
-          # The inventory had problems; we can't run verify.
+        rescue OcflTools::Errors::UnableToLoadInventoryFile
           @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
           return @my_results
         end
@@ -686,16 +691,20 @@ module OcflTools
       # return true
       rescue RuntimeError
         @my_results.error('E210', 'load_inventory', "Unable to read Inventory file #{inventory_file}")
-        return false
+        raise OcflTools::Errors::UnableToLoadInventoryFile
+#        return false
       rescue OcflTools::Errors::Error211
         @my_results.error('E211', 'load_inventory', "#{inventory_file} is not valid JSON.")
-        return false
+        raise OcflTools::Errors::UnableToLoadInventoryFile
+#        return false
       rescue OcflTools::Errors::Error216 => e
         @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
-        return false
+        raise OcflTools::Errors::UnableToLoadInventoryFile
+#        return false
       rescue OcflTools::Errors::Error217 => e
         @my_results.error('E217', 'load_inventory', "#{e} in #{inventory_file}")
-        return false
+        raise OcflTools::Errors::UnableToLoadInventoryFile
+#        return false
       end
     end
 

@@ -13,6 +13,12 @@ module OcflTools
       end
     end
 
+    class UnableToLoadInventoryFile < StandardError
+      def initialize(msg="Requested inventory file failed to load. See downstream errors for details.")
+        super
+      end
+    end
+
     class RequestedKeyNotFound < StandardError
       def initialize(msg="Requested key not found in provided inventory.json.")
         super
