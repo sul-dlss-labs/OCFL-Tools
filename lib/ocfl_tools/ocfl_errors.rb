@@ -43,6 +43,13 @@ module OcflTools
       end
     end
 
+
+    class Error215 < StandardError
+      def initialize(msg="Expected inventory.json file not found.")
+        super
+      end
+    end
+
     class Error216 < StandardError
       def initialize(msg="Unable to find required key in inventory.json.")
         super

@@ -55,6 +55,8 @@ module OcflTools
         JSON.parse(File.read(file))
       rescue JSON::ParserError
         raise OcflTools::Errors::Error211, "#{file} is not valid JSON."
+      rescue Errno::ENOENT
+        raise OcflTools::Errors::Error215, "expected inventory file #{file} not found!"
       rescue StandardError => e
         # Would be good to catch File Not Found and throw a specific error here.
         raise "An unknown error occured reading file #{file}: #{e}" # catch/encapsulate any FileIO issues
