@@ -189,7 +189,7 @@ describe OcflTools::OcflInventory do
       %w[created message user].each do |key|
         missing_state_hash[key] = ''
       end
-      expect { ocfl.set_version(7, missing_state_hash) }.to raise_error(OcflTools::Errors::Error216)
+      expect { ocfl.set_version(7, missing_state_hash) }.to raise_error(OcflTools::Errors::ValidationError)
     end
   end
 

@@ -1,64 +1,56 @@
 module OcflTools
   module Errors
-
-    class SyntaxError < StandardError
-      def initialize(msg="Generic syntax error.")
-        super
+    # See this for a nice model.
+    # https://github.com/ryanb/cancan/blob/master/lib/cancan/exceptions.rb
+    class ValidationError < StandardError
+      attr_accessor :details
+      attr_accessor :msg
+      def initialize(msg: "A validation error has occured.", details: {} )
+        @msg = msg
+        @details = details
       end
     end
 
-    class NonCompliantValue < StandardError
-      def initialize(msg="Value provided is outside of specification bounds.")
-        super
+    # For bad client requests
+    class ClientError < StandardError; end
+
+    class SyntaxError < StandardError
+      def initialize(msg="Generic syntax error.")
       end
     end
 
     class UnableToLoadInventoryFile < StandardError
       def initialize(msg="Requested inventory file failed to load. See downstream errors for details.")
-        super
       end
     end
 
-    class RequestedKeyNotFound < StandardError
+    ### Client errors (you asked for the wrong stuff)
+    class RequestedKeyNotFound < ClientError
+      # You ask for key 'foo', but you are dumb and key 'foo' is not in the spec.
       def initialize(msg="Requested key not found in provided inventory.json.")
-        super
       end
     end
 
-    class CannotEditPreviousVersion < StandardError
-      def initialize(msg="Previous version state blocks are considered read-only.")
-        super
-      end
-    end
-
-    class FileMissingFromVersionState < StandardError
+    class FileMissingFromVersionState < ClientError
       def initialize(msg="The requested file cannot be found in the provided version state block.")
-        super
       end
     end
 
-    class Error211 < StandardError
-      def initialize(msg="inventory.json is not valid JSON.")
-        super
+    # You asked for version -1, or version 44c.
+    class NonCompliantValue < ClientError
+      def initialize(msg="Value provided is outside of specification bounds.")
       end
     end
 
-
-    class Error215 < StandardError
-      def initialize(msg="Expected inventory.json file not found.")
-        super
+    ### Validation errors (stuff that MUST be true, per spec, is not)
+    class RequiredKeyNotFound < ValidationError
+      # key 'foo' is in the spec and should be in the inventory. Fail if not.
+      def initialize(msg="Required key not found in provided inventory.json.")
       end
     end
 
-    class Error216 < StandardError
-      def initialize(msg="Unable to find required key in inventory.json.")
-        super
-      end
-    end
-
-    class Error217 < StandardError
-      def initialize(msg="Required key in inventory.json cannot be empty.")
-        super
+    class CannotEditPreviousVersion < ValidationError
+      def initialize(msg="Previous version state blocks are considered read-only.")
       end
     end
 

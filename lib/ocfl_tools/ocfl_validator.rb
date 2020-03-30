@@ -66,7 +66,7 @@ module OcflTools
 
       begin
         @inventory = load_inventory(inventory_file)
-      rescue OcflTools::Errors::UnableToLoadInventoryFile
+      rescue OcflTools::Errors::ValidationError
         @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -130,7 +130,7 @@ module OcflTools
 
       begin
         @inventory = load_inventory(inventory_file)
-      rescue OcflTools::Errors::UnableToLoadInventoryFile
+      rescue OcflTools::Errors::ValidationError
         @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -269,7 +269,7 @@ module OcflTools
 
       begin
         @inventory = load_inventory(inventory_file)
-      rescue OcflTools::Errors::UnableToLoadInventoryFile
+      rescue OcflTools::Errors::ValidationError
         @my_results.error('E210', 'verify_checksums', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -352,7 +352,7 @@ module OcflTools
           contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
           expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
           file_checks << "inventory.json.#{json_digest}"
-        rescue OcflTools::Errors::UnableToLoadInventoryFile
+        rescue OcflTools::Errors::ValidationError
           # We couldn't load up the inventory; use site defaults.
           # We should also record the error in @my_results?
           contentDirectory = OcflTools.config.content_directory
@@ -518,7 +518,7 @@ module OcflTools
               @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
               error = true
             end
-          rescue OcflTools::Errors::UnableToLoadInventoryFile
+          rescue OcflTools::Errors::ValidationError
             # We couldn't load up the inventory; use site defaults.
             # We should also record the error in @my_results?
             json_digest = OcflTools.config.digest_algorithm
@@ -664,19 +664,16 @@ module OcflTools
     def verify_inventory(inventory_file = "#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
       @my_results ||= OcflTools::OcflResults.new
-      # Inventory file does not exist; create a results object, record this epic fail, and return.
-      if File.exist?(inventory_file)
-        begin
-          @inventory = load_inventory(inventory_file)
-          @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-          @verify    = OcflTools::OcflVerify.new(@inventory)
-          @verify.check_all # creates & returns @results object from OcflVerify
-        rescue OcflTools::Errors::UnableToLoadInventoryFile
-          @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
-          return @my_results
-        end
-      else
-        @my_results.error('E215', 'verify_inventory', "Expected inventory file #{inventory_file} not found.")
+      # If inventory_file does not exist, load_inventory will throw and log an E215.
+      begin
+        @inventory = load_inventory(inventory_file)
+        @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+        @verify    = OcflTools::OcflVerify.new(@inventory)
+        @verify.check_all # creates & returns @results object from OcflVerify
+      # This could be OcflTools::Errors::ValidationError now.
+      rescue OcflTools::Errors::ValidationError
+        # I don't think we need to throw this E210 any more.
+        @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
     end
@@ -687,21 +684,18 @@ module OcflTools
     def load_inventory(inventory_file)
       @my_results ||= OcflTools::OcflResults.new
       OcflTools::OcflInventory.new.from_file(inventory_file)
+      # The generic 'something went wrong but I don't know what'; not sure if we should keep this.
       rescue RuntimeError => e
         @my_results.error('E210', 'load_inventory', "#{e}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile, "E210: #{e}"
-      rescue OcflTools::Errors::Error211 => e
-        @my_results.error('E211', 'load_inventory', "#{e}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile, "E211 occured while processing #{inventory_file}"
-      rescue OcflTools::Errors::Error215 => e
-        @my_results.error('E215', 'load_inventory', "#{e}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile, "E215 occured while processing #{inventory_file}"
-      rescue OcflTools::Errors::Error216 => e
-        @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile, "E216 occured while processing #{inventory_file}"
-      rescue OcflTools::Errors::Error217 => e
-        @my_results.error('E217', 'load_inventory', "#{e} in #{inventory_file}")
-        raise OcflTools::Errors::UnableToLoadInventoryFile, "E217 occured while processing #{inventory_file}"
+        raise
+      rescue OcflTools::Errors::ValidationError => e
+        e.details.each do | code, messages |
+          # code is a string, messages is an array.
+          messages.each do | msg |
+            @my_results.error(code, 'load_inventory', msg)
+          end
+        end
+        raise # re-raise the error.
     end
 
     # Compares the state blocks for all versions across all inventories in the object,

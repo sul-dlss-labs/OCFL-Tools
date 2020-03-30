@@ -414,10 +414,14 @@ module OcflTools
     # @param [Hash] hash use this hash for the content of the new OCFL version block.
     def set_version(version, hash)
       # SAN Check to make sure passed Hash has all expected keys.
+      e216_errors = []
       %w[created message user state].each do |key|
         if hash.key?(key) == false
-          raise OcflTools::Errors::Error216, "version #{version} hash block is missing required #{key} key."
+          e216_errors << "version #{version} hash block is missing required #{key} key."
         end
+      end
+      if e216_errors.size > 0
+        raise OcflTools::Errors::ValidationError, details: { "E216" => e216_errors }
       end
       @versions[OcflTools::Utils.version_int_to_string(version)] = hash
     end
