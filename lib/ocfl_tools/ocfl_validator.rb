@@ -457,7 +457,6 @@ module OcflTools
       rescue OcflTools::Errors::ValidationError => e
         e.details.each do | code, messages |
           messages.each do | msg |
-            puts "#{code} #{msg}"
             @my_results.error(code, 'verify_structure', msg)
           end
         end
@@ -534,6 +533,7 @@ module OcflTools
             json_digest = OcflTools.config.digest_algorithm
             file_checks << 'inventory.json'
             file_checks << "inventory.json.#{json_digest}"
+            error = true
           end
         else
           file_checks << 'inventory.json'         # We look for it, even though we know we won't find it, so we can log the omission.
