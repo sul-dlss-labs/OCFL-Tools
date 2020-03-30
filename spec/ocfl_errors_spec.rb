@@ -30,10 +30,6 @@ fixture_dirs.each do | fixture_dir |
       case
         # Example for how to  handle objects with multiple (expected) errors.
       when expected_error == 'E215'
-<<<<<<< HEAD
-=======
-        validate_me.results.print
->>>>>>> f696d810e844919ea848fc600755c4f5a12bcb39
         it "expects error code E215" do
           # E102 is the generic 'required file missing from object root'
           # E215 is the explicit missing Inventory file.
