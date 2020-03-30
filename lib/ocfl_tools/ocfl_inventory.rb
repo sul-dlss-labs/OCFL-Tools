@@ -54,9 +54,10 @@ module OcflTools
       begin
         JSON.parse(File.read(file))
       rescue JSON::ParserError
-        raise OcflTools::Errors::Error211
-      rescue StandardError
-        raise "An unknown error occured reading file #{file}" # catch/encapsulate any JSON::Parser or FileIO issues
+        raise OcflTools::Errors::Error211, "#{file} is not valid JSON."
+      rescue StandardError => e
+        # Would be good to catch File Not Found and throw a specific error here.
+        raise "An unknown error occured reading file #{file}: #{e}" # catch/encapsulate any FileIO issues
       end
     end
 

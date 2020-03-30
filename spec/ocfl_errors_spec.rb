@@ -29,6 +29,14 @@ fixture_dirs.each do | fixture_dir |
 
       case
         # Example for how to  handle objects with multiple (expected) errors.
+      when expected_error == 'E215'
+        it "expects error code E215" do
+          # E102 is the generic 'required file missing from object root'
+          # E215 is the explicit missing Inventory file.
+          expect(validate_me.results.get_errors).to include('E102')
+          expect(validate_me.results.get_errors).to include('E215')
+        end
+
       when expected_error == 'E211'
         it "expects error code E211" do
           # We get some E210 as well.
