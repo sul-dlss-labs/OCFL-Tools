@@ -185,8 +185,134 @@ module OcflTools
           :desc => '[head] must be the version directory name with the highest version number.',
           :link => 'https://ocfl.io/draft/spec/#E040'
         },
-
-
+        'E041' => {
+          :desc => 'In addition to these keys, there must be two other blocks present, manifest and versions, which are discussed in the next two sections.',
+          :link => 'https://ocfl.io/draft/spec/#E041'
+        },
+        'E042' => {
+          :desc => 'Content paths within a manifest block must be relative to the OCFL Object Root.',
+          :link => 'https://ocfl.io/draft/spec/#E042'
+        },
+        # There must be 'a block for storing versions', which isn't terribly actionable.
+        'E043' => {
+          :desc => 'An OCFL Object Inventory must include a block for storing versions.',
+          :link => 'https://ocfl.io/draft/spec/#E043'
+        },
+        # There must be a Versions key in inventory.json.
+        'E044' => {
+          :desc => 'This block MUST have the key of versions within the inventory, and it must be a JSON object.',
+          :link => 'https://ocfl.io/draft/spec/#E044'
+        },
+        # The contents of the Versions key must be a JSON object (not a single value)
+        'E045' => {
+          :desc => 'This block must have the key of versions within the inventory, and it MUST be a JSON object.',
+          :link => 'https://ocfl.io/draft/spec/#E045'
+        },
+        # v1, v2, etc as discovered on disk or from Manifest block content path.
+        'E046' => {
+          :desc => 'The keys of [the versions object] must correspond to the names of the version directories used.',
+          :link => 'https://ocfl.io/draft/spec/#E046'
+        },
+        # Versions key values must be JSON objects that conform to  3.5.3.1.
+        'E047' => {
+          :desc => 'Each value [of the versions object] must be another JSON object that characterizes the version, as described in the 3.5.3.1 Version section.',
+          :link => 'https://ocfl.io/draft/spec/#E047'
+        },
+        'E048' => {
+          :desc => 'A JSON object to describe one OCFL Version, which must include the following keys: [created, state, message, user]',
+          :link => 'https://ocfl.io/draft/spec/#E048'
+        },
+        'E049' => {
+          :desc => '[the value of the "created" key] must be expressed in the Internet Date/Time Format defined by [RFC3339].',
+          :link => 'https://ocfl.io/draft/spec/#E049'
+        },
+        'E050' => {
+          :desc => 'The keys of [the "state" JSON object] are digest values, each of which must correspond to an entry in the manifest of the inventory.',
+          :link => 'https://ocfl.io/draft/spec/#E050'
+        },
+        'E051' => {
+          :desc => 'The logical path [value of a "state" digest key] must be interpreted as a set of one or more path elements joined by a / path separator.',
+          :link => 'https://ocfl.io/draft/spec/#E051'
+        },
+        'E052' => {
+          :desc => '[logical] Path elements must not be ., .., or empty (//).',
+          :link => 'https://ocfl.io/draft/spec/#E052'
+        },
+        'E053' => {
+          :desc => 'Additionally, a logical path must not begin or end with a forward slash (/).',
+          :link => 'https://ocfl.io/draft/spec/#E053'
+        },
+        'E054' => {
+          :desc => 'The value of the user key must contain a user name key, "name" and should contain an address key, "address".',
+          :link => 'https://ocfl.io/draft/spec/#E054'
+        },
+        # IF a fixity block exists, it must be a top-level key called 'fixity'
+        'E055' => {
+          :desc => 'This block must have the key of fixity within the inventory.',
+          :link => 'https://ocfl.io/draft/spec/#E055'
+        },
+        # IF fixity block exists, it can only contain keys defined in the controlled vocab OR via extension.
+        'E056' => {
+          :desc => 'The fixity block must contain keys corresponding to the controlled vocabulary given in the digest algorithms listed in the Digests section, or in a table given in an Extension.',
+          :link => 'https://ocfl.io/draft/spec/#E056'
+        },
+        # IF fixity block exists, it should be digest => [Array of content paths]
+        'E057' => {
+          :desc => 'The value of the fixity block for a particular digest algorithm must follow the structure of the manifest block; that is, a key corresponding to the digest value, and an array of content paths that match that digest.',
+          :link => 'https://ocfl.io/draft/spec/#E057'
+        },
+        # inventory digest sidecars MUST exist.
+        'E058' => {
+          :desc => 'Every occurrence of an inventory file must have an accompanying sidecar file stating its digest.',
+          :link => 'https://ocfl.io/draft/spec/#E058'
+        },
+        # TBD; E092 missing from spec.
+        'E092' => {
+          :desc => 'This sidecar file must be of the form inventory.json.ALGORITHM, where ALGORITHM is the chosen digest algorithm for the object.',
+          :link => 'https://ocfl.io/draft/spec/#E092'
+        },
+        'E059' => {
+          :desc => 'This value must match the value given for the digestAlgorithm key in the inventory.',
+          :link => 'https://ocfl.io/draft/spec/#E059'
+        },
+        'E060' => {
+          :desc => 'The digest sidecar file must contain the digest of the inventory file.',
+          :link => 'https://ocfl.io/draft/spec/#E060'
+        },
+        'E061' => {
+          :desc => '[The digest sidecar file] must follow the format: DIGEST inventory.json',
+          :link => 'https://ocfl.io/draft/spec/#E061'
+        },
+        'E062' => {
+          :desc => 'The digest of the inventory must be computed only after all changes to the inventory have been made, and thus writing the digest sidecar file is the last step in the versioning process.',
+          :link => 'https://ocfl.io/draft/spec/#E062'
+        },
+        'E063' => {
+          :desc => 'Every OCFL Object must have an inventory file within the OCFL Object Root, corresponding to the state of the OCFL Object at the current version.',
+          :link => 'https://ocfl.io/draft/spec/#E063'
+        },
+        'E064' => {
+          :desc => 'Where an OCFL Object contains inventory.json in version directories, the inventory file in the OCFL Object Root must be the same as the file in the most recent version.',
+          :link => 'https://ocfl.io/draft/spec/#E064'
+        },
+        # Dupe of E058
+        'E065' => {
+          :desc => 'Every inventory file must have a corresponding Inventory Digest.',
+          :link => 'https://ocfl.io/draft/spec/#E065'
+        },
+        'E066' => {
+          :desc => 'Each version block in each prior inventory file must represent the same object state as the corresponding version block in the current inventory file.',
+          :link => 'https://ocfl.io/draft/spec/#E066'
+        },
+        'E067' => {
+          :desc => 'The extensions directory must not contain any files, and no sub-directories other than extension sub-directories.',
+          :link => 'https://ocfl.io/draft/spec/#E067'
+        },
+        'E068' => {
+          :desc => 'The specific structure and function of the extension, as well as a declaration of the registered extension name must be defined in one of the following locations: The OCFL Extensions repository OR The Storage Root, as a plain text document directly in the Storage Root.',
+          :link => 'https://ocfl.io/draft/spec/#E068'
+        }
+        # E069+ are storage root errors, out of scope for this validator for now.
       }
 
       def initialize(msg: "A validation error has occured.", details: {} )
