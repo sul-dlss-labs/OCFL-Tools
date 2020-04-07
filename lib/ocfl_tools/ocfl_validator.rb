@@ -63,7 +63,14 @@ module OcflTools
     # @return {OcflTools::OcflResults} of event results
     def verify_fixity(inventory_file: "#{@ocfl_object_root}/inventory.json", digest: 'md5')
       # Gets the appropriate fixity block, calls compare_hash_checksums
-      @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+
+      begin
+        @inventory = load_inventory(inventory_file)
+      rescue OcflTools::Errors::ValidationError
+        @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
+        return @my_results
+      end
+
       # Since fixity blocks are not required to be complete, we just validate what's there.
       # So get the fixity block, flip it, expand it, checksum it against the same files on disk.
 
@@ -121,9 +128,9 @@ module OcflTools
         return @my_results
       end
 
-      if load_inventory(inventory_file) == true
-        @inventory         = OcflTools::OcflInventory.new.from_file(inventory_file)
-      else
+      begin
+        @inventory = load_inventory(inventory_file)
+      rescue OcflTools::Errors::ValidationError
         @my_results.error('E210', 'verify_fixity', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -260,9 +267,9 @@ module OcflTools
         return @my_results
       end
 
-      if load_inventory(inventory_file) == true
-        @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-      else
+      begin
+        @inventory = load_inventory(inventory_file)
+      rescue OcflTools::Errors::ValidationError
         @my_results.error('E210', 'verify_checksums', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
@@ -312,7 +319,8 @@ module OcflTools
       # 1. use get_version_format to determine the format used for version directories.
       #    If we can't deduce it by inspection of the object_root, ERROR and try and process using site-wide defaults.
       if get_version_format == false
-        error = true
+        @my_results.error('E111', 'verify_structure', 'OCFL unable to determine version format by inspection of directories.')
+        @error = true
       end
 
       object_root_dirs  = []
@@ -339,12 +347,13 @@ module OcflTools
       # 2b. What's the highest version we should find here?
       # 2c. What should our contentDirectory value be?
       if File.exist? "#{@ocfl_object_root}/inventory.json"
-        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+        begin
+          @inventory = load_inventory("#{@ocfl_object_root}/inventory.json")
           json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/inventory.json")
           contentDirectory = OcflTools::Utils::Inventory.get_contentDirectory("#{@ocfl_object_root}/inventory.json")
           expect_head      = OcflTools::Utils::Inventory.get_value("#{@ocfl_object_root}/inventory.json", 'head')
           file_checks << "inventory.json.#{json_digest}"
-        else
+        rescue OcflTools::Errors::ValidationError
           # We couldn't load up the inventory; use site defaults.
           contentDirectory = OcflTools.config.content_directory
           json_digest      = OcflTools.config.digest_algorithm
@@ -444,7 +453,17 @@ module OcflTools
         object_root_dirs.delete('extensions')
       end
 
-      version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
+      begin
+        version_directories = OcflTools::Utils::Files.get_version_directories(@ocfl_object_root)
+      rescue OcflTools::Errors::ValidationError => e
+        e.details.each do | code, messages |
+          messages.each do | msg |
+            @my_results.error(code, 'verify_structure', msg)
+          end
+        end
+        # If we actually throw a validation error, we can't proceed: no version directories found!
+        return @my_results
+      end
 
       remaining_dirs = object_root_dirs - version_directories
 
@@ -466,7 +485,7 @@ module OcflTools
         # just that they're valid version dir names, sorted in ascending order, and they exist.
         if version_directories.include? expected_directory
           # Could verbose log this here.
-          # @my_results.ok('O200', 'verify_sructure', "Expected version directory #{expected_directory} found.")
+          # @my_results.info('I200', 'verify_sructure', "Expected version directory #{expected_directory} found.")
         else
           @my_results.error('E013', 'verify_structure', "Expected version directory #{expected_directory} missing from directory list #{version_directories} ")
           error = true
@@ -499,7 +518,8 @@ module OcflTools
         # 9. Warn if inventory.json and sidecar are not present in version directory.
         file_checks = []
         if File.exist? "#{@ocfl_object_root}/#{ver}/inventory.json"
-          if load_inventory("#{@ocfl_object_root}/inventory.json") == true
+          begin
+            @inventory = load_inventory("#{@ocfl_object_root}/#{ver}/inventory.json")
             json_digest      = OcflTools::Utils::Inventory.get_digestAlgorithm("#{@ocfl_object_root}/#{ver}/inventory.json")
             file_checks << 'inventory.json'
             file_checks << "inventory.json.#{json_digest}"
@@ -508,12 +528,14 @@ module OcflTools
               @my_results.error('E111', 'verify_structure', "contentDirectory value #{versionContentDirectory} in version #{ver} does not match expected contentDirectory value #{contentDirectory}.")
               error = true
             end
-          else
+          rescue OcflTools::Errors::ValidationError
+            # We couldn't load up the inventory; use site defaults.
+            # We should also record the error in @my_results?
             json_digest = OcflTools.config.digest_algorithm
             file_checks << 'inventory.json'
             file_checks << "inventory.json.#{json_digest}"
+            error = true
           end
-
         else
           file_checks << 'inventory.json'         # We look for it, even though we know we won't find it, so we can log the omission.
           file_checks << 'inventory.json.sha512'  # We look for it, even though we know we won't find it, so we can log the omission.
@@ -557,12 +579,6 @@ module OcflTools
         # 11. WARN if a contentDirectory exists, but is empty.
         if version_dirs.include? contentDirectory
           version_dirs.delete(contentDirectory)
-#          if Dir.empty?(contentDirectory)
-#            @my_results.warn('W102', 'verify_structure', "OCFL 3.3.1 version #{ver} contentDirectory should not be empty.")
-#          end
-#        else
-#          # Informational message that contentDir does not exist. Not necssarily a problem!
-#          @my_results.info('I101', 'verify_structure', "OCFL 3.3.1 version #{ver} does not contain a contentDirectory.")
         end
 
         # 12. Warn if any directories other than the expected 'content' directory are found in the version directory.
@@ -587,11 +603,8 @@ module OcflTools
     # @return {OcflTools::OcflResults} of verify events
     def verify_directory(version)
       # start by getting version format and directories.
-      if @version_format.nil?
-        @version_format = OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
-      end
+      get_version_format # sets @version_format, one way or another.
 
-      # result = OcflTools.config.version_format % version.to_i
       version_name = @version_format % version.to_i
       # Make sure this directory actually exists.
       unless File.directory?("#{@ocfl_object_root}/#{version_name}")
@@ -653,44 +666,38 @@ module OcflTools
     def verify_inventory(inventory_file = "#{@ocfl_object_root}/inventory.json")
       # Load up the object with ocfl_inventory, push it through ocfl_verify.
       @my_results ||= OcflTools::OcflResults.new
-      # Inventory file does not exist; create a results object, record this epic fail, and return.
-      if File.exist?(inventory_file)
-        if load_inventory("#{@ocfl_object_root}/inventory.json") == true
-          @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
-          @verify    = OcflTools::OcflVerify.new(@inventory)
-          @verify.check_all # creates & returns @results object from OcflVerify
-        else
-          # The inventory had problems; we can't run verify.
-          @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
-          return @my_results
-        end
-      else
-        @my_results.error('E215', 'verify_inventory', "Expected inventory file #{inventory_file} not found.")
+      # If inventory_file does not exist, load_inventory will throw and log an E215.
+      begin
+        @inventory = load_inventory(inventory_file)
+        @inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
+        @verify    = OcflTools::OcflVerify.new(@inventory)
+        @verify.check_all # creates & returns @results object from OcflVerify
+      # This could be OcflTools::Errors::ValidationError now.
+      rescue OcflTools::Errors::ValidationError
+        # I don't think we need to throw this E210 any more.
+        @my_results.error('E210', 'verify_inventory', "Unable to process inventory file #{inventory_file}.")
         return @my_results
       end
     end
 
   private
     # load up an inventory file and handle any errors.
-    # Returns true if the inventory file is syntatically correct; false if otherwise.
+    # Returns an inventory file is syntatically correct; false if otherwise.
     def load_inventory(inventory_file)
-      begin
-        @my_results ||= OcflTools::OcflResults.new
-        OcflTools::OcflInventory.new.from_file(inventory_file)
-        return true
-      rescue RuntimeError
-        @my_results.error('E210', 'load_inventory', "Unable to read Inventory file #{inventory_file}")
-        return false
-      rescue OcflTools::Errors::Error211
-        @my_results.error('E211', 'load_inventory', "#{inventory_file} is not valid JSON.")
-        return false
-      rescue OcflTools::Errors::Error216 => e
-        @my_results.error('E216', 'load_inventory', "#{e} in #{inventory_file}")
-        return false
-      rescue OcflTools::Errors::Error217 => e
-        @my_results.error('E217', 'load_inventory', "#{e} in #{inventory_file}")
-        return false
-      end
+      @my_results ||= OcflTools::OcflResults.new
+      OcflTools::OcflInventory.new.from_file(inventory_file)
+      # The generic 'something went wrong but I don't know what'; not sure if we should keep this.
+      rescue RuntimeError => e
+        @my_results.error('E210', 'load_inventory', "#{e}")
+        raise
+      rescue OcflTools::Errors::ValidationError => e
+        e.details.each do | code, messages |
+          # code is a string, messages is an array.
+          messages.each do | msg |
+            @my_results.error(code, 'load_inventory', msg)
+          end
+        end
+        raise # re-raise the error.
     end
 
     # Compares the state blocks for all versions across all inventories in the object,
@@ -784,13 +791,22 @@ module OcflTools
 
     def get_version_format
       begin
+        @my_results ||= OcflTools::OcflResults.new
         @version_format ||= OcflTools::Utils::Files.get_version_format(@ocfl_object_root)
         @my_results.ok('O111', 'version_format', 'OCFL conforming first version directory found.')
-        return true
-      rescue StandardError
+        return @version_format
+      rescue OcflTools::Errors::ValidationError => e
+        # OcflTools::Utils::Files.get_version_format doesn't set errors, so capture them here.
+        e.details.each do | code, messages |
+          # code is a string, messages is an array.
+          messages.each do | msg |
+            @my_results.error(code, 'load_inventory', msg)
+          end
+        end
+        # Add on another error explaining how we got here.
         @my_results.error('E111', 'version_format', 'OCFL unable to determine version format by inspection of directories.')
-        @version_format = OcflTools.config.version_format
         @my_results.warn('W111', 'version_format', "Attempting to process using default value: #{OcflTools.config.version_format}")
+        @version_format = OcflTools.config.version_format
         return false
       end
     end

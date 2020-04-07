@@ -52,7 +52,8 @@ module OcflTools
       # Given an object root directory, deduce and return the version directories by inspecting disk.
       def self.get_version_directories(object_root_dir)
         unless Dir.exist?(object_root_dir) == true
-          raise 'Directory does not exist!'
+          # This is a client error.
+          raise OcflTools::Errors::RequestedDirectoryNotFound, "#{object_root_dir} does not exist!"
         end
 
         object_root_dirs = []
@@ -62,7 +63,8 @@ module OcflTools
           object_root_dirs << file if File.directory? file
         end
         if object_root_dirs.empty?
-          raise "No directories found in #{object_root_dir}!"
+          # This is a validation error.
+          raise OcflTools::Errors::ValidationError, details: { "E100" => ["#{object_root_dir} is empty!"] }
         end
 
         # Needs to call get version_format method here.
@@ -71,15 +73,18 @@ module OcflTools
             version_directories << i
           end
         end
-        raise 'No version directories found!' if version_directories.empty?
-
+        # This is a validation error; we expect to find matching version directories.
+        if version_directories.empty?
+          raise OcflTools::Errors::ValidationError, details: { "E013" => ["#{object_root_dir} must contain at least one identifiable version directory."] }
+        end
         version_directories.sort! # sort it, to be nice.
       end
 
       # Given an object_root_directory, deduce the format used to describe version directories.
       def self.get_version_format(object_root_dir)
         unless Dir.exist?(object_root_dir) == true
-          raise 'Directory does not exist!'
+          # This is a client error.
+          raise OcflTools::Errors::RequestedDirectoryNotFound, "#{object_root_dir} does not exist!"
         end
 
         # Get all directories starting with 'v', sort them.
@@ -98,14 +103,16 @@ module OcflTools
         first_version.slice!(0, 1) # cut the leading 'v' from the string.
         if first_version.length == 1 # A length of 1 for the first version implies 'v1'
           unless first_version.to_i == 1
-            raise "#{object_root_dir}/#{first_version} is not the first version directory!"
+            # This is a validation error; there must be a v1 directory.
+            # E015 "OCFL 3.5.3 Expected version sequence not found. Expected version #{count}, found version #{my_versions[count]}."
+            raise OcflTools::Errors::ValidationError, details: { "E015" => ["Expected version 1 not found. Found version #{first_version.to_i} instead."] }
           end
 
           version_format = 'v%d'
         else
           # Make sure this is Integer 1.
           unless first_version.to_i == 1
-            raise "#{object_root_dir}/#{first_version} is not the first version directory!"
+            raise OcflTools::Errors::ValidationError, details: { "E015" => ["Expected version 1 not found. Found version #{first_version.to_i} instead."] }
           end
 
           version_format = "v%0#{first_version.length}d"
@@ -170,24 +177,34 @@ module OcflTools
         # g_v_d returns a sorted array already. Reverse it, so we start with highest version.
         my_versions = OcflTools::Utils::Files.get_version_directories(object_root_dir).reverse
         case
+        # Return the inventory file in the highest version dir, if it exists.
         when File.exist?("#{object_root_dir}/#{my_versions[0]}/inventory.json")
           return "#{object_root_dir}/#{my_versions[0]}/inventory.json"
+        # Otherwise, return the inventory file in the root, if it exists.
         when File.exist?("#{object_root_dir}/inventory.json")
           return "#{object_root_dir}/inventory.json"
         else
-          # Quit out here if there was only 1 version directory
+          # We don't have a highest-version inventory, and we don't have a root inventory.
+          # This is a problem! But there might be an inventory file in a non-highest-version dir.
+          # Quit out here if there was only 1 version directory (We've already checked this)
           unless my_versions.size > 1
-            raise "No inventory file found in #{object_root_dir}!"
+            # This is a validation error; no inventory files found.
+            raise OcflTools::Errors::ValidationError, details: { "E215" => ["OCFL 3.1 Expected inventory file not found in #{object_root_dir} or discovered version directories."] }
           end
 
-          my_versions.delete_at(0) # drop the first element.
+          my_versions.delete_at(0) # drop the first element (we've already checked it).
           my_versions.each do |v|
+            # Return the highest version inventory file we find.
+            # Note, this is technically a non-compliant object root, but we
+            # want to return a result if we have one - we might be attempting object
+            # recovery and something is better than nothing.
             if File.exist?("#{object_root_dir}/#{v}/inventory.json")
               return "#{object_root_dir}/#{v}/inventory.json"
             end
           end
-          # If we get here, no inventory file found!
-          raise "No inventory file found in #{object_root_dir}!"
+          # If we get here, no inventory file found in any version dirs or the object root.
+          # This is a validation error.
+          raise OcflTools::Errors::ValidationError, details: { "E215" => ["OCFL 3.1 Expected inventory file not found in #{object_root_dir} or discovered version directories."] }
         end
       end
     end

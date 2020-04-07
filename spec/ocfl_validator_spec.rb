@@ -164,7 +164,7 @@ describe OcflTools::OcflValidator do
       validate_i_results = validate_i_all.validate_ocfl_object_root(digest: 'md5')
       # We know this object isn't actually fully OK, but we're not testing that right now.
       expect(validate_i_results.get_errors).to include('E111')
-      expect(validate_i_results.get_errors.count).to equal 1
+      expect(validate_i_results.get_errors.count).to equal(1)
       expect(validate_i_results.get_ok).to include('O111') # Replace with actual fixity-ok code when done.
     end
   end
@@ -179,7 +179,7 @@ describe OcflTools::OcflValidator do
 
     validate_i2.validate_ocfl_object_root.results
     it 'expects 7 specific errors in verify_structure' do
-      expect(validate_i2.results.error_count).to eq 7
+      expect(validate_i2.results.error_count).to equal(7)
       expect(validate_i2.results.get_errors).to match(
         {"E107"=>{"verify_structure"=>["Required NamAsTe file in object root is for unexpected OCFL version: 0=ocfl_object_1.0"]}, "E111"=>{"check_version"=>["Version v0001 created block is empty.", "Value in version v0001 user name block cannot be empty.", "Version v0002 created block is empty.", "Value in version v0002 user name block cannot be empty.", "Version v0003 created block is empty.", "Value in version v0003 user name block cannot be empty."]}}
       )
@@ -194,7 +194,7 @@ describe OcflTools::OcflValidator do
   describe 'Namaste file exists but is empty' do
     validate_j.validate_ocfl_object_root.results
     it 'expects 1 specific error in verify_structure' do
-      expect(validate_j.results.error_count).to eq 8
+      expect(validate_j.results.error_count).to equal(8)
       expect(validate_j.results.get_errors).to include(
         {"E105"=>{"verify_structure"=>["Required NamAsTe file in object root directory has no content!"]}}
       )
@@ -210,7 +210,7 @@ describe OcflTools::OcflValidator do
   describe 'Namaste file exists but contains garbage' do
     validate_k.validate_ocfl_object_root.results
     it 'expects 1 specific error in verify_structure' do
-      expect(validate_k.results.error_count).to eq 8
+      expect(validate_k.results.error_count).to equal(8)
       expect(validate_k.results.get_errors).to include(
         {"E106"=>{"verify_structure"=>["Required NamAsTe file in object root directory does not contain expected string."]}}
       )
@@ -243,23 +243,23 @@ describe OcflTools::OcflValidator do
     validate_bad102.validate_ocfl_object_root
 
     it 'expects 2 errors' do
-      expect(validate_bad102.results.error_count).to equal 2
+      expect(validate_bad102.results.error_count).to equal(2)
     end
 
     it 'expects only 1 error code; an E270' do
       expect(validate_bad102.results.get_errors).to include('E270')
-      expect(validate_bad102.results.get_errors.count).to equal 1
+      expect(validate_bad102.results.get_errors.count).to equal(1)
     end
 
     it 'expects 6 warns' do
-      expect(validate_bad102.results.warn_count).to equal 6
+      expect(validate_bad102.results.warn_count).to equal(6)
     end
 
     it 'expects only 3 warn codes; W270, W271, W272' do
       expect(validate_bad102.results.get_warnings).to include('W270')
       expect(validate_bad102.results.get_warnings).to include('W271')
       expect(validate_bad102.results.get_warnings).to include('W272')
-      expect(validate_bad102.results.get_warnings.count).to equal 3
+      expect(validate_bad102.results.get_warnings.count).to equal(3)
     end
 
   end

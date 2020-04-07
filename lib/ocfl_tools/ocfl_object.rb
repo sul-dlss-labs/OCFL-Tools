@@ -52,7 +52,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def set_version_message(version, message)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['message'] = message
@@ -64,7 +64,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def get_version_message(version)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['message']
@@ -76,7 +76,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def set_version_created(version, created)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['created'] = created
@@ -88,7 +88,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a non-existent version.
     def get_version_created(version)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['created']
@@ -100,7 +100,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a nonexistent version.
     def set_version_user(version, user)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['user'] = user
@@ -112,7 +112,7 @@ module OcflTools
     # @note will raise an exception if you attempt to query a nonexistent version.
     def get_version_user(version)
       unless @versions.key?(OcflTools::Utils.version_int_to_string(version))
-        raise "Version #{version} does not yet exist!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Version #{version} does not yet exist!"
       end
 
       @versions[OcflTools::Utils.version_int_to_string(version)]['user']
@@ -184,7 +184,7 @@ module OcflTools
       my_state = get_state(version)
 
       unless version == version_id_list.max
-        raise "Can't edit prior versions! Only version #{version_id_list.max} can be modified now."
+        raise OcflTools::Errors::CannotEditPreviousVersion, "Can't edit prior versions! Only version #{version_id_list.max} can be modified now."
       end
 
       # if the key is not in the manifest, assume that we meant to add it.
@@ -205,7 +205,7 @@ module OcflTools
       # If so; fail. We don't do implicit / soft adds. You want that, be explict: do an update_file instead.
       existing_files = get_files(version)
       if existing_files.key?(file)
-        raise 'File already exists with different digest in this version! Consider update instead.'
+        raise OcflTools::Errors::FileDigestMismatch, "#{file} already exists with different digest in version #{version}. Consider update instead."
       end
 
       # if it's not in State already, just add it.
@@ -256,7 +256,7 @@ module OcflTools
       # Does Digest exist in @manifest? Fail if not.
       # Doe fixityAlgorithm exist as a key in @fixity? Add if not.
       unless @manifest.key?(digest) == true
-        raise "Unable to find digest #{digest} in manifest!"
+        raise OcflTools::Errors::RequestedKeyNotFound, "Unable to find digest #{digest} in manifest!"
       end
 
       filepaths = @manifest[digest]
@@ -289,7 +289,7 @@ module OcflTools
       my_state = get_state(version) # Creates version & copies state from prior version if doesn't exist.
 
       unless version == version_id_list.max
-        raise "Can't edit prior versions! Only version #{version} can be modified now."
+        raise OcflTools::Errors::CannotEditPreviousVersion, "Can't edit prior versions! Only version #{version_id_list.max} can be modified now."
       end
 
       my_digest = get_digest(file, version)
@@ -364,7 +364,7 @@ module OcflTools
       end
       # Now see if the requested file is actually here.
       unless my_files.key?(file)
-        raise "Get_digest can't find requested file in given version!"
+        raise OcflTools::Errors::FileMissingFromVersionState, "Get_digest can't find requested file #{file} in version #{version}."
       end
 
       my_files[file]
@@ -377,7 +377,7 @@ module OcflTools
     # @note If a (n-1) version exists in the object, and the requested version does not yet exist, this method will copy that version's state block into the new version.
     def get_version(version)
       unless version > 0
-        raise "OCFL object version cannot be zero!"
+        raise OcflTools::Errors::NonCompliantValue, "Requested value '#{version}' for object version does not comply with specification."
       end
       if @versions.key?(OcflTools::Utils.version_int_to_string(version))
         @versions[OcflTools::Utils.version_int_to_string(version)]
@@ -414,10 +414,14 @@ module OcflTools
     # @param [Hash] hash use this hash for the content of the new OCFL version block.
     def set_version(version, hash)
       # SAN Check to make sure passed Hash has all expected keys.
+      e216_errors = []
       %w[created message user state].each do |key|
         if hash.key?(key) == false
-          raise "version #{version} hash block is missing required #{key} key"
+          e216_errors << "version #{version} hash block is missing required #{key} key."
         end
+      end
+      if e216_errors.size > 0
+        raise OcflTools::Errors::ValidationError, details: { "E216" => e216_errors }
       end
       @versions[OcflTools::Utils.version_int_to_string(version)] = hash
     end

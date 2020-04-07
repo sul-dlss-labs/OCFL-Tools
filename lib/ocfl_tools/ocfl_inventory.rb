@@ -54,9 +54,13 @@ module OcflTools
       begin
         JSON.parse(File.read(file))
       rescue JSON::ParserError
-        raise OcflTools::Errors::Error211
-      rescue StandardError
-        raise "An unknown error occured reading file #{file}" # catch/encapsulate any JSON::Parser or FileIO issues
+        raise OcflTools::Errors::ValidationError, details: { "E211" => ["#{file} is not valid JSON."] }
+      rescue Errno::ENOENT
+        # raise OcflTools::Errors::Error215, "expected inventory file #{file} not found!"
+        raise OcflTools::Errors::ValidationError, details: { "E215" => ["expected inventory file #{file} not found!"] }
+      # rescue Errno::EACCES Don't think we need to explicitly raise file permissions; let StdErr take it.
+      rescue StandardError => e
+        raise "An unknown error occured reading file #{file}: #{e}" # catch/encapsulate any FileIO issues
       end
     end
 
@@ -67,22 +71,31 @@ module OcflTools
       import_hash = read_json(file)
 
       # REQUIRED keys; raise exception if not found.
+      e216_errors = []
+      e217_errors = []
+      error_hash  = {}
       [ 'id', 'head', 'type', 'digestAlgorithm', 'manifest', 'versions' ].each do | key |
         unless import_hash.key?(key)
-          raise OcflTools::Errors::Error216, "Required key #{key} not found"
+          e216_errors << "Required key #{key} not found in #{file}"
+          error_hash["E216"] = e216_errors # we'll keep updating this value as new errors are recorded.
         end
-        if import_hash[key].empty?
-          raise OcflTools::Errors::Error217, "Required key #{key} must contain a value"
+        if import_hash.key?(key) && import_hash[key].empty?
+          # If the key exists but it's empty, that's also a problem!
+          e217_errors << "Required key #{key} in #{file} must contain a value"
+          error_hash["E217"] = e217_errors
         end
       end
+      # Raise a problem if we have anything in error_hash.
+      if error_hash.size > 0
+        raise OcflTools::Errors::ValidationError, details: error_hash
+      end
+
+
 
       @id               = import_hash['id']
       @head             = import_hash['head']
       @type             = import_hash['type']
       @digestAlgorithm  = import_hash['digestAlgorithm']
-#      if import_hash.key?('contentDirectory')
-#        @contentDirectory = import_hash['contentDirectory']
-#      end
       @manifest         = import_hash['manifest']
       @versions         = import_hash['versions']
       # Optional keys - contentDirectory and fixity block.
