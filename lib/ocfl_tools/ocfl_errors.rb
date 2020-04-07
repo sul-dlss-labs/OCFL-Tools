@@ -98,6 +98,95 @@ module OcflTools
           :desc => 'If the key contentDirectory is set, it must be set in the first version of the object and MUST NOT change between versions of the same object.',
           :link => 'https://ocfl.io/draft/spec/#E020'
         },
+        'E021' => {
+          :desc => 'If the key contentDirectory is not present in the inventory file then the name of the designated content sub-directory must be content.',
+          :link => 'https://ocfl.io/draft/spec/#E021'
+        },
+        # The Moab Exception.
+        'E022' => {
+          :desc => 'OCFL-compliant tools (including any validators) must ignore all directories in the object version directory except for the designated content directory.',
+          :link => 'https://ocfl.io/draft/spec/#E022'
+        },
+        'E023' => {
+          :desc => 'Every file within a version\'s content directory must be referenced in the manifest section of the inventory.',
+          :link => 'https://ocfl.io/draft/spec/#E023'
+        },
+        'E024' => {
+          :desc => 'There must not be empty directories within a version\'s content directory.',
+          :link => 'https://ocfl.io/draft/spec/#E024'
+        },
+        'E025' => {
+          :desc => 'For content-addressing, OCFL Objects must use either sha512 or sha256, and should use sha512.',
+          :link => 'https://ocfl.io/draft/spec/#E025'
+        },
+        'E026' => {
+          :desc => 'For storage of additional fixity values, or to support legacy content migration, implementers must choose from the following controlled vocabulary of digest algorithms, or from a list of additional algorithms given in the [Digest-Algorithms-Extension].',
+          :link => 'https://ocfl.io/draft/spec/#E026'
+        },
+        'E027' => {
+          :desc => 'OCFL clients must support all fixity algorithms given in the table below, and may support additional algorithms from the extensions.',
+          :link => 'https://ocfl.io/draft/spec/#E027'
+        },
+        'E028' => {
+          :desc => 'Optional fixity algorithms that are not supported by a client must be ignored by that client.',
+          :link => 'https://ocfl.io/draft/spec/#E028'
+        },
+        # If you use SHA1 in the fixity block...
+        'E029' => {
+          :desc => 'SHA-1 algorithm defined by [FIPS-180-4] and must be encoded using hex (base16) encoding [RFC4648].',
+          :link => 'https://ocfl.io/draft/spec/#E029'
+        },
+        # Only mentioned in the context of fixity, but presumably also applies to Digest choice.
+        'E030' => {
+          :desc => 'SHA-256 algorithm defined by [FIPS-180-4] and must be encoded using hex (base16) encoding [RFC4648].',
+          :link => 'https://ocfl.io/draft/spec/#E030'
+        },
+        # As E030; presumably also applies to Digest value.
+        'E031' => {
+          :desc => 'SHA-512 algorithm defined by [FIPS-180-4] and must be encoded using hex (base16) encoding [RFC4648].',
+          :link => 'https://ocfl.io/draft/spec/#E031'
+        },
+        'E032' => {
+          :desc => '[blake2b-512] must be encoded using hex (base16) encoding [RFC4648].',
+          :link => 'https://ocfl.io/draft/spec/#E032'
+        },
+        # Inventory must be JSON, must adhere to structure defined here.
+        'E033' => {
+          :desc => 'An OCFL Object Inventory MUST follow the [JSON] structure described in this section and must be named inventory.json.',
+          :link => 'https://ocfl.io/draft/spec/#E033'
+        },
+        # Inventory file must be called 'inventory.json'. This will be hard to test.
+        'E034' => {
+          :desc => 'An OCFL Object Inventory must follow the [JSON] structure described in this section and MUST be named inventory.json.',
+          :link => 'https://ocfl.io/draft/spec/#E034'
+        },
+        # Another hard one to test; how do we know that non-/ characters might be path separators?
+        'E035' => {
+          :desc => 'The forward slash (/) path separator must be used in content paths in the manifest and fixity blocks within the inventory.',
+          :link => 'https://ocfl.io/draft/spec/#E035'
+        },
+        'E036' => {
+          :desc => 'An OCFL Object Inventory must include the following keys: [id, type, digestAlgorithm, head]',
+          :link => 'https://ocfl.io/draft/spec/#E036'
+        },
+        'E037' => {
+          :desc => '[id] must be unique in the local context, and should be a URI [RFC3986].',
+          :link => 'https://ocfl.io/draft/spec/#E037'
+        },
+        'E038' => {
+          :desc => '[type] must be the URI of the inventory section of the specification, https://ocfl.io/1.0/spec/#inventory.',
+          :link => 'https://ocfl.io/draft/spec/#E038'
+        },
+        'E039' => {
+          :desc => '[digestAlgorithm] must be either sha512 or sha256, and should be sha512.',
+          :link => 'https://ocfl.io/draft/spec/#E039'
+        },
+        'E040' => {
+          :desc => '[head] must be the version directory name with the highest version number.',
+          :link => 'https://ocfl.io/draft/spec/#E040'
+        },
+
+
       }
 
       def initialize(msg: "A validation error has occured.", details: {} )
