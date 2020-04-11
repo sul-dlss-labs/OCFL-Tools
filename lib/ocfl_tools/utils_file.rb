@@ -95,6 +95,12 @@ module OcflTools
         Dir.glob('v*').select do |file|
           version_dirs << file if File.directory? file
         end
+
+        # Raise E008 if there are no identifiable version directories.
+        if version_dirs.empty?
+          raise OcflTools::Errors::ValidationError, details: { "E008" => ["No version directories found in #{object_root_dir}."] }
+        end
+
         version_dirs.sort!
         # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage edge case we'll deal with later.
         version_dirs.delete('v') if version_dirs.include? 'v'
