@@ -96,14 +96,15 @@ module OcflTools
           version_dirs << file if File.directory? file
         end
 
-        # Raise E008 if there are no identifiable version directories.
+        # This shouldn't fail if the array is empty. It's just not pretty.
+        version_dirs.sort!
+        # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage edge case.
+        version_dirs.delete('v') if version_dirs.include? 'v'
+
+        # ...and if that gets rid of the only directory; guess what! Another E008 opportunity.
         if version_dirs.empty?
           raise OcflTools::Errors::ValidationError, details: { "E008" => ["No version directories found in #{object_root_dir}."] }
         end
-
-        version_dirs.sort!
-        # if there's a verson_dirs that's just 'v', throw it out! It's hot garbage edge case we'll deal with later.
-        version_dirs.delete('v') if version_dirs.include? 'v'
 
         first_version = version_dirs[0] # the first element should be the first version directory.
         first_version.slice!(0, 1) # cut the leading 'v' from the string.
