@@ -13,6 +13,7 @@ module OcflTools
       def self.get_value(inventory_file, key)
         unless %w[contentDirectory digestAlgorithm head type id].include?(key)
           raise "#{key} is not a valid OCFL inventory header key"
+          raise OcflTools::Errors::RequestedKeyNotFound, "#{key} is not a valid OCFL inventory header key"
         end
 
         inventory = OcflTools::OcflInventory.new.from_file(inventory_file)
