@@ -59,6 +59,23 @@ module OcflTools
       @my_results['ok']
     end
 
+    # Convenience method to look up offical OCFL validation codes.
+    # @param [String] code a 4-character string starting of E, W or I and 3 digits.
+    # @return [Hash] a hash describing the requested OCFL validation code.
+    def get_code(code)
+      upcode = code.upcase # just in case you forget; no harm, no foul.
+      case
+      when upcode =~ /^E\d{3}$/
+        get_error_code(upcode)
+      when upcode =~/^W\d{3}$/
+        get_warning_code(upcode)
+      when upcode =~/^I\d{3}$/
+        get_information_code(upcode)
+      else
+        raise OcflTools::Errors::SyntaxError, "#{code} is not a valid OCFL error, warn or info code."
+      end
+    end
+
     # Processes all of @my_results and creates a nested hash of
     # context => level => code => [ descriptions ]
     # Useful if you want to get all the info/error/warn/ok results for a specific context.
@@ -268,5 +285,29 @@ module OcflTools
       end
       self
     end
+
+    private
+
+    def get_error_code(code)
+      OcflTools::Errors::ValidationError.code(code)
+      rescue OcflTools::Errors::SyntaxError => e
+      # Code not found; just re-raise it for now.
+        raise
+    end
+
+    def get_warning_code(code)
+      puts "This is a dummy method for now."
+      rescue OcflTools::Errors::SyntaxError => e
+      # Code not found; just re-raise it for now.
+        raise
+    end
+
+    def get_information_code(code)
+      puts "Yet more dummy code for infos."
+      rescue OcflTools::Errors::SyntaxError => e
+      # Code not found; just re-raise it for now.
+        raise
+    end
+
   end
 end
